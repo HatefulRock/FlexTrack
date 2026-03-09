@@ -1,82 +1,94 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { WorkoutTemplate } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+
+if (!apiKey) {
+  console.error("API Key is missing! Check your .env file.");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey || "");
 
 export const generateWorkoutRoutine = async (prompt: string, currentTemplate?: WorkoutTemplate | null): Promise<WorkoutTemplate | null> => {
-  try {
-    let contentPrompt = "";
-    
-    if (currentTemplate) {
-        contentPrompt = `
-        I have this existing workout routine in JSON format:
-        ${JSON.stringify(currentTemplate)}
-
-        The user wants to modify it with this request: "${prompt}".
-        
-        Return the UPDATED JSON object. Keep the structure identical. Ensure IDs are preserved if the exercise remains, or generate new IDs for new exercises.
-        `;
-    } else {
-        contentPrompt = `Create a detailed workout routine based on this request: "${prompt}". 
-        Ensure the exercises are real and practical. 
-        For 'type':
-        - Use 'reps' for weightlifting/calisthenics.
-        - Use 'timer' for static holds or yoga.
-        - Use 'distance' for running, swimming, cycling, or rowing.
-        
-        Generate a unique ID for the workout and each exercise (short strings are fine).
-        If the user implies a schedule (e.g. "daily", "Mondays"), set scheduleDays accordingly (0=Sun, 1=Mon...6=Sat).`;
-    }
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: contentPrompt,
-      config: {
-        systemInstruction: "You are an expert fitness coach. You create and modify structured JSON workout plans.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            id: { type: Type.STRING },
-            name: { type: Type.STRING },
-            description: { type: Type.STRING },
-            scheduleDays: { 
-                type: Type.ARRAY, 
-                items: { type: Type.INTEGER },
-                description: "Array of days (0=Sun...6=Sat) to schedule this workout."
-            },
-            exercises: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  id: { type: Type.STRING },
-                  name: { type: Type.STRING },
-                  type: { type: Type.STRING, enum: ["reps", "timer", "distance"] },
-                  targetSets: { type: Type.INTEGER },
-                  targetReps: { type: Type.INTEGER },
-                  targetWeight: { type: Type.NUMBER },
-                  targetDurationSeconds: { type: Type.INTEGER },
-                  targetDistance: { type: Type.NUMBER },
-                  targetDistanceUnit: { type: Type.STRING, enum: ["m", "km", "miles"] },
-                  restSeconds: { type: Type.INTEGER, description: "Rest time in seconds between sets" },
-                  notes: { type: Type.STRING }
-                },
-                required: ["id", "name", "type"]
-              }
-            }
+  
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash", 
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          id: { type: SchemaType.STRING },
+          name: { type: SchemaType.STRING },
+          description: { type: SchemaType.STRING },
+          scheduleDays: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.INTEGER },
           },
-          required: ["id", "name", "exercises"]
-        }
-      }
-    });
+          exercises: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                id: { type: SchemaType.STRING },
+                name: { type: SchemaType.STRING },
+                
+                // FIX: TypeScript requires 'format: "enum"' when using an enum array
+                type: { 
+                  type: SchemaType.STRING, 
+                  format: "enum", 
+                  enum: ["reps", "timer", "distance"] 
+                },
 
-    const text = response.text;
-    if (!text) return null;
-    
-    return JSON.parse(text) as WorkoutTemplate;
-  } catch (error) {
-    console.error("Error generating workout:", error);
-    return null;
+                // Optional fields (omitted from 'required' list below)
+                targetSets: { type: SchemaType.INTEGER },
+                targetReps: { type: SchemaType.INTEGER },
+                targetWeight: { type: SchemaType.NUMBER },
+                targetDurationSeconds: { type: SchemaType.INTEGER },
+                targetDistance: { type: SchemaType.NUMBER },
+                
+                // FIX: TypeScript requires 'format: "enum"' here as well
+                targetDistanceUnit: { 
+                  type: SchemaType.STRING, 
+                  format: "enum",
+                  enum: ["m", "km", "miles"]
+                },
+
+                restSeconds: { type: SchemaType.INTEGER },
+                notes: { type: SchemaType.STRING }
+              },
+              // We only force these to be required. The rest are optional.
+              required: ["id", "name", "type"]
+            }
+          }
+        },
+        required: ["id", "name", "exercises"]
+      },
+    },
+  });
+
+  let contentPrompt = "";
+
+  if (currentTemplate) {
+    contentPrompt = `
+      I have this existing workout routine in JSON format:
+      ${JSON.stringify(currentTemplate)}
+
+      The user wants to modify it with this request: "${prompt}".
+      
+      Return the UPDATED JSON object. Keep the structure identical.
+      `;
+  } else {
+    contentPrompt = `Create a detailed workout routine based on this request: "${prompt}". 
+      Use "reps" for weights, "timer" for static/yoga, "distance" for cardio.
+      Generate unique IDs.`;
   }
+
+  const result = await model.generateContent(contentPrompt);
+  const response = result.response;
+  const text = response.text();
+
+  if (!text) throw new Error("No response generated");
+
+  return JSON.parse(text) as WorkoutTemplate;
 };
