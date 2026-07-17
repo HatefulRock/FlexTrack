@@ -22,99 +22,95 @@ FlexTrack is a mobile fitness tracking application that helps you plan, execute,
 
 ---
 
-## Screenshots
-
-> **Note:** Run the app and capture screenshots, then place them in a `docs/screenshots/` folder and update the paths below.
+## Current app
 
 <div align="center">
 <table>
   <tr>
-    <td align="center"><b>Dashboard</b></td>
+    <td align="center"><b>Today</b></td>
+    <td align="center"><b>Workouts</b></td>
     <td align="center"><b>Active Workout</b></td>
     <td align="center"><b>Workout Summary</b></td>
-    <td align="center"><b>History</b></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/dashboard.png" width="200" alt="Dashboard" /></td>
+    <td><img src="docs/screenshots/workouts.png" width="200" alt="Workouts" /></td>
     <td><img src="docs/screenshots/active-workout.png" width="200" alt="Active Workout" /></td>
     <td><img src="docs/screenshots/summary.png" width="200" alt="Workout Summary" /></td>
-    <td><img src="docs/screenshots/history.png" width="200" alt="History" /></td>
   </tr>
   <tr>
-    <td align="center"><b>Stats</b></td>
     <td align="center"><b>Template Editor</b></td>
-    <td align="center"><b>AI Creator</b></td>
+    <td align="center"><b>History</b></td>
+    <td align="center"><b>Training Progress</b></td>
     <td align="center"><b>Body Metrics</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/stats.png" width="200" alt="Stats" /></td>
     <td><img src="docs/screenshots/template-editor.png" width="200" alt="Template Editor" /></td>
-    <td><img src="docs/screenshots/ai-creator.png" width="200" alt="AI Creator" /></td>
+    <td><img src="docs/screenshots/history.png" width="200" alt="History" /></td>
+    <td><img src="docs/screenshots/stats.png" width="200" alt="Training Progress" /></td>
     <td><img src="docs/screenshots/body-metrics.png" width="200" alt="Body Metrics" /></td>
   </tr>
 </table>
 </div>
 
+The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolution (1290 × 2796). They use deterministic local demo data against the current web app.
+
 ---
 
 ## Features
 
-### Dashboard
-- **Weekly schedule** — view which workouts are planned for each day of the week
-- **Today's focus card** — highlights workouts scheduled for today with a one-tap start
-- **Template quick-launch** — shows your top 3 templates with a contextual action sheet (Start / Edit) and a "View All" shortcut when you have more than 3
+### Today and scheduling
 
-### Workout Templates
-- Create and edit fully custom workout templates
-- Add exercises of three types: **Reps**, **Timer**, or **Distance**
-- Configure per-exercise targets: sets, reps, weight, rest time, notes
-- Assign workouts to specific days of the week for schedule planning
+- Highlights a routine scheduled for today with one-tap start
+- Shows sessions completed this week and total workout count
+- Displays the seven-day routine schedule and quick access to the first three routines
 
-### Active Workout
-- Step-by-step exercise navigator with per-set logging
-- Inline weight / reps / duration / distance input per set
-- **Previous session reference** — shows your last logged numbers for each set as a ghost value
-- Per-set notes
-- **Rest timer** — integrated countdown with vibration feedback; adjustable ±15 s
-- **Timer mode** for timed exercises (stopwatch per set)
-- **Haptic feedback** on set completion
-- Screen stays awake during a session (`expo-keep-awake`)
-- Hardware back-button guard with discard confirmation
+### Workout routines
 
-### Post-Workout Summary
-- Automatically shown after finishing a workout
-- Displays: total duration, exercises completed, total sets done, total volume lifted
-- Per-exercise completion breakdown with completion indicator
-- One-tap "Done" button navigates to History
+- Create, edit, search, start, and delete reusable routines
+- Mix repetition, timed, and distance exercises in one routine
+- Configure sets, reps, weight or assistance, duration, distance units, rest time, and weekly schedule
+- Support weighted, bodyweight, and assisted repetition exercises
+
+### Guided workouts
+
+- Log every set with weight, reps, duration, or distance as appropriate
+- Compare a set with values from the previous matching session
+- Mark sets individually or complete all sets in an exercise
+- Update an exercise's default weight during a session
+- Use the built-in plate calculator for externally loaded exercises
+- Run per-set timers and an adjustable rest countdown with vibration feedback
+- Keep the screen awake and guard against accidentally leaving a session
+- Review duration, completed exercises, sets, volume, and per-exercise results after saving
+
+### Quick Log
+
+- Record an activity that was completed outside a routine
+- Supports strength, run, walk, cycle, timed, and other activities
+- Captures completion time, duration, distance and unit when relevant, plus notes
+- Adds the activity directly to History and Progress
 
 ### History
-- **28-day activity heatmap** showing training frequency at a glance
-- Stats row: total workouts · average session duration · current streak 🔥
-- Filter logs by template name via scrollable chip bar
-- Logs grouped by month, newest first
-- Each log card shows: template name, date, duration, total volume, completed exercises, and exercise tags
 
-### Stats — Training Tab
-- **Dynamic Personal Records** — automatically discovers the heaviest lift across all your exercises (top 8, sorted by weight); no hardcoded exercise list
-- **Consistency chart** — 14-day bar chart of daily workout frequency (locale-safe date comparison)
-- **Training split pie chart** — Push / Pull / Legs / Cardio breakdown
-- **Progression chart** — line chart of weight or estimated 1-rep max over time for any exercise; exercise picker modal
+- Browse a tappable 28-day activity grid
+- See total workouts, average duration, and current streak
+- Filter by routine or a selected day
+- Review sessions grouped by month with duration, volume, and exercise details
 
-### Stats — Body Tab
-- Log body weight over time
-- Log height
-- **BMI calculator** with colour-coded status (Underweight / Healthy / Overweight / Obese)
-- Weight-over-time line chart
+### Progress
 
-### AI Workout Creator
-- A placeholder screen is included for a future workout-generation feature
-- No AI provider or client-side API key is currently configured
+- Derives personal records from the exercise data actually logged
+- Shows a 14-day consistency chart and Push / Pull / Legs / Cardio training split
+- Charts the last eight progression points for a selected exercise
+- Chooses metrics for each modality, including weight, estimated 1RM, reps, assistance, duration, distance, and pace
+- Logs height and body weight, calculates BMI, and charts the five latest weight entries
 
-### Navigation
-- Bottom navigation for Schedule · Workouts · History · Stats, with a Quick Start action
-- Active tab highlighted in primary blue
-- **Haptic selection feedback** on every tab press
-- Navigation bar hidden during active workout and AI creator screens
+### Navigation and feedback
+
+- Bottom tabs for Today, Workouts, History, and Progress
+- Central Quick Start sheet for launching routines, logging completed activity, or creating a routine
+- Haptic feedback for navigation, workout starts, and completed sets on supported devices
+- Focused full-screen layouts for routine editing, active workouts, summaries, and Quick Log
 
 ---
 
@@ -143,45 +139,29 @@ FlexTrack is a mobile fitness tracking application that helps you plan, execute,
 
 ```
 flex-track/
-├── App.tsx                     # Root component, view-state router
+├── App.tsx                     # Root view-state router and data wiring
+├── constants/
+│   └── theme.ts                # Shared colors, type, spacing, and shadows
 ├── types/
-│   └── index.ts                # All shared TypeScript types
+│   └── index.ts                # Templates, exercises, logs, profile, and views
 ├── hooks/
-│   ├── useWorkoutDataSafe.ts   # Validated AsyncStorage CRUD for templates, logs, profile
-│   └── useWorkoutTimer.ts      # Per-exercise timers and rest countdown
+│   ├── useWorkoutDataSafe.ts   # Validated, serialized AsyncStorage operations
+│   └── useWorkoutTimer.ts      # Exercise timers and rest countdown
 ├── utils/
-│   ├── helpers.ts              # generateId()
-│   ├── time.ts                 # formatTime(), parseTimeString()
-│   ├── formatters.ts           # Day name helpers
-│   └── constants.ts
+│   ├── progress.ts             # Modality-aware progress calculations
+│   ├── time.ts                 # Duration parsing and formatting
+│   ├── formatters.ts           # Schedule labels
+│   └── helpers.ts              # ID generation
 ├── components/
-│   └── layout/
-│       ├── Navigation.tsx      # Bottom tab bar + FAB
-│       └── Header.tsx
+│   ├── layout/                 # Header and bottom navigation
+│   └── ui/                     # Buttons, cards, chips, and empty states
 └── pages/
-    ├── Dashboard/
-    │   ├── DashboardPage.tsx
-    │   ├── WeeklySchedule.tsx
-    │   └── TodayFocusCard.tsx
-    ├── Templates/
-    │   ├── TemplatesPage.tsx
-    │   ├── TemplateEditor.tsx
-    │   └── WorkoutCard.tsx
-    ├── ActiveWorkout/
-    │   ├── ActiveWorkoutPage.tsx
-    │   ├── WorkoutSummaryPage.tsx
-    │   ├── ExerciseView.tsx
-    │   ├── SetList.tsx
-    │   └── RestControl.tsx
-    ├── History/
-    │   ├── HistoryPage.tsx
-    │   └── LogItem.tsx
-    ├── Stats/
-    │   ├── StatsPage.tsx
-    │   ├── TrainingTab.tsx
-    │   └── BodyTab.tsx
-    └── AICreator/
-        └── AICreatorPage.tsx
+    ├── Dashboard/              # Today, schedule, and routine shortcuts
+    ├── Templates/              # Routine list and editor
+    ├── ActiveWorkout/          # Guided session, set logging, rest, and summary
+    ├── QuickLog/               # Completed-activity entry
+    ├── History/                # Activity grid, filters, and workout cards
+    └── Stats/                  # Training progress and body metrics
 ```
 
 ---
@@ -199,13 +179,17 @@ WorkoutTemplate {
 Exercise {
   id, name,
   type: 'reps' | 'timer' | 'distance',
+  loadMode?: 'external' | 'bodyweight' | 'assisted',
   targetSets?, targetReps?, targetWeight?,
-  targetDurationSeconds?, targetDistance?,
+  targetDurationSeconds?, targetDistance?, targetDistanceUnit?,
   restSeconds?, notes?
 }
 
 WorkoutLog {
-  id, templateId, templateName,
+  id, templateId?, templateName,
+  source?: 'routine' | 'quick',
+  activityCategory?: 'strength' | 'run' | 'walk' | 'cycle' | 'timed' | 'other',
+  notes?,
   startTime: number,        // Unix ms
   endTime?: number,
   exercises: ExerciseLog[]
@@ -213,6 +197,7 @@ WorkoutLog {
 
 ExerciseLog {
   exerciseId, exerciseName,
+  exerciseType?, loadMode?, distanceUnit?,
   sets: SetLog[],
   completed: boolean
 }
@@ -221,6 +206,11 @@ SetLog {
   setNumber, reps?, weight?,
   distance?, durationSeconds?,
   completed: boolean, notes?
+}
+
+UserProfile {
+  height?: number,         // centimetres
+  weightLogs: { date: number, weight: number }[] // kilograms
 }
 ```
 
@@ -298,11 +288,17 @@ Configuration is in `eas.json`.
 
 ## Architecture Notes
 
-**State management** is intentionally simple: a single `useState<ViewState>` in `App.tsx` drives which screen renders. There is no Redux, Zustand, or React Context. This keeps the codebase easy to follow and fast to navigate.
+**State management** is intentionally simple: local React state in `App.tsx` drives the current screen and active session. There is no Redux, Zustand, or application context.
 
 **Persistence** is handled by `useWorkoutDataSafe`, which validates and bounds stored values and serializes writes to the three AsyncStorage keys: `workout-templates`, `workout-logs`, and `user-profile`. No sync layer or remote database is involved.
 
 **Performance** — expensive derivations are memoized, and the chart-heavy Stats screen is loaded only when opened.
+
+### Current boundaries
+
+- Data is local to the current browser or device; there is no account, cloud sync, or remote database.
+- The included AI Creator screen is an unlinked coming-soon prototype. No AI provider or API key is configured, and the current product does not generate routines with AI.
+- Exercise grouping for the training split is inferred from exercise names.
 
 ---
 

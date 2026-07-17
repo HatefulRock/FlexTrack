@@ -1,5 +1,5 @@
 {
   "name": "FlexTrack",
-  "description": "A smart, mobile-first workout tracker with AI-generated routines, progress analytics, and active session management.",
+  "description": "A local-first, mobile workout tracker with reusable routines, guided sessions, quick activity logging, and progress analytics.",
   "requestFramePermissions": []
 }
