@@ -70,6 +70,11 @@ const App = () => {
     setView('templates');
   };
 
+  const handleUpdateActiveTemplate = (t: WorkoutTemplate) => {
+    setActiveTemplate(t);
+    void saveTemplate(t).catch(() => Alert.alert('Save failed', 'The new default weight could not be written to local storage.'));
+  };
+
   const handleDeleteTemplate = (id: string) => {
     Alert.alert(
       "Delete Workout",
@@ -135,6 +140,7 @@ const App = () => {
               <ActiveWorkoutPage 
                   template={activeTemplate}
                   previousLogs={logs} 
+                  onUpdateTemplate={handleUpdateActiveTemplate}
                   onFinish={handleFinishWorkout} 
               />
           )}
