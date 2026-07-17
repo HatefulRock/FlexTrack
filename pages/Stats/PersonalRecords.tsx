@@ -33,7 +33,7 @@ export const PersonalRecords = ({ logs }: { logs: WorkoutLog[] }) => {
         {records.map((rec, i) => (
           <LinearGradient
             key={i}
-            colors={["#334155", "#1e293b"]}
+            colors={["#263245", "#111722"]}
             style={styles.card}
           >
             <Text style={styles.liftName}>{rec.name}</Text>
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 4,
   },
-  title: { color: "white", fontWeight: "bold", fontSize: 16 },
+  title: { color: "#F7F9FC", fontWeight: "bold", fontSize: 16 },
   grid: { flexDirection: "row", gap: 12 },
   card: {
     flex: 1,
@@ -75,6 +75,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 4,
   },
-  liftValue: { color: "white", fontSize: 18, fontWeight: "bold" },
+  liftValue: { color: "#F7F9FC", fontSize: 18, fontWeight: "bold" },
   unit: { fontSize: 12, color: "#64748b", fontWeight: "normal" },
 });
+
+

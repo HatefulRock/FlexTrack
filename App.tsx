@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 // 1. Updated Imports
 import { View, StyleSheet, Alert, StatusBar, ActivityIndicator } from 'react-native';
+import { theme } from './constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ViewState, WorkoutTemplate, WorkoutLog } from './types';
@@ -18,6 +19,7 @@ import { ActiveWorkoutPage } from './pages/ActiveWorkout/ActiveWorkoutPage';
 import { WorkoutSummaryPage } from './pages/ActiveWorkout/WorkoutSummaryPage';
 import { HistoryPage } from './pages/History/HistoryPage';
 import { StatsPage } from './pages/Stats/StatsPage';
+import { QuickLogPage } from './pages/QuickLog/QuickLogPage';
 
 const App = () => {
   const [view, setView] = useState<ViewState | 'template-editor'>('dashboard');
@@ -83,12 +85,12 @@ const App = () => {
     setView('templates');
   };
 
-  const isFullScreen = view === 'active-workout' || view === 'workout-summary';
+  const isFullScreen = view === 'active-workout' || view === 'workout-summary' || view === 'quick-log';
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+        <StatusBar barStyle="light-content" backgroundColor={theme.colors.canvas} />
 
         {/* FIX: Conditional styling. ActiveWorkout needs 0 padding to look native. */}
         <View style={[styles.content, isFullScreen && styles.fullScreenContent]}>
@@ -96,7 +98,8 @@ const App = () => {
           {view === 'dashboard' && (
               <DashboardPage 
                   templates={templates} 
-                  startWorkout={handleStartWorkout} 
+                  
+                  logs={logs}startWorkout={handleStartWorkout} 
                   setView={setView} 
               />
           )}
@@ -142,6 +145,9 @@ const App = () => {
               />
           )}
 
+          {view === 'quick-log' && (
+              <QuickLogPage onSave={(log) => { addLog(log); setView('history'); }} onCancel={() => setView('dashboard')} />
+          )}
           {view === 'history' && (
               <HistoryPage logs={logs} />
           )}
@@ -155,8 +161,8 @@ const App = () => {
           )}
         </View>
 
-        {view !== 'active-workout' && view !== 'workout-summary' && view !== 'template-editor' && view !== 'ai-creator' && (
-          <Navigation currentView={view} setView={setView} />
+        {view !== 'active-workout' && view !== 'workout-summary' && view !== 'template-editor' && view !== 'ai-creator' && view !== 'quick-log' && (
+          <Navigation currentView={view} setView={setView} templates={templates} onStart={handleStartWorkout} onCreate={() => { setEditingTemplate(null); setView('template-editor'); }} onQuickLog={() => setView('quick-log')} />
         )}
 
       </SafeAreaView>
@@ -167,12 +173,12 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a', 
+    backgroundColor: theme.colors.canvas, 
   },
   content: {
     flex: 1, 
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   // FIX: Removes padding for the active workout screen
   fullScreenContent: {
@@ -181,10 +187,13 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: theme.colors.canvas,
     justifyContent: 'center',
     alignItems: 'center',
   }
 });
 
 export default App;
+
+
+

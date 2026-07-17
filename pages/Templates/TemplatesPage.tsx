@@ -1,169 +1,31 @@
-import React from 'react';
-import { 
-  View, 
-  Text,
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity 
-} from 'react-native';
-import { Plus, Dumbbell } from 'lucide-react-native';
-
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dumbbell, Plus, Search } from 'lucide-react-native';
 import { Header } from '../../components/layout/Header';
+import { Button, EmptyState } from '../../components/ui/Primitives';
 import { WorkoutTemplate } from '../../types';
 import { WorkoutCard } from './WorkoutCard';
+import { theme } from '../../constants/theme';
 
-interface TemplatesPageProps {
-  templates: WorkoutTemplate[];
-  onEdit: (t: WorkoutTemplate) => void;
-  onDelete: (id: string) => void;
-  onCreate: () => void;
-  onStart: (t: WorkoutTemplate) => void;
-}
+interface Props { templates: WorkoutTemplate[]; onEdit: (t: WorkoutTemplate) => void; onDelete: (id: string) => void; onCreate: () => void; onStart: (t: WorkoutTemplate) => void; }
 
-export const TemplatesPage = ({ 
-    templates, 
-    onEdit, 
-    onDelete, 
-    onCreate, 
-    onStart 
-}: TemplatesPageProps) => {
-    return (
-        <View style={styles.container}>
-            <Header title="My Workouts" />
-            
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                
-                {/* 1. Subtle Counter */}
-                {templates.length > 0 && (
-                    <Text style={styles.counterText}>
-                        {templates.length} {templates.length === 1 ? 'Routine' : 'Routines'} Found
-                    </Text>
-                )}
-
-                {/* 2. List of Cards */}
-                {templates.map(t => (
-                    <WorkoutCard 
-                      key={t.id} 
-                      template={t} 
-                      onEdit={onEdit} 
-                      onDelete={onDelete} 
-                      onStart={onStart} 
-                    />
-                ))}
-                
-                {/* 3. Rich Empty State */}
-                {templates.length === 0 && (
-                    <View style={styles.emptyState}>
-                        <View style={styles.emptyIconCircle}>
-                            <Dumbbell size={48} color="#94a3b8" />
-                        </View>
-                        <Text style={styles.emptyTitle}>No Workouts Yet</Text>
-                        <Text style={styles.emptySubtitle}>
-                            Create your first routine manually or use the AI generator to build one.
-                        </Text>
-                        <TouchableOpacity onPress={onCreate} style={styles.createButton}>
-                            <Plus size={20} color="white" />
-                            <Text style={styles.createButtonText}>Create Workout</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </ScrollView>
-
-            {/* 4. Floating Action Button (FAB) */}
-            {/* Only show FAB if we have templates (otherwise the empty state button is enough) */}
-            {templates.length > 0 && (
-                <TouchableOpacity 
-                    onPress={onCreate} 
-                    style={styles.fab}
-                    activeOpacity={0.8}
-                >
-                    <Plus size={32} color="white" />
-                </TouchableOpacity>
-            )}
-        </View>
-    );
+export const TemplatesPage = ({ templates, onEdit, onDelete, onCreate, onStart }: Props) => {
+  const [query,setQuery]=useState('');
+  const shown=useMemo(()=>templates.filter(t=>`${t.name} ${t.description||''}`.toLowerCase().includes(query.trim().toLowerCase())),[templates,query]);
+  return <View style={styles.container}>
+    <Header title="Workouts" rightAction={templates.length ? <TouchableOpacity accessibilityLabel="Create routine" onPress={onCreate} style={styles.add}><Plus size={21} color={theme.colors.canvas}/></TouchableOpacity> : undefined}/>
+    <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      {templates.length > 0 && <View style={styles.search}><Search size={19} color={theme.colors.textSubtle}/><TextInput value={query} onChangeText={setQuery} placeholder="Search routines" placeholderTextColor={theme.colors.textSubtle} style={styles.input} returnKeyType="search"/>{query.length>0&&<TouchableOpacity onPress={()=>setQuery('')}><Text style={styles.clear}>Clear</Text></TouchableOpacity>}</View>}
+      {templates.length > 0 && <View style={styles.intro}><View><Text style={styles.count}>{shown.length} {shown.length===1?'ROUTINE':'ROUTINES'}</Text><Text style={styles.helper}>Choose a plan and make today count.</Text></View></View>}
+      <View style={styles.list}>{shown.map(t=><WorkoutCard key={t.id} template={t} onEdit={onEdit} onDelete={onDelete} onStart={onStart}/>)}</View>
+      {!templates.length&&<EmptyState icon={Dumbbell} title="Your training starts here" message="Create a routine once, then launch it anytime from Today or Quick Start." action="Create a routine" onAction={onCreate}/>}
+      {!!templates.length&&!shown.length&&<View style={styles.noResults}><Text style={styles.noResultsTitle}>No matching routines</Text><Text style={styles.noResultsBody}>Try another name or clear your search.</Text><Button label="Clear search" variant="secondary" onPress={()=>setQuery('')}/></View>}
+    </ScrollView>
+  </View>;
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
-  scrollContent: {
-    paddingHorizontal: 20, // Increased padding
-    paddingTop: 16,
-    paddingBottom: 120, // Extra space at bottom so FAB doesn't cover last card
-  },
-  counterText: {
-    color: '#64748b',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  
-  // Empty State Styles
-  emptyState: {
-    marginTop: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  emptyIconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 20,
-  },
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0ea5e9', // Primary
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 8,
-  },
-  createButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-
-  // Floating Action Button
-  fab: {
-    position: 'absolute',
-    bottom: 100, // Sits above the Bottom Navigation Bar
-    right: 20,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#0ea5e9', // Primary
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Shadow
-    shadowColor: '#0ea5e9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 50,
-  }
+const styles=StyleSheet.create({
+  container:{flex:1,backgroundColor:theme.colors.canvas},scroll:{paddingHorizontal:16,paddingTop:8,paddingBottom:120,maxWidth:620,width:'100%',alignSelf:'center'},search:{height:48,borderRadius:theme.radius.md,borderWidth:1,borderColor:theme.colors.border,backgroundColor:theme.colors.surface,flexDirection:'row',alignItems:'center',paddingHorizontal:14,gap:10,marginBottom:20},
+  input:{flex:1,height:'100%',color:theme.colors.text,fontSize:15,outlineStyle:'none'} as any,clear:{...theme.type.caption,color:theme.colors.primary},intro:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-end',marginBottom:14},count:{...theme.type.caption,color:theme.colors.primary,letterSpacing:1.2},helper:{...theme.type.body,color:theme.colors.textMuted,marginTop:3},
+  list:{gap:12},add:{width:42,height:42,borderRadius:21,backgroundColor:theme.colors.primary,alignItems:'center',justifyContent:'center'},noResults:{paddingVertical:64,alignItems:'center'},noResultsTitle:{...theme.type.heading,color:theme.colors.text},noResultsBody:{...theme.type.body,color:theme.colors.textMuted,marginTop:5,marginBottom:20}
 });
+

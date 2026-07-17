@@ -1,98 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ChevronDown, Maximize2, Minus, Plus } from 'lucide-react-native';
 import { formatTime } from '../../utils/time';
-import { Maximize2, Minimize2, X, Plus, Minus } from 'lucide-react-native';
+import { theme } from '../../constants/theme';
 
-interface RestControlProps {
-  restTimer: number;
-  expanded: boolean;
-  onToggleExpand: () => void;
-  onAdd: () => void;
-  onSubtract: () => void;
-  onSkip: () => void;
-}
-
-export const RestControl = ({ 
-    restTimer, expanded, onToggleExpand, onAdd, onSubtract, onSkip 
-}: RestControlProps) => {
-
-  if (!expanded) {
-    // MINIMIZED VIEW (Bottom Bar)
-    return (
-        <View style={styles.miniContainer}>
-            <TouchableOpacity onPress={onToggleExpand} style={styles.miniContent}>
-                <View>
-                    <Text style={styles.miniLabel}>Rest</Text>
-                    <Text style={styles.miniTimer}>{formatTime(restTimer)}</Text>
-                </View>
-                <Maximize2 size={20} color="#94a3b8" />
-            </TouchableOpacity>
-            
-            <View style={styles.miniControls}>
-                <TouchableOpacity onPress={onAdd} style={styles.miniBtn}>
-                    <Text style={styles.miniBtnText}>+30</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onSkip} style={styles.miniBtnSkip}>
-                    <Text style={styles.miniBtnTextWhite}>Skip</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
-  }
-
-  // EXPANDED VIEW (Full Screen Overlay)
-  return (
-    <View style={styles.overlay}>
-        <TouchableOpacity onPress={onToggleExpand} style={styles.closeBtn}>
-            <Minimize2 size={24} color="white" />
-        </TouchableOpacity>
-
-        <Text style={styles.label}>Resting</Text>
-        <Text style={styles.timer}>{formatTime(restTimer)}</Text>
-        
-        <View style={styles.controlsRow}>
-            <TouchableOpacity onPress={onSubtract} style={styles.circleBtn}>
-                <Minus size={24} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onAdd} style={styles.circleBtn}>
-                <Plus size={24} color="white" />
-            </TouchableOpacity>
-        </View>
-        
-        <TouchableOpacity onPress={onSkip} style={styles.skipBtn}>
-            <Text style={styles.skipBtnText}>Skip Rest</Text>
-        </TouchableOpacity>
-    </View>
-  );
+interface Props {restTimer:number;expanded:boolean;onToggleExpand:()=>void;onAdd:()=>void;onSubtract:()=>void;onSkip:()=>void}
+export const RestControl=({restTimer,expanded,onToggleExpand,onAdd,onSubtract,onSkip}:Props)=>{
+ if(!expanded)return <View style={styles.mini}><TouchableOpacity accessibilityLabel="Expand rest timer" onPress={onToggleExpand} style={styles.miniMain}><View style={styles.restDot}/><View><Text style={styles.label}>RESTING</Text><Text style={styles.miniTime}>{formatTime(restTimer)}</Text></View><Maximize2 size={19} color={theme.colors.textMuted}/></TouchableOpacity><TouchableOpacity onPress={onAdd} style={styles.miniAdd}><Text style={styles.miniAddText}>+15s</Text></TouchableOpacity><TouchableOpacity onPress={onSkip} style={styles.miniSkip}><Text style={styles.miniSkipText}>Skip</Text></TouchableOpacity></View>;
+ return <View style={styles.overlay}><TouchableOpacity accessibilityLabel="Minimize rest timer" onPress={onToggleExpand} style={styles.close}><ChevronDown size={26} color={theme.colors.text}/></TouchableOpacity><View style={styles.pulse}><Text style={styles.label}>RECOVER & RESET</Text><Text style={styles.time}>{formatTime(restTimer)}</Text><Text style={styles.hint}>Your next set starts when you’re ready.</Text></View><View style={styles.controls}><TouchableOpacity onPress={onSubtract} style={styles.adjust}><Minus size={22} color={theme.colors.text}/><Text style={styles.adjustText}>15 sec</Text></TouchableOpacity><TouchableOpacity onPress={onAdd} style={styles.adjust}><Plus size={22} color={theme.colors.text}/><Text style={styles.adjustText}>15 sec</Text></TouchableOpacity></View><TouchableOpacity onPress={onSkip} style={styles.skip}><Text style={styles.skipText}>Skip rest</Text></TouchableOpacity></View>
 };
-
-const styles = StyleSheet.create({
-  // Minimized Styles
-  miniContainer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#1e293b', borderTopWidth: 1, borderTopColor: '#334155',
-    flexDirection: 'row', alignItems: 'center', padding: 12, justifyContent: 'space-between',
-    elevation: 10, zIndex: 100
-  },
-  miniContent: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  miniLabel: { fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' },
-  miniTimer: { fontSize: 24, fontWeight: 'bold', color: '#38bdf8', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  miniControls: { flexDirection: 'row', gap: 8 },
-  miniBtn: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#0f172a', borderRadius: 8, borderWidth: 1, borderColor: '#334155' },
-  miniBtnSkip: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#ef4444', borderRadius: 8 },
-  miniBtnText: { color: '#94a3b8', fontSize: 12, fontWeight: 'bold' },
-  miniBtnTextWhite: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-
-  // Expanded Styles
-  overlay: {
-    ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.95)',
-    justifyContent: 'center', alignItems: 'center', zIndex: 200, elevation: 200,
-  },
-  closeBtn: { position: 'absolute', top: 48, right: 24, padding: 8 },
-  label: { color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 4, fontSize: 14, fontWeight: 'bold' },
-  timer: { fontSize: 80, fontWeight: '900', color: 'white', marginBottom: 32, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  controlsRow: { flexDirection: 'row', gap: 32, marginBottom: 48 },
-  circleBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#475569', justifyContent: 'center', alignItems: 'center' },
-  skipBtn: { backgroundColor: '#38bdf8', paddingHorizontal: 48, paddingVertical: 16, borderRadius: 999 },
-  skipBtnText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
+const styles=StyleSheet.create({
+ mini:{position:'absolute',left:10,right:10,bottom:72,minHeight:68,borderRadius:16,backgroundColor:theme.colors.surfaceElevated,borderWidth:1,borderColor:theme.colors.primary,flexDirection:'row',alignItems:'center',paddingHorizontal:10,zIndex:100,...theme.shadow.glow},miniMain:{flex:1,flexDirection:'row',alignItems:'center',gap:10},restDot:{width:8,height:8,borderRadius:4,backgroundColor:theme.colors.energy},label:{fontSize:10,fontWeight:'800',letterSpacing:1.5,color:theme.colors.primary},miniTime:{fontSize:22,fontWeight:'800',fontVariant:['tabular-nums'],color:theme.colors.text},miniAdd:{minWidth:52,height:44,alignItems:'center',justifyContent:'center'},miniAddText:{...theme.type.label,color:theme.colors.textSecondary},miniSkip:{minWidth:58,height:44,borderRadius:12,backgroundColor:theme.colors.primarySoft,alignItems:'center',justifyContent:'center'},miniSkipText:{...theme.type.label,color:theme.colors.primary},
+ overlay:{...StyleSheet.absoluteFillObject,backgroundColor:theme.colors.canvas,alignItems:'center',justifyContent:'center',zIndex:200},close:{position:'absolute',right:18,top:Platform.OS==='ios'?24:14,width:48,height:48,borderRadius:24,backgroundColor:theme.colors.surface,alignItems:'center',justifyContent:'center'},pulse:{alignItems:'center'},time:{fontSize:78,lineHeight:92,fontWeight:'900',fontVariant:['tabular-nums'],color:theme.colors.text,marginTop:6},hint:{...theme.type.body,color:theme.colors.textMuted,marginTop:4},controls:{flexDirection:'row',gap:16,marginTop:38},adjust:{width:112,height:58,borderRadius:16,borderWidth:1,borderColor:theme.colors.borderStrong,backgroundColor:theme.colors.surface,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7},adjustText:{...theme.type.label,color:theme.colors.text},skip:{minWidth:240,height:54,borderRadius:16,backgroundColor:theme.colors.primary,alignItems:'center',justifyContent:'center',marginTop:20},skipText:{...theme.type.label,color:theme.colors.canvas}
 });
+

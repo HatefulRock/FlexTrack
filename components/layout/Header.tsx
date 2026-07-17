@@ -1,58 +1,22 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
+import { theme } from '../../constants/theme';
 
-interface HeaderProps {
-  title: string;
-  rightAction?: React.ReactNode;
-  onBack?: () => void;
-}
-
-export const Header = ({ title, rightAction, onBack }: HeaderProps) => (
+export const Header = ({ title, eyebrow, onBack, rightAction }: { title: string; eyebrow?: string; onBack?: () => void; rightAction?: ReactNode }) => (
   <View style={styles.container}>
-    <View style={styles.leftContainer}>
-      {onBack && (
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <ChevronLeft size={28} color="#94a3b8" /> {/* text-slate-400 */}
-        </TouchableOpacity>
-      )}
-      <Text style={styles.title}>{title}</Text>
+    <View style={styles.left}>
+      {onBack && <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.back}><ChevronLeft size={24} color={theme.colors.text} /></TouchableOpacity>}
+      <View><Text style={styles.eyebrow}>{eyebrow || 'FLEXTRACK'}</Text><Text style={styles.title}>{title}</Text></View>
     </View>
-    
-    <View style={styles.rightContainer}>
-        {rightAction}
-    </View>
+    <View style={styles.right}>{rightAction}</View>
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: {
-    height: 60, // h-16 approx
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16, // p-4
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b', // border-slate-800
-    backgroundColor: 'rgba(0, 0, 0, 0.9)', // bg-background/90
-    zIndex: 40, // z-40
-  },
-  leftContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12, // gap-3
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 20, // text-xl
-    fontWeight: 'bold', // font-bold
-    color: 'white', // text-white
-    letterSpacing: -0.5, // tracking-tight
-  },
-  rightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  }
+  container: { minHeight: 72, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: theme.colors.canvas },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 8 }, back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
+  eyebrow: { ...theme.type.caption, color: theme.colors.primary, letterSpacing: 1.6, fontSize: 10 }, title: { ...theme.type.title, color: theme.colors.text },
+  right: { flexDirection: 'row', alignItems: 'center' },
 });
+

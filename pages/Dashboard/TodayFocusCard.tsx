@@ -1,150 +1,22 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Play } from "lucide-react-native";
-import { WorkoutTemplate } from "../../types";
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { CalendarCheck, Dumbbell, Play } from 'lucide-react-native';
+import { WorkoutTemplate } from '../../types';
+import { theme } from '../../constants/theme';
+import { Button } from '../../components/ui/Primitives';
 
-interface TodayFocusCardProps {
-  todaysWorkouts: WorkoutTemplate[];
-  onStartWorkout: (t: WorkoutTemplate) => void;
-  onBrowse: () => void;
-}
-
-export const TodayFocusCard = ({
-  todaysWorkouts,
-  onStartWorkout,
-  onBrowse,
-}: TodayFocusCardProps) => {
-  return (
-    <LinearGradient colors={["#0ea5e9", "#1d4ed8"]} style={styles.container}>
-      <Text style={styles.date}>
-        {new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-        })}
-      </Text>
-
-      <Text style={styles.title}>Ready to train?</Text>
-
-      {todaysWorkouts.length > 0 ? (
-        <View style={styles.listContainer}>
-          {todaysWorkouts.map((workout, idx) => (
-            <View
-              key={workout.id}
-              style={[
-                styles.workoutCard,
-                idx === 0 ? styles.cardHighlight : styles.cardStandard,
-              ]}
-            >
-              <View style={styles.badgeRow}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>Scheduled</Text>
-                </View>
-              </View>
-
-              <Text style={styles.workoutName}>{workout.name}</Text>
-              <Text style={styles.workoutDetails}>
-                {workout.exercises.length} Exercises
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => onStartWorkout(workout)}
-                style={styles.startButton}
-              >
-                {/* FIX: Removed whitespace between Play and Text */}
-                <Play size={20} color="#0284c7" fill="#0284c7" />
-                <Text style={styles.startButtonText}>Start Workout</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>
-            Rest day! Or pick a routine from your list.
-          </Text>
-          <TouchableOpacity onPress={onBrowse} style={styles.browseButton}>
-            <Text style={styles.browseButtonText}>Browse Workouts</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </LinearGradient>
-  );
+export const TodayFocusCard = ({ todaysWorkouts, onStartWorkout, onBrowse }: { todaysWorkouts: WorkoutTemplate[]; onStartWorkout: (t: WorkoutTemplate) => void; onBrowse: () => void }) => {
+  const workout = todaysWorkouts[0];
+  return <LinearGradient colors={['#112638', '#101925', '#111722']} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.card}>
+    <View style={styles.glow} /><View style={styles.eyebrowRow}><CalendarCheck size={15} color={theme.colors.primary} /><Text style={styles.eyebrow}>{new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}).toUpperCase()}</Text></View>
+    {workout ? <><Text style={styles.kicker}>TODAY'S SESSION</Text><Text style={styles.title}>{workout.name}</Text><View style={styles.metaRow}><Dumbbell size={16} color={theme.colors.textMuted} /><Text style={styles.meta}>{workout.exercises.length} exercises · Ready when you are</Text></View><Button label="Start workout" icon={Play} onPress={() => onStartWorkout(workout)} style={styles.button} /></>
+      : <><Text style={styles.kicker}>RECOVERY DAY</Text><Text style={styles.title}>Move on your terms.</Text><Text style={styles.meta}>Nothing scheduled today. Rest, recover, or choose a routine when the energy is there.</Text><Button label="Browse workouts" variant="secondary" onPress={onBrowse} style={styles.button} /></>}
+  </LinearGradient>;
 };
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  date: { color: "#dbeafe", marginBottom: 4, fontSize: 14 },
-  title: { fontSize: 30, fontWeight: "bold", color: "white", marginBottom: 16 },
-  listContainer: { gap: 12 },
-  workoutCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  cardHighlight: { backgroundColor: "rgba(255, 255, 255, 0.15)" },
-  cardStandard: { backgroundColor: "rgba(255, 255, 255, 0.05)" },
-  badgeRow: {
-    flexDirection: "row",
-    marginBottom: 8,
-    justifyContent: "space-between",
-  },
-  badge: {
-    backgroundColor: "#4ade80",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  badgeText: {
-    color: "#14532d",
-    fontSize: 10,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  workoutName: { fontSize: 20, fontWeight: "bold", color: "white" },
-  workoutDetails: {
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.9)",
-    marginBottom: 16,
-  },
-  startButton: {
-    width: "100%",
-    backgroundColor: "white",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  startButtonText: { color: "#0284c7", fontWeight: "bold", fontSize: 16 },
-  emptyCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-  },
-  emptyText: { marginBottom: 16, textAlign: "center", color: "#dbeafe" },
-  browseButton: {
-    width: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    alignItems: "center",
-  },
-  browseButtonText: { color: "white", fontWeight: "600" },
+const styles=StyleSheet.create({
+  card:{minHeight:246,borderRadius:theme.radius.xl,padding:22,overflow:'hidden',borderWidth:1,borderColor:'#23435A',...theme.shadow.card},glow:{position:'absolute',width:170,height:170,borderRadius:85,backgroundColor:'rgba(56,189,248,0.08)',right:-45,top:-65},
+  eyebrowRow:{flexDirection:'row',alignItems:'center',gap:7,marginBottom:22},eyebrow:{...theme.type.caption,color:theme.colors.primary,letterSpacing:1.1},kicker:{fontSize:11,fontWeight:'800',color:theme.colors.energy,letterSpacing:1.5,marginBottom:7},
+  title:{...theme.type.display,color:theme.colors.text,maxWidth:310},metaRow:{flexDirection:'row',alignItems:'center',gap:7,marginTop:9},meta:{...theme.type.body,color:theme.colors.textMuted,marginTop:8,maxWidth:330},button:{marginTop:22,alignSelf:'stretch'}
 });
+

@@ -1,379 +1,45 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  Platform,
-} from "react-native";
-import {
-  CheckCircle2,
-  MoreVertical,
-  StopCircle,
-  Play,
-  Calculator,
-} from "lucide-react-native";
-import * as Haptics from "expo-haptics";
+import React, { useState } from 'react';
+import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Calculator, Check, MessageSquarePlus, Pause, Play } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Exercise, SetLog } from '../../types';
+import { formatTime, parseTimeString } from '../../utils/time';
+import { theme } from '../../constants/theme';
 
-import { SetLog, Exercise } from "../../types";
-import { formatTime, parseTimeString } from "../../utils/time";
+interface Props { exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number; timers: Record<string,number>; timerRunning: Record<string,boolean>; onUpdateSet:(index:number,field:keyof SetLog,value:any)=>void; onToggleComplete:(index:number)=>void; onToggleTimer:(index:number)=>void; }
 
-interface SetListProps {
-  exercise: Exercise;
-  sets: SetLog[];
-  historySets?: SetLog[];
-  exerciseIndex: number;
-  timers: { [key: string]: number };
-  timerRunning: { [key: string]: boolean };
-  onUpdateSet: (index: number, field: keyof SetLog, value: any) => void;
-  onToggleComplete: (index: number) => void;
-  onToggleTimer: (index: number) => void;
-}
-
-export const SetList = ({
-  exercise,
-  sets,
-  historySets,
-  exerciseIndex,
-  timers,
-  timerRunning,
-  onUpdateSet,
-  onToggleComplete,
-  onToggleTimer,
-}: SetListProps) => {
-  const [expandedNotes, setExpandedNotes] = useState<{
-    [key: string]: boolean;
-  }>({});
-
-  const toggleNote = (setIndex: number) => {
-    const key = `${exerciseIndex}-${setIndex}`;
-    setExpandedNotes((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleComplete = (i: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    onToggleComplete(i);
-  };
-
-  const getHistoryText = (index: number) => {
-    if (!historySets || !historySets[index]) return "-";
-    const h = historySets[index];
-
-    if (exercise.type === "reps") return `${h.reps} x ${h.weight}kg`;
-    if (exercise.type === "distance")
-      return `${h.distance}km in ${formatTime(h.durationSeconds || 0)}`;
-    if (exercise.type === "timer")
-      return `${formatTime(h.durationSeconds || 0)}`;
-    return "-";
-  };
-
-  const showPlateCalc = (weight: number) => {
-    const bar = 20;
-    if (weight <= bar) return Alert.alert("Empty Bar", "Just the bar (20kg)");
-
-    let remainder = (weight - bar) / 2;
-    const plates = [];
-
-    [25, 20, 15, 10, 5, 2.5, 1.25].forEach((plate) => {
-      while (remainder >= plate) {
-        plates.push(plate);
-        remainder -= plate;
-      }
-    });
-
-    const text = plates.map((p) => `${p}kg`).join("\n+ ");
-    Alert.alert("Per Side", `Load per side:\n\n${text}`);
-  };
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
-          Set
-        </Text>
-        <Text style={[styles.headerText, { flex: 3, paddingLeft: 8 }]}>
-          Previous
-        </Text>
-        <Text style={[styles.headerText, { flex: 7 }]}>Log</Text>
-        <View style={{ flex: 1 }} />
+export const SetList=({exercise,sets,historySets,exerciseIndex,timers,timerRunning,onUpdateSet,onToggleComplete,onToggleTimer}:Props)=>{
+  const [notes,setNotes]=useState<Record<string,boolean>>({});
+  const previous=(i:number)=>{const h=historySets?.[i];if(!h)return 'No previous set';if(exercise.type==='reps')return exercise.loadMode==='bodyweight'?`${h.reps||0} reps`:`${h.weight||0} kg × ${h.reps||0}`;if(exercise.type==='distance')return `${h.distance||0} ${exercise.targetDistanceUnit||'km'} · ${formatTime(h.durationSeconds||0)}`;return formatTime(h.durationSeconds||0)};
+  const plates=(weight:number)=>{if(weight<=20)return Alert.alert('Plate calculator','Use the empty 20 kg bar.');let left=(weight-20)/2;const result:number[]=[];[25,20,15,10,5,2.5,1.25].forEach(p=>{while(left>=p){result.push(p);left-=p}});Alert.alert('Load each side',result.length?result.map(p=>`${p} kg`).join(' + '):'No plates needed')};
+  const complete=(i:number)=>{Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);onToggleComplete(i)};
+  return <View style={styles.list}>{sets.map((set,i)=>{
+    const key=`${exerciseIndex}-${i}`,running=timerRunning[key],elapsed=timers[key]||0;
+    return <View key={key} style={[styles.card,set.completed&&styles.cardDone]}>
+      <View style={styles.cardTop}><View style={[styles.number,set.completed&&styles.numberDone]}><Text style={[styles.numberText,set.completed&&styles.numberTextDone]}>{set.setNumber}</Text></View><View style={styles.previous}><Text style={styles.previousLabel}>PREVIOUS</Text><Text style={styles.previousValue}>{previous(i)}</Text></View>
+        <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{checked:set.completed}} accessibilityLabel={`Complete set ${set.setNumber}`} onPress={()=>complete(i)} style={[styles.check,set.completed&&styles.checkDone]}><Check size={22} color={set.completed?theme.colors.canvas:theme.colors.textSubtle} strokeWidth={3}/></TouchableOpacity></View>
+      <View style={styles.fields}>
+        {exercise.type==='reps'&&<><Field label="REPS" value={set.reps?.toString()||''} placeholder={exercise.targetReps?.toString()||'0'} onChange={v=>onUpdateSet(i,'reps',parseFloat(v)||0)}/>
+          {(exercise.loadMode||'external')!=='bodyweight'&&<View style={styles.weightWrap}><Field label={exercise.loadMode==='assisted'?'ASSISTANCE (KG)':'WEIGHT (KG)'} value={set.weight?.toString()||''} placeholder={exercise.targetWeight?.toString()||'0'} onChange={v=>onUpdateSet(i,'weight',parseFloat(v)||0)}/>{exercise.loadMode!=='assisted'&&<TouchableOpacity accessibilityLabel="Open plate calculator" onPress={()=>plates(set.weight||0)} style={styles.calc}><Calculator size={16} color={theme.colors.textMuted}/></TouchableOpacity>}</View>}</>}
+        {exercise.type==='distance'&&<><Field label={`DISTANCE (${(exercise.targetDistanceUnit||'km').toUpperCase()})`} value={set.distance?.toString()||''} placeholder={exercise.targetDistance?.toString()||'0'} onChange={v=>onUpdateSet(i,'distance',parseFloat(v)||0)}/><Field label="TIME" value={set.durationSeconds?formatTime(set.durationSeconds):''} placeholder="0:00" keyboard="default" onChange={v=>onUpdateSet(i,'durationSeconds',parseTimeString(v))}/></>}
+        {exercise.type==='timer'&&<TouchableOpacity onPress={()=>onToggleTimer(i)} style={[styles.timer,running&&styles.timerRunning]}>{running?<Pause size={20} color={theme.colors.danger}/>:<Play size={20} color={theme.colors.primary}/>}<Text style={styles.timerText}>{formatTime(elapsed)}</Text><Text style={styles.timerHint}>{running?'Pause':'Start timer'}</Text></TouchableOpacity>}
       </View>
-
-      {sets.map((set, i) => {
-        const isTimerRunning = timerRunning[`${exerciseIndex}-${i}`];
-        const timerValue = timers[`${exerciseIndex}-${i}`] || 0;
-
-        return (
-          <View
-            key={i}
-            style={[
-              styles.card,
-              set.completed ? styles.cardCompleted : styles.cardDefault,
-            ]}
-          >
-            <View style={styles.row}>
-              {/* Set Number */}
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.setNumber,
-                    set.completed && { color: "#86efac" },
-                  ]}
-                >
-                  {set.setNumber}
-                </Text>
-              </View>
-
-              {/* Real History Data */}
-              <View style={{ flex: 3 }}>
-                <Text style={styles.targetText}>{getHistoryText(i)}</Text>
-              </View>
-
-              {/* Inputs - Fixed Fragments Here */}
-              <View style={{ flex: 7, flexDirection: "row", gap: 8 }}>
-                {exercise.type === "reps" && (
-                  /* Replaced Fragment <> with a View to handle flex/whitespace correctly */
-                  <View style={{ flex: 1, flexDirection: "row", gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <TextInput
-                        value={set.reps?.toString() || ""}
-                        placeholder={exercise.targetReps?.toString()}
-                        placeholderTextColor="#475569"
-                        keyboardType="numeric"
-                        selectTextOnFocus={true}
-                        onChangeText={(txt) =>
-                          onUpdateSet(i, "reps", parseFloat(txt) || 0)
-                        }
-                        style={[
-                          styles.input,
-                          set.completed && styles.inputCompleted,
-                        ]}
-                      />
-                    </View>
-                    <View style={{ flex: 1, flexDirection: "row" }}>
-                      <TextInput
-                        value={set.weight?.toString() || ""}
-                        placeholder={exercise.targetWeight?.toString() || "0"}
-                        placeholderTextColor="#475569"
-                        keyboardType="numeric"
-                        selectTextOnFocus={true}
-                        onChangeText={(txt) =>
-                          onUpdateSet(i, "weight", parseFloat(txt) || 0)
-                        }
-                        style={[
-                          styles.input,
-                          set.completed && styles.inputCompleted,
-                          {
-                            borderTopRightRadius: 0,
-                            borderBottomRightRadius: 0,
-                          },
-                        ]}
-                      />
-                      <TouchableOpacity
-                        onPress={() => showPlateCalc(set.weight || 0)}
-                        style={styles.calcBtn}
-                      >
-                        <Calculator size={12} color="#94a3b8" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {exercise.type === "distance" && (
-                  /* Replaced Fragment <> with View */
-                  <View
-                    style={{
-                      flex: 1,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <TextInput
-                      placeholder="0:00"
-                      placeholderTextColor="#64748b"
-                      value={formatTime(set.durationSeconds || 0)}
-                      selectTextOnFocus={true}
-                      onChangeText={(txt) =>
-                        onUpdateSet(i, "durationSeconds", parseTimeString(txt))
-                      }
-                      style={[styles.input, { flex: 1 }]}
-                    />
-                    <Text style={styles.unitText}>m</Text>
-                  </View>
-                )}
-
-                {exercise.type === "timer" && (
-                  <TouchableOpacity
-                    onPress={() => onToggleTimer(i)}
-                    style={[
-                      styles.timerButton,
-                      isTimerRunning
-                        ? styles.timerActive
-                        : styles.timerInactive,
-                    ]}
-                  >
-                    {isTimerRunning ? (
-                      <StopCircle size={16} color="white" />
-                    ) : (
-                      <Play size={16} color="#cbd5e1" />
-                    )}
-                    <Text
-                      style={
-                        isTimerRunning
-                          ? styles.timerTextActive
-                          : styles.timerTextInactive
-                      }
-                    >
-                      {formatTime(timerValue)}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Check Button */}
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <TouchableOpacity
-                  onPress={() => handleComplete(i)}
-                  style={[
-                    styles.checkButton,
-                    set.completed
-                      ? styles.checkButtonCompleted
-                      : styles.checkButtonDefault,
-                  ]}
-                >
-                  <CheckCircle2
-                    size={18}
-                    color={set.completed ? "white" : "#94a3b8"}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Notes */}
-            <View style={styles.notesSection}>
-              {expandedNotes[`${exerciseIndex}-${i}`] ? (
-                <View style={styles.noteInputContainer}>
-                  <TextInput
-                    placeholder="Add set notes..."
-                    placeholderTextColor="#64748b"
-                    value={set.notes || ""}
-                    onChangeText={(txt) => onUpdateSet(i, "notes", txt)}
-                    style={styles.noteInput}
-                  />
-                </View>
-              ) : (
-                <TouchableOpacity
-                  onPress={() => toggleNote(i)}
-                  style={{ padding: 4 }}
-                >
-                  <MoreVertical
-                    size={12}
-                    color="#475569"
-                    style={{ transform: [{ rotate: "90deg" }] }}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
+      {notes[key]?<TextInput autoFocus placeholder="Add a note for this set…" placeholderTextColor={theme.colors.textSubtle} value={set.notes||''} onChangeText={v=>onUpdateSet(i,'notes',v)} style={styles.noteInput}/>
+        :<TouchableOpacity onPress={()=>setNotes(n=>({...n,[key]:true}))} style={styles.noteButton}><MessageSquarePlus size={15} color={theme.colors.textSubtle}/><Text style={styles.noteText}>{set.notes?'Edit note':'Add note'}</Text></TouchableOpacity>}
+    </View>})}</View>;
 };
 
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  headerRow: { flexDirection: "row", marginBottom: 8, paddingHorizontal: 8 },
-  headerText: {
-    fontSize: 10,
-    color: "#64748b",
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  card: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  cardDefault: { backgroundColor: "#1e293b", borderColor: "#334155" },
-  cardCompleted: {
-    backgroundColor: "rgba(34, 197, 94, 0.1)",
-    borderColor: "rgba(34, 197, 94, 0.3)",
-  },
-  row: { flexDirection: "row", padding: 12, alignItems: "center", gap: 8 },
-  setNumber: { fontWeight: "bold", textAlign: "center", color: "#cbd5e1" },
-  targetText: {
-    fontSize: 12,
-    color: "#64748b",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
-  input: {
-    backgroundColor: "black",
-    borderWidth: 1,
-    borderColor: "#475569",
-    borderRadius: 4,
-    padding: 12,
-    textAlign: "center",
-    color: "white",
-    flex: 1,
-    fontSize: 16,
-  },
-  inputCompleted: { borderColor: "rgba(34, 197, 94, 0.5)", color: "#dcfce7" },
-  unitText: { fontSize: 12, color: "#64748b", alignSelf: "center" },
-  calcBtn: {
-    backgroundColor: "#0f172a",
-    borderTopRightRadius: 4,
-    borderBottomRightRadius: 4,
-    borderWidth: 1,
-    borderLeftWidth: 0,
-    borderColor: "#475569",
-    height: "100%",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  timerButton: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 4,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-  },
-  timerInactive: { backgroundColor: "black", borderColor: "#475569" },
-  timerActive: {
-    backgroundColor: "rgba(239, 68, 68, 0.2)",
-    borderColor: "#ef4444",
-  },
-  timerTextInactive: {
-    color: "#cbd5e1",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
-  timerTextActive: {
-    color: "white",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
-  checkButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkButtonDefault: { backgroundColor: "#334155" },
-  checkButtonCompleted: { backgroundColor: "#22c55e" },
-  notesSection: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    alignItems: "center",
-  },
-  noteInputContainer: { width: "100%" },
-  noteInput: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    color: "#cbd5e1",
-    fontSize: 12,
-    padding: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#1e293b",
-  },
+const Field=({label,value,placeholder,onChange,keyboard='decimal-pad'}:{label:string;value:string;placeholder:string;onChange:(v:string)=>void;keyboard?:any})=><View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput accessibilityLabel={label} value={value} placeholder={placeholder} placeholderTextColor={theme.colors.textSubtle} onChangeText={onChange} keyboardType={keyboard} selectTextOnFocus style={styles.input}/></View>;
+
+const styles=StyleSheet.create({
+  list:{gap:12},card:{padding:14,borderRadius:theme.radius.lg,backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.border},cardDone:{backgroundColor:'rgba(52,211,153,0.06)',borderColor:'rgba(52,211,153,0.4)'},cardTop:{flexDirection:'row',alignItems:'center',marginBottom:13},
+  number:{width:34,height:34,borderRadius:11,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceElevated},numberDone:{backgroundColor:'rgba(52,211,153,0.14)'},numberText:{...theme.type.label,color:theme.colors.textSecondary},numberTextDone:{color:theme.colors.success},
+  previous:{flex:1,marginLeft:10},previousLabel:{fontSize:9,fontWeight:'800',letterSpacing:1,color:theme.colors.textSubtle},previousValue:{...theme.type.caption,color:theme.colors.textSecondary,marginTop:2,fontFamily:Platform.OS==='ios'?'Menlo':'monospace'},check:{width:46,height:46,borderRadius:14,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceElevated,borderWidth:1,borderColor:theme.colors.borderStrong},checkDone:{backgroundColor:theme.colors.success,borderColor:theme.colors.success},
+  fields:{flexDirection:'row',gap:10},field:{flex:1},fieldLabel:{fontSize:9,fontWeight:'800',letterSpacing:.8,color:theme.colors.textMuted,marginBottom:5},input:{height:48,borderRadius:12,backgroundColor:theme.colors.canvas,borderWidth:1,borderColor:theme.colors.borderStrong,color:theme.colors.text,textAlign:'center',fontSize:18,fontWeight:'700',fontVariant:['tabular-nums'],outlineStyle:'none'} as any,
+  weightWrap:{flex:1,flexDirection:'row',alignItems:'flex-end'},weightWrapField:{flex:1},calc:{width:40,height:48,marginLeft:-40,alignItems:'center',justifyContent:'center'},timer:{flex:1,height:54,borderRadius:12,backgroundColor:theme.colors.canvas,borderWidth:1,borderColor:theme.colors.borderStrong,flexDirection:'row',alignItems:'center',paddingHorizontal:14,gap:10},timerRunning:{borderColor:theme.colors.danger},timerText:{fontSize:20,fontWeight:'800',fontVariant:['tabular-nums'],color:theme.colors.text},timerHint:{...theme.type.caption,color:theme.colors.textMuted,marginLeft:'auto'},
+  noteButton:{minHeight:38,flexDirection:'row',alignItems:'center',gap:6,marginTop:7},noteText:{...theme.type.caption,color:theme.colors.textSubtle},noteInput:{minHeight:42,marginTop:9,borderRadius:10,backgroundColor:theme.colors.canvas,borderWidth:1,borderColor:theme.colors.border,color:theme.colors.textSecondary,paddingHorizontal:12}
 });
+
+
+
+

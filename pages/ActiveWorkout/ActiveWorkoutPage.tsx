@@ -1,376 +1,89 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  BackHandler,
-  KeyboardAvoidingView,
-  Platform,
-  Keyboard,
-} from "react-native";
-import { Zap, ChevronRight, ChevronLeft } from "lucide-react-native";
-import { useKeepAwake } from "expo-keep-awake";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ChevronLeft, ChevronRight, LogOut, Zap } from 'lucide-react-native';
+import { useKeepAwake } from 'expo-keep-awake';
+import { ExerciseLog, SetLog, WorkoutLog, WorkoutTemplate } from '../../types';
+import { generateId } from '../../utils/helpers';
+import { formatTime } from '../../utils/time';
+import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
+import { RestControl } from './RestControl';
+import { ExerciseView } from './ExerciseView';
+import { SetList } from './SetList';
+import { Button, EmptyState } from '../../components/ui/Primitives';
+import { theme } from '../../constants/theme';
 
-import { WorkoutTemplate, WorkoutLog, ExerciseLog, SetLog } from "../../types";
-import { generateId } from "../../utils/helpers";
-import { formatTime } from "../../utils/time";
-import { useWorkoutTimer } from "../../hooks/useWorkoutTimer";
+interface Props { template: WorkoutTemplate; previousLogs: WorkoutLog[]; onFinish: (log: WorkoutLog) => void; }
 
-// Components
-import { RestControl } from "./RestControl";
-import { ExerciseView } from "./ExerciseView";
-import { SetList } from "./SetList";
-
-interface ActiveWorkoutPageProps {
-  template: WorkoutTemplate;
-  previousLogs: WorkoutLog[];
-  onFinish: (log: WorkoutLog) => void;
-}
-
-export const ActiveWorkoutPage = ({
-  template,
-  previousLogs,
-  onFinish,
-}: ActiveWorkoutPageProps) => {
+export const ActiveWorkoutPage = ({ template, previousLogs, onFinish }: Props) => {
   useKeepAwake();
-
   const [startTime] = useState(Date.now());
-  const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
-  const [restExpanded, setRestExpanded] = useState(false);
+  const [now,setNow]=useState(Date.now());
+  const [activeExerciseIndex,setActiveExerciseIndex]=useState(0);
+  const [restExpanded,setRestExpanded]=useState(false);
+  const [logs,setLogs]=useState<ExerciseLog[]>(template.exercises.map(e=>({
+    exerciseId:e.id,exerciseName:e.name,exerciseType:e.type,loadMode:e.type==='reps'?(e.loadMode||'external'):undefined,distanceUnit:e.targetDistanceUnit,completed:false,
+    sets:Array(e.targetSets||1).fill(0).map((_,i)=>({setNumber:i+1,completed:false,reps:e.targetReps,weight:e.loadMode==='bodyweight'?undefined:e.targetWeight,distance:e.targetDistance,durationSeconds:e.targetDurationSeconds,notes:''}))
+  })));
+  const {timers,timerRunning,restTimer,isResting,toggleTimer,startRest,cancelRest,adjustRest}=useWorkoutTimer();
+  const currentExercise=template.exercises[activeExerciseIndex], currentLog=logs[activeExerciseIndex];
 
-  const [logs, setLogs] = useState<ExerciseLog[]>(
-    template.exercises.map((e) => ({
-      exerciseId: e.id,
-      exerciseName: e.name,
-      completed: false,
-      sets: Array(e.targetSets || 1)
-        .fill(0)
-        .map((_, i) => ({
-          setNumber: i + 1,
-          completed: false,
-          reps: e.targetReps,
-          weight: e.targetWeight,
-          distance: e.targetDistance,
-          durationSeconds: e.targetDurationSeconds,
-          notes: "",
-        })),
-    })),
-  );
+  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(id)},[]);
+  const historySets=useMemo(()=>{
+    if(!currentExercise)return undefined;
+    const prior=[...previousLogs].sort((a,b)=>(b.endTime||b.startTime)-(a.endTime||a.startTime)).find(l=>l.exercises.some(e=>e.exerciseId===currentExercise.id));
+    return prior?.exercises.find(e=>e.exerciseId===currentExercise.id)?.sets;
+  },[currentExercise?.id,previousLogs]);
 
-  const {
-    timers,
-    timerRunning,
-    restTimer,
-    isResting,
-    toggleTimer,
-    startRest,
-    cancelRest,
-    adjustRest,
-  } = useWorkoutTimer();
+  const finishWorkout=()=>{cancelRest();onFinish({id:generateId(),templateId:template.id,templateName:template.name,source:'routine',startTime,endTime:Date.now(),exercises:logs.map(e=>({...e,completed:e.sets.length>0&&e.sets.every(s=>s.completed)}))})};
+  const confirmExit=()=>Alert.alert('Leave this workout?','You can save completed sets or discard this session.',[
+    {text:'Keep training',style:'cancel'},{text:'Discard',style:'destructive',onPress:()=>onFinish(null as any)},{text:'Save & end',onPress:finishWorkout}
+  ]);
 
-  const currentExercise = template.exercises?.[activeExerciseIndex];
-  const currentLog = logs[activeExerciseIndex];
+  useEffect(()=>{const handler=BackHandler.addEventListener('hardwareBackPress',()=>{if(Keyboard.isVisible?.()){Keyboard.dismiss();return true}if(restExpanded){setRestExpanded(false);return true}confirmExit();return true});return()=>handler.remove()},[restExpanded,logs]);
 
-  const historySets = useMemo(() => {
-    if (!currentExercise) return undefined;
-
-    const lastLogWithExercise = previousLogs
-      .sort((a, b) => b.endTime - a.endTime)
-      .find((log) =>
-        log.exercises.some((e) => e.exerciseId === currentExercise.id),
-      );
-
-    if (!lastLogWithExercise) return undefined;
-
-    return lastLogWithExercise.exercises.find(
-      (e) => e.exerciseId === currentExercise.id,
-    )?.sets;
-  }, [currentExercise?.id, previousLogs]);
-
-  useEffect(() => {
-    const backAction = () => {
-      if (Keyboard.isVisible?.()) {
-        Keyboard.dismiss();
-        return true;
-      }
-      if (restExpanded) {
-        setRestExpanded(false);
-        return true;
-      }
-      Alert.alert("Discard Workout?", "Current progress will be lost.", [
-        { text: "Keep Going", onPress: () => null, style: "cancel" },
-        {
-          text: "Discard",
-          onPress: () => onFinish(null as any),
-          style: "destructive",
-        },
-      ]);
-      return true;
-    };
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction,
-    );
-    return () => backHandler.remove();
-  }, [restExpanded, onFinish]);
-
-  const toggleSetComplete = (setIndex: number) => {
-    const newLogs = [...logs];
-    const set = newLogs[activeExerciseIndex].sets[setIndex];
-    set.completed = !set.completed;
-    setLogs(newLogs);
-
-    if (set.completed && !isResting) {
-      const restTime =
-        currentExercise.restSeconds !== undefined
-          ? currentExercise.restSeconds
-          : 60;
-      if (restTime > 0) {
-        startRest(restTime);
-        setRestExpanded(false);
-      }
-    }
+  const toggleSetComplete=(i:number)=>{
+    setLogs(current=>current.map((exercise,eIndex)=>{
+      if(eIndex!==activeExerciseIndex)return exercise;
+      const sets=exercise.sets.map((set,sIndex)=>sIndex===i?{...set,completed:!set.completed}:set);
+      return {...exercise,sets,completed:sets.every(s=>s.completed)};
+    }));
+    const set=currentLog.sets[i];
+    if(!set.completed&&!isResting){const seconds=currentExercise.restSeconds??60;if(seconds>0){startRest(seconds);setRestExpanded(false)}}
   };
-
-  const updateSet = (setIndex: number, field: keyof SetLog, value: any) => {
-    const newLogs = [...logs];
-    newLogs[activeExerciseIndex].sets[setIndex] = {
-      ...newLogs[activeExerciseIndex].sets[setIndex],
-      [field]: value,
-    };
-    setLogs(newLogs);
+  const updateSet=(i:number,field:keyof SetLog,value:any)=>setLogs(current=>current.map((e,eIndex)=>eIndex===activeExerciseIndex?{...e,sets:e.sets.map((s,sIndex)=>sIndex===i?{...s,[field]:value}:s)}:e));
+  const quickFinish=()=>{
+    setLogs(current=>current.map((e,eIndex)=>eIndex===activeExerciseIndex?{...e,completed:true,sets:e.sets.map(s=>({...s,completed:true,reps:s.reps||currentExercise.targetReps,weight:currentExercise.loadMode==='bodyweight'?undefined:(s.weight||currentExercise.targetWeight)}))}:e));
   };
+  const next=()=>{cancelRest();if(activeExerciseIndex<template.exercises.length-1)setActiveExerciseIndex(i=>i+1);else finishWorkout()};
+  const prev=()=>{cancelRest();if(activeExerciseIndex>0)setActiveExerciseIndex(i=>i-1)};
 
-  const handleToggleTimer = (setIndex: number) => {
-    toggleTimer(`${activeExerciseIndex}-${setIndex}`);
-  };
+  if(!currentExercise||!currentLog)return <View style={styles.container}><EmptyState icon={Zap} title="Nothing to train yet" message="This routine has no exercises. Add at least one exercise before starting." action="Leave workout" onAction={()=>onFinish(null as any)}/></View>;
 
-  const quickFinishExercise = () => {
-    const newLogs = [...logs];
-    newLogs[activeExerciseIndex].sets.forEach((set) => {
-      if (!set.completed) {
-        set.completed = true;
-        if (!set.reps) set.reps = currentExercise.targetReps;
-        if (!set.weight) set.weight = currentExercise.targetWeight;
-      }
-    });
-    setLogs(newLogs);
-    handleNext();
-  };
-
-  const handleNext = () => {
-    cancelRest();
-    if (activeExerciseIndex < template.exercises.length - 1) {
-      setActiveExerciseIndex((prev) => prev + 1);
-    } else {
-      onFinish({
-        id: generateId(),
-        templateId: template.id,
-        templateName: template.name,
-        startTime,
-        endTime: Date.now(),
-        exercises: logs,
-      });
-    }
-  };
-
-  const handlePrev = () => {
-    if (activeExerciseIndex > 0) setActiveExerciseIndex((prev) => prev - 1);
-  };
-
-  const progress = (activeExerciseIndex / template.exercises.length) * 100;
-
-  if (!currentExercise || !currentLog) {
-    return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text style={{ color: "white" }}>
-          No exercises found in this template.
-        </Text>
-        <TouchableOpacity
-          onPress={() => onFinish(null as any)}
-          style={{ marginTop: 20, padding: 10, backgroundColor: "#333" }}
-        >
-          <Text style={{ color: "white" }}>Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.progressBarBg}>
-        <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-      </View>
-
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerSubtitle}>{template.name}</Text>
-          <Text style={styles.headerTimer}>
-            {formatTime(Math.floor((Date.now() - startTime) / 1000))}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert("Finish Workout?", "Save current progress?", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Save & End", onPress: handleNext },
-            ])
-          }
-          style={styles.endButton}
-        >
-          <Text style={styles.endButtonText}>End</Text>
-        </TouchableOpacity>
-      </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          style={styles.scrollContainer}
-          contentContainerStyle={{ paddingBottom: 120 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ExerciseView
-            exercise={currentExercise}
-            index={activeExerciseIndex}
-            total={template.exercises.length}
-          />
-
-          <View style={styles.quickFinishContainer}>
-            <TouchableOpacity
-              onPress={quickFinishExercise}
-              style={styles.quickFinishButton}
-            >
-              {/* FIX: Removed whitespace between Zap and Text */}
-              <Zap size={14} color="#38bdf8" />
-              <Text style={styles.quickFinishText}>Quick Finish</Text>
-            </TouchableOpacity>
-          </View>
-
-          <SetList
-            exercise={currentExercise}
-            sets={currentLog.sets}
-            historySets={historySets}
-            exerciseIndex={activeExerciseIndex}
-            timers={timers}
-            timerRunning={timerRunning}
-            onUpdateSet={updateSet}
-            onToggleComplete={toggleSetComplete}
-            onToggleTimer={handleToggleTimer}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {isResting && (
-        <RestControl
-          restTimer={restTimer}
-          expanded={restExpanded}
-          onToggleExpand={() => setRestExpanded(!restExpanded)}
-          onAdd={() => adjustRest(30)}
-          onSubtract={() => adjustRest(-30)}
-          onSkip={cancelRest}
-        />
-      )}
-
-      {!restExpanded && (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            onPress={handlePrev}
-            disabled={activeExerciseIndex === 0}
-            style={[
-              styles.footerBtn,
-              styles.prevBtn,
-              activeExerciseIndex === 0 && styles.disabledBtn,
-            ]}
-          >
-            <ChevronLeft size={20} color="#94a3b8" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleNext}
-            style={[styles.footerBtn, styles.nextBtn]}
-          >
-            {/* FIX: Removed whitespace between Text and Chevron */}
-            <Text style={styles.nextBtnText}>
-              {activeExerciseIndex === template.exercises.length - 1
-                ? "Finish"
-                : "Next Exercise"}
-            </Text>
-            <ChevronRight size={20} color="black" />
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
+  const completed=currentLog.sets.filter(s=>s.completed).length;
+  return <View style={styles.container}>
+    <View style={styles.progressTrack}><View style={[styles.progressFill,{width:`${((activeExerciseIndex+1)/template.exercises.length)*100}%`}]} /></View>
+    <View style={styles.header}><View><Text numberOfLines={1} style={styles.routineName}>{template.name}</Text><Text style={styles.timer}>{formatTime(Math.floor((now-startTime)/1000))}</Text></View>
+      <TouchableOpacity accessibilityLabel="End workout" onPress={confirmExit} style={styles.end}><LogOut size={18} color={theme.colors.danger}/><Text style={styles.endText}>End</Text></TouchableOpacity></View>
+    <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.flex}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ExerciseView exercise={currentExercise} index={activeExerciseIndex} total={template.exercises.length}/>
+        <View style={styles.setHeading}><View><Text style={styles.setTitle}>Working sets</Text><Text style={styles.setProgress}>{completed} of {currentLog.sets.length} completed</Text></View>
+          <TouchableOpacity onPress={quickFinish} style={styles.quick}><Zap size={15} color={theme.colors.energy}/><Text style={styles.quickText}>Complete all</Text></TouchableOpacity></View>
+        <SetList exercise={currentExercise} sets={currentLog.sets} historySets={historySets} exerciseIndex={activeExerciseIndex} timers={timers} timerRunning={timerRunning} onUpdateSet={updateSet} onToggleComplete={toggleSetComplete} onToggleTimer={i=>toggleTimer(`${activeExerciseIndex}-${i}`)}/>
+      </ScrollView>
+    </KeyboardAvoidingView>
+    {isResting&&<RestControl restTimer={restTimer} expanded={restExpanded} onToggleExpand={()=>setRestExpanded(v=>!v)} onAdd={()=>adjustRest(15)} onSubtract={()=>adjustRest(-15)} onSkip={cancelRest}/>}
+    {!restExpanded&&<View style={[styles.footer,isResting&&styles.footerResting]}><TouchableOpacity accessibilityLabel="Previous exercise" onPress={prev} disabled={activeExerciseIndex===0} style={[styles.prev,activeExerciseIndex===0&&styles.disabled]}><ChevronLeft size={22} color={theme.colors.textMuted}/></TouchableOpacity>
+      <Button label={activeExerciseIndex===template.exercises.length-1?'Finish workout':'Next exercise'} icon={ChevronRight} onPress={next} style={styles.next}/></View>}
+  </View>;
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "black" },
-  progressBarBg: { height: 4, backgroundColor: "#1e293b", width: "100%" },
-  progressBarFill: { height: "100%", backgroundColor: "#38bdf8" },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1e293b",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: "#94a3b8",
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  headerTimer: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#38bdf8",
-    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-  },
-  endButton: {
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.5)",
-  },
-  endButtonText: { color: "#ef4444", fontSize: 12, fontWeight: "bold" },
-  scrollContainer: { flex: 1, padding: 16 },
-  quickFinishContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 16,
-  },
-  quickFinishButton: { flexDirection: "row", alignItems: "center", gap: 4 },
-  quickFinishText: { fontSize: 12, color: "#38bdf8", fontWeight: "bold" },
-  footer: {
-    flexDirection: "row",
-    gap: 16,
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#1e293b",
-    backgroundColor: "black",
-  },
-  footerBtn: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  prevBtn: { flex: 1, backgroundColor: "#1e293b" },
-  disabledBtn: { opacity: 0.3 },
-  nextBtn: { flex: 2, backgroundColor: "white", gap: 8 },
-  nextBtnText: { color: "black", fontWeight: "bold" },
+const styles=StyleSheet.create({
+  container:{flex:1,backgroundColor:theme.colors.canvas},flex:{flex:1},progressTrack:{height:4,backgroundColor:theme.colors.surfaceElevated},progressFill:{height:4,backgroundColor:theme.colors.primary},
+  header:{height:76,paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderBottomWidth:1,borderBottomColor:theme.colors.border,backgroundColor:theme.colors.canvas},routineName:{...theme.type.caption,color:theme.colors.textMuted,textTransform:'uppercase',letterSpacing:1,maxWidth:240},timer:{fontSize:24,lineHeight:28,fontWeight:'800',fontVariant:['tabular-nums'],color:theme.colors.primary},
+  end:{minWidth:70,height:44,borderRadius:12,backgroundColor:theme.colors.dangerSoft,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6},endText:{...theme.type.label,color:theme.colors.danger},scroll:{flex:1},scrollContent:{padding:16,paddingBottom:130,maxWidth:620,width:'100%',alignSelf:'center'},
+  setHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},setTitle:{...theme.type.heading,color:theme.colors.text},setProgress:{...theme.type.caption,color:theme.colors.textMuted,marginTop:2},quick:{minHeight:44,flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:8},quickText:{...theme.type.caption,color:theme.colors.energy},
+  footer:{padding:12,flexDirection:'row',gap:10,borderTopWidth:1,borderTopColor:theme.colors.border,backgroundColor:theme.colors.canvas},footerResting:{paddingBottom:82},prev:{width:52,minHeight:50,borderRadius:12,backgroundColor:theme.colors.surfaceElevated,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:theme.colors.border},disabled:{opacity:.35},next:{flex:1}
 });
+
+

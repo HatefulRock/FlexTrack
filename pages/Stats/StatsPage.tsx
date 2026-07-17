@@ -1,141 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView 
-} from 'react-native';
-
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Header } from '../../components/layout/Header';
 import { WorkoutLog, UserProfile } from '../../types';
 import { TrainingTab } from './TrainingTab';
 import { BodyTab } from './BodyTab';
+import { theme } from '../../constants/theme';
 
-interface StatsPageProps {
-  logs: WorkoutLog[];
-  userProfile: UserProfile;
-  setUserProfile: (p: UserProfile) => void;
-}
-
-export const StatsPage = ({ 
-    logs, 
-    userProfile, 
-    setUserProfile 
-}: StatsPageProps) => {
-    const [activeTab, setActiveTab] = useState<'training' | 'body'>('training');
-
-    return (
-        <ScrollView 
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-        >
-            <Header title="Statistics" />
-            
-            {/* Tab Switcher */}
-            <View style={styles.tabContainer}>
-                <TouchableOpacity 
-                    onPress={() => setActiveTab('training')}
-                    style={[
-                        styles.tab, 
-                        activeTab === 'training' ? styles.activeTabTrain : styles.inactiveTab
-                    ]}
-                >
-                    <Text style={[
-                        styles.tabText, 
-                        activeTab === 'training' ? styles.activeTabText : styles.inactiveTabText
-                    ]}>
-                        Training
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                    onPress={() => setActiveTab('body')}
-                    style={[
-                        styles.tab, 
-                        activeTab === 'body' ? styles.activeTabBody : styles.inactiveTab
-                    ]}
-                >
-                    <Text style={[
-                        styles.tabText, 
-                        activeTab === 'body' ? styles.activeTabText : styles.inactiveTabText
-                    ]}>
-                        Body & Health
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Content Area */}
-            <View style={styles.contentContainer}>
-                {activeTab === 'training' && <TrainingTab logs={logs} />}
-                {activeTab === 'body' && <BodyTab userProfile={userProfile} setUserProfile={setUserProfile} />}
-            </View>
-        </ScrollView>
-    );
+export const StatsPage=({logs,userProfile,setUserProfile}:{logs:WorkoutLog[];userProfile:UserProfile;setUserProfile:(p:UserProfile)=>void})=>{
+ const [tab,setTab]=useState<'training'|'body'>('training');
+ return <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}><Header title="Progress"/><View style={styles.inner}>
+  <View accessibilityRole="tablist" style={styles.tabs}><TouchableOpacity accessibilityRole="tab" accessibilityState={{selected:tab==='training'}} onPress={()=>setTab('training')} style={[styles.tab,tab==='training'&&styles.tabActive]}><Text style={[styles.tabText,tab==='training'&&styles.tabTextActive]}>Training</Text></TouchableOpacity><TouchableOpacity accessibilityRole="tab" accessibilityState={{selected:tab==='body'}} onPress={()=>setTab('body')} style={[styles.tab,tab==='body'&&styles.tabActive]}><Text style={[styles.tabText,tab==='body'&&styles.tabTextActive]}>Body & health</Text></TouchableOpacity></View>
+  <View>{tab==='training'?<TrainingTab logs={logs}/>:<BodyTab userProfile={userProfile} setUserProfile={setUserProfile}/>}</View>
+ </View></ScrollView>
 };
+const styles=StyleSheet.create({container:{flex:1,backgroundColor:theme.colors.canvas},scroll:{paddingBottom:110},inner:{paddingHorizontal:16,maxWidth:620,width:'100%',alignSelf:'center'},tabs:{height:48,padding:4,borderRadius:14,backgroundColor:theme.colors.surface,flexDirection:'row',borderWidth:1,borderColor:theme.colors.border,marginBottom:18},tab:{flex:1,borderRadius:10,alignItems:'center',justifyContent:'center'},tabActive:{backgroundColor:theme.colors.surfaceElevated},tabText:{...theme.type.label,color:theme.colors.textMuted},tabTextActive:{color:theme.colors.primary}});
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black', // bg-background
-  },
-  scrollContent: {
-    paddingBottom: 96, // pb-24
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    padding: 16, // p-4
-    gap: 16, // gap-4
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10, // py-2 (approx)
-    borderRadius: 8, // rounded-lg
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Default transitions aren't supported in RN StyleSheet, requires Reanimated for smooth color fade
-  },
-  tabText: {
-    fontWeight: 'bold', // font-bold
-    fontSize: 14, // text-sm
-  },
-  
-  // Inactive Styles
-  inactiveTab: {
-    backgroundColor: '#1e293b', // bg-surface
-  },
-  inactiveTabText: {
-    color: '#94a3b8', // text-slate-400
-  },
-
-  // Active Training Styles
-  activeTabTrain: {
-    backgroundColor: '#0ea5e9', // bg-primary (sky-500)
-    // shadow-lg
-    shadowColor: '#0c4a6e', // sky-900
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-
-  // Active Body Styles
-  activeTabBody: {
-    backgroundColor: '#059669', // bg-emerald-600
-    // shadow-lg
-    shadowColor: '#064e3b', // emerald-900
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-
-  activeTabText: {
-    color: 'white',
-  },
-  
-  contentContainer: {
-    paddingHorizontal: 16, // px-4
-    paddingBottom: 16, // pb-4
-  }
-});

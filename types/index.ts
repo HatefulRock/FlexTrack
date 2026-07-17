@@ -1,10 +1,13 @@
 
 export type ExerciseType = 'reps' | 'timer' | 'distance';
+export type LoadMode = 'external' | 'bodyweight' | 'assisted';
+export type ActivityCategory = 'strength' | 'run' | 'walk' | 'cycle' | 'timed' | 'other';
 
 export interface Exercise {
   id: string;
   name: string;
   type: ExerciseType;
+  loadMode?: LoadMode;
   targetSets?: number;
   targetReps?: number;
   targetWeight?: number; // in kg or lbs
@@ -37,6 +40,9 @@ export interface SetLog {
 export interface ExerciseLog {
   exerciseId: string;
   exerciseName: string;
+  exerciseType?: ExerciseType;
+  loadMode?: LoadMode;
+  distanceUnit?: 'm' | 'km' | 'miles';
   sets: SetLog[];
   durationSeconds?: number; // For timed exercises
   completed: boolean;
@@ -44,8 +50,11 @@ export interface ExerciseLog {
 
 export interface WorkoutLog {
   id: string;
-  templateId: string;
+  templateId?: string;
   templateName: string;
+  source?: 'routine' | 'quick';
+  activityCategory?: ActivityCategory;
+  notes?: string;
   startTime: number;
   endTime?: number;
   exercises: ExerciseLog[];
@@ -61,4 +70,5 @@ export interface UserProfile {
   weightLogs: BodyMetricLog[];
 }
 
-export type ViewState = 'dashboard' | 'templates' | 'active-workout' | 'workout-summary' | 'history' | 'ai-creator' | 'stats';
+export type ViewState = 'dashboard' | 'quick-log' | 'templates' | 'active-workout' | 'workout-summary' | 'history' | 'ai-creator' | 'stats';
+

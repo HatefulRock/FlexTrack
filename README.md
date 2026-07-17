@@ -5,11 +5,13 @@
   <p><strong>AI-powered fitness tracker built with React Native & Expo</strong></p>
 
   <p>
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react" alt="React 19" />
     <img src="https://img.shields.io/badge/React_Native-0.81-61DAFB?style=flat-square&logo=react" alt="React Native" />
     <img src="https://img.shields.io/badge/Expo-54-000020?style=flat-square&logo=expo" alt="Expo" />
     <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite" alt="Vite" />
     <img src="https://img.shields.io/badge/Gemini_AI-1.5_Flash-4285F4?style=flat-square&logo=google" alt="Gemini AI" />
-    <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-lightgrey?style=flat-square" alt="Platform" />
+    <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey?style=flat-square" alt="Platform" />
   </p>
 </div>
 
@@ -124,7 +126,9 @@ FlexTrack is a mobile fitness tracking application that helps you plan, execute,
 | Layer | Technology |
 |---|---|
 | Framework | React Native 0.81 + Expo 54 |
+| UI library | React 19 |
 | Language | TypeScript 5.9 |
+| Web bundler | Vite 6 + `react-native-web` |
 | Navigation | Manual view-state (`useState`) in `App.tsx` |
 | Persistence | `@react-native-async-storage/async-storage` |
 | AI | Google Gemini 1.5 Flash (`@google/generative-ai`) |
@@ -134,6 +138,8 @@ FlexTrack is a mobile fitness tracking application that helps you plan, execute,
 | Haptics | `expo-haptics` |
 | Gradients | `expo-linear-gradient` |
 | Screen awake | `expo-keep-awake` |
+| Architecture | React Native New Architecture (enabled) |
+| Compiler | React Compiler (experimental, enabled) |
 
 ---
 
@@ -231,8 +237,7 @@ SetLog {
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v20+
-- [Expo CLI](https://docs.expo.dev/get-started/installation/) — `npm install -g expo-cli`
-- [Expo Go](https://expo.dev/client) on your physical device, **or** an iOS Simulator / Android Emulator
+- For mobile: [Expo Go](https://expo.dev/client) on your physical device, **or** an iOS Simulator / Android Emulator
 
 ### Installation
 
@@ -247,20 +252,29 @@ npm install
 
 ### Environment Variables
 
-Create a `.env.local` file in `flex-track/`:
+Create a `.env` file in `flex-track/`:
 
 ```env
-EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 Get a free API key at [Google AI Studio](https://aistudio.google.com/app/apikey).
 
-> The AI Creator feature is the only part that requires the API key. All other features work offline.
+> The AI Creator feature is the only part that requires the API key. All other features work fully offline.
 
 ### Running the App
 
+**Web (Vite — recommended for development):**
+
 ```bash
-# Start the Expo development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+**Mobile (Expo):**
+
+```bash
 npx expo start
 ```
 
@@ -268,11 +282,19 @@ Then:
 - **Physical device:** Scan the QR code with the Expo Go app
 - **iOS Simulator:** Press `i`
 - **Android Emulator:** Press `a`
-- **Web:** Press `w` (limited functionality — designed for mobile)
 
 ---
 
 ## Building for Production
+
+**Web:**
+
+```bash
+npm run build      # outputs to dist/
+npm run preview    # preview the production build locally
+```
+
+**Mobile (via EAS):**
 
 ```bash
 # Install EAS CLI

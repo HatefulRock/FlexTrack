@@ -1,173 +1,26 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet 
-} from 'react-native';
-import { Edit2, Trash2, Play } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics'; // Optional: for vibration feel
-
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { CalendarDays, ChevronRight, Edit3, Play, Trash2 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { WorkoutTemplate } from '../../types';
 import { formatSchedule } from '../../utils/formatters';
+import { theme } from '../../constants/theme';
 
-interface WorkoutCardProps {
-  template: WorkoutTemplate;
-  onEdit: (t: WorkoutTemplate) => void;
-  onDelete: (id: string) => void;
-  onStart: (t: WorkoutTemplate) => void;
-}
+interface Props { template: WorkoutTemplate; onEdit: (t: WorkoutTemplate) => void; onDelete: (id: string) => void; onStart: (t: WorkoutTemplate) => void; }
 
-export const WorkoutCard = ({ template, onEdit, onDelete, onStart }: WorkoutCardProps) => {
-  
-  const handleStart = () => {
-    // Optional: Add vibration when starting
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onStart(template);
-  };
-
-  return (
-    <View style={styles.card}>
-        {/* Header Section */}
-        <View style={styles.header}>
-            <View style={styles.headerTextContainer}>
-                <Text style={styles.title}>{template.name}</Text>
-                <Text 
-                    style={styles.description} 
-                    numberOfLines={2} 
-                >
-                    {template.description || 'No description'}
-                </Text>
-            </View>
-            
-            <View style={styles.actionRow}>
-                <TouchableOpacity 
-                    onPress={() => onEdit(template)} 
-                    style={styles.iconButton}
-                >
-                    <Edit2 size={18} color="#94a3b8" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                    onPress={() => onDelete(template.id)} 
-                    style={styles.iconButton}
-                >
-                    <Trash2 size={18} color="#ef4444" />
-                </TouchableOpacity>
-            </View>
-        </View>
-
-        {/* Tags / Details */}
-        <View style={styles.tagsContainer}>
-            <View style={styles.tag}>
-                <Text style={styles.tagText}>
-                    {formatSchedule(template.scheduleDays)}
-                </Text>
-            </View>
-            <View style={styles.tag}>
-                <Text style={styles.tagText}>
-                    {template.exercises.length} Exercises
-                </Text>
-            </View>
-        </View>
-
-        {/* Start Button - High Contrast & Taller */}
-        <TouchableOpacity 
-            onPress={handleStart} 
-            style={styles.startButton}
-            activeOpacity={0.8}
-        >
-            <Play size={20} color="white" fill="white" />
-            <Text style={styles.startButtonText}>Start Workout</Text>
-        </TouchableOpacity>
-    </View>
-  );
+export const WorkoutCard = ({template,onEdit,onDelete,onStart}:Props) => {
+  const start=()=>{Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);onStart(template)};
+  return <View style={styles.card}>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Edit ${template.name}`} onPress={()=>onEdit(template)} activeOpacity={.78} style={styles.main}>
+      <View style={styles.top}><View style={styles.copy}><Text style={styles.title}>{template.name}</Text><Text numberOfLines={2} style={styles.description}>{template.description||'A focused workout routine.'}</Text></View><ChevronRight size={20} color={theme.colors.textSubtle}/></View>
+      <View style={styles.meta}><View style={styles.metaItem}><CalendarDays size={14} color={theme.colors.textMuted}/><Text style={styles.metaText}>{formatSchedule(template.scheduleDays)}</Text></View><View style={styles.dot}/><Text style={styles.metaText}>{template.exercises.length} exercises</Text></View>
+    </TouchableOpacity>
+    <View style={styles.actions}><TouchableOpacity accessibilityLabel="Edit routine" onPress={()=>onEdit(template)} style={styles.icon}><Edit3 size={18} color={theme.colors.textMuted}/></TouchableOpacity><TouchableOpacity accessibilityLabel="Delete routine" onPress={()=>onDelete(template.id)} style={styles.icon}><Trash2 size={18} color={theme.colors.danger}/></TouchableOpacity><TouchableOpacity accessibilityLabel={`Start ${template.name}`} onPress={start} style={styles.start}><Play size={17} color={theme.colors.canvas} fill={theme.colors.canvas}/><Text style={styles.startText}>Start</Text></TouchableOpacity></View>
+  </View>;
 };
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#1e293b', 
-    padding: 20, 
-    borderRadius: 24, // Increased for modern look
-    marginBottom: 16, // Adds breathing room between cards
-    borderWidth: 1,
-    borderColor: '#334155', 
-    // Stronger Shadow for depth
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16, // More space between title and tags
-  },
-  headerTextContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  title: {
-    fontSize: 22, // Bigger Title
-    fontWeight: '800', // Thicker font
-    color: 'white',
-    letterSpacing: 0.5,
-  },
-  description: {
-    fontSize: 14, 
-    color: '#94a3b8', 
-    marginTop: 6,
-    lineHeight: 20, // Better readability
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconButton: {
-    padding: 10, // Larger hit target for fingers
-    backgroundColor: '#0f172a', // Darker bg for contrast
-    borderRadius: 12, 
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
-  },
-  tag: {
-    backgroundColor: 'rgba(148, 163, 184, 0.1)', // Transparent pill style (Cleaner)
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  tagText: {
-    fontSize: 12, // Increased from 10
-    color: '#cbd5e1', 
-    fontWeight: '600',
-  },
-  startButton: {
-    width: '100%',
-    backgroundColor: '#0ea5e9', // Solid Primary Color
-    paddingVertical: 16, // Taller button
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    // Button Shadow
-    shadowColor: '#0ea5e9',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  startButtonText: {
-    color: 'white', 
-    fontWeight: 'bold',
-    fontSize: 18,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
+const styles=StyleSheet.create({
+  card:{backgroundColor:theme.colors.surface,borderRadius:theme.radius.lg,borderWidth:1,borderColor:theme.colors.border,overflow:'hidden',...theme.shadow.card},main:{padding:16,paddingBottom:14},top:{flexDirection:'row',alignItems:'flex-start',gap:10},copy:{flex:1},title:{...theme.type.heading,color:theme.colors.text},description:{...theme.type.body,color:theme.colors.textMuted,marginTop:4},
+  meta:{flexDirection:'row',alignItems:'center',gap:8,marginTop:14},metaItem:{flexDirection:'row',alignItems:'center',gap:6},metaText:{...theme.type.caption,color:theme.colors.textSecondary},dot:{width:3,height:3,borderRadius:2,backgroundColor:theme.colors.textSubtle},
+  actions:{minHeight:60,borderTopWidth:1,borderTopColor:theme.colors.border,flexDirection:'row',alignItems:'center',paddingHorizontal:10,gap:4},icon:{width:44,height:44,borderRadius:12,alignItems:'center',justifyContent:'center'},start:{marginLeft:'auto',height:42,minWidth:108,borderRadius:12,backgroundColor:theme.colors.primary,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7},startText:{...theme.type.label,color:theme.colors.canvas}
 });
+

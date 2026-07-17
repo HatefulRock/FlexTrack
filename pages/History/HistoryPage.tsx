@@ -1,222 +1,36 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { CalendarDays, Clock3, Flame, History as HistoryIcon } from 'lucide-react-native';
+import { format, isSameDay, subDays } from 'date-fns';
 import { Header } from '../../components/layout/Header';
-import { LogItem } from './LogItem';
+import { Card, Chip, EmptyState, SectionHeader } from '../../components/ui/Primitives';
 import { WorkoutLog } from '../../types';
-import { format, subDays, isSameDay } from 'date-fns';
+import { theme } from '../../constants/theme';
+import { LogItem } from './LogItem';
 
-// --- COMPONENT: ACTIVITY HEATMAP (28 days, 4 rows × 7 cols) ---
-const ActivityHeatmap = ({ logs }: { logs: WorkoutLog[] }) => {
-    const days = Array.from({ length: 28 }).map((_, i) => {
-        const date = subDays(new Date(), 27 - i);
-        const hasWorkout = logs.some(l => isSameDay(new Date(l.startTime), date));
-        return { date, hasWorkout };
-    });
-
-    const weeks = [days.slice(0, 7), days.slice(7, 14), days.slice(14, 21), days.slice(21, 28)];
-
-    return (
-        <View style={styles.heatmapContainer}>
-            {weeks.map((week, wi) => (
-                <View key={wi} style={styles.heatmapGrid}>
-                    {week.map((day, i) => (
-                        <View key={i} style={styles.heatmapDayColumn}>
-                            <View
-                                style={[
-                                    styles.heatmapDot,
-                                    day.hasWorkout && styles.heatmapDotActive
-                                ]}
-                            />
-                            <Text style={styles.heatmapLabel}>{format(day.date, 'dd')}</Text>
-                            <Text style={styles.heatmapSubLabel}>{format(day.date, 'EEEEE')}</Text>
-                        </View>
-                    ))}
-                </View>
-            ))}
-        </View>
-    );
+export const HistoryPage=({logs}:{logs:WorkoutLog[]})=>{
+ const [filter,setFilter]=useState('All'),[selected,setSelected]=useState<Date|null>(null);
+ const options=useMemo(()=>['All',...Array.from(new Set(logs.map(l=>l.templateName)))],[logs]);
+ const stats=useMemo(()=>{const avg=logs.length?Math.round(logs.reduce((n,l)=>n+((l.endTime||l.startTime)-l.startTime),0)/logs.length/60000):0;let streak=0,day=new Date();while(logs.some(l=>isSameDay(new Date(l.startTime),day))){streak++;day=subDays(day,1)}return{avg,streak}},[logs]);
+ const shown=useMemo(()=>logs.filter(l=>(filter==='All'||l.templateName===filter)&&(!selected||isSameDay(new Date(l.startTime),selected))).sort((a,b)=>b.startTime-a.startTime),[logs,filter,selected]);
+ const grouped=useMemo(()=>shown.reduce<Record<string,WorkoutLog[]>>((all,l)=>{const key=format(new Date(l.startTime),'MMMM yyyy');(all[key]??=[]).push(l);return all},{}),[shown]);
+ return <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}><Header title="History"/><View style={styles.content}>
+   <ActivityGrid logs={logs} selected={selected} onSelect={d=>setSelected(selected&&isSameDay(selected,d)?null:d)}/>
+   <View style={styles.stats}><Stat icon={CalendarDays} value={String(logs.length)} label="Workouts"/><Stat icon={Clock3} value={`${stats.avg}m`} label="Average"/><Stat icon={Flame} value={String(stats.streak)} label="Streak" energy/></View>
+   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>{options.map(o=><Chip key={o} label={o} active={filter===o} onPress={()=>setFilter(o)}/>)}</ScrollView>
+   {selected&&<TouchableOpacity onPress={()=>setSelected(null)} style={styles.selection}><Text style={styles.selectionText}>Showing {format(selected,'EEEE, MMM d')}</Text><Text style={styles.clear}>Clear</Text></TouchableOpacity>}
+   {!logs.length?<EmptyState icon={HistoryIcon} title="Your history begins here" message="Completed workouts will appear here with volume, duration, and exercise details."/>:
+    !shown.length?<EmptyState icon={CalendarDays} title="No workouts found" message="There are no sessions matching this date and routine filter." action="Clear filters" onAction={()=>{setFilter('All');setSelected(null)}}/>:
+    Object.entries(grouped).map(([month,items])=><View key={month}><SectionHeader title={month}/><View style={styles.list}>{items.map(l=><LogItem key={l.id} log={l}/>)}</View></View>)}
+ </View></ScrollView>
 };
-
-export const HistoryPage = ({ logs }: { logs: WorkoutLog[] }) => {
-    const [filter, setFilter] = useState('All');
-
-    const { totalWorkouts, avgDuration } = useMemo(() => {
-        const total = logs.length;
-        const dur = logs.reduce((acc, log) => acc + (log.endTime ? log.endTime - log.startTime : 0), 0);
-        return {
-            totalWorkouts: total,
-            avgDuration: total > 0 ? Math.round(dur / total / 60 / 1000) : 0,
-        };
-    }, [logs]);
-
-    const filterOptions = useMemo(
-        () => ['All', ...Array.from(new Set(logs.map(l => l.templateName)))],
-        [logs]
-    );
-
-    const streak = useMemo(() => {
-        let count = 0;
-        let day = new Date();
-        while (logs.some(l => isSameDay(new Date(l.startTime), day))) {
-            count++;
-            day = subDays(day, 1);
-        }
-        return count;
-    }, [logs]);
-
-    const filteredLogs = useMemo(() => {
-        if (filter === 'All') return logs;
-        return logs.filter(l => l.templateName === filter);
-    }, [logs, filter]);
-
-    const groupedLogs = useMemo(() => {
-        const groups: { [key: string]: WorkoutLog[] } = {};
-        filteredLogs.forEach(log => {
-            const monthKey = format(new Date(log.startTime), 'MMMM yyyy');
-            if (!groups[monthKey]) groups[monthKey] = [];
-            groups[monthKey].push(log);
-        });
-        return groups;
-    }, [filteredLogs]);
-
-    return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-            <Header title="History" />
-
-            <View style={styles.content}>
-                <ActivityHeatmap logs={logs} />
-
-                <View style={styles.statsGrid}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statValue}>{totalWorkouts}</Text>
-                        <Text style={styles.statLabel}>Workouts</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statValue}>{avgDuration}<Text style={styles.statUnit}>m</Text></Text>
-                        <Text style={styles.statLabel}>Avg Time</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statValue}>{streak}<Text style={styles.statUnit}> 🔥</Text></Text>
-                        <Text style={styles.statLabel}>Streak</Text>
-                    </View>
-                </View>
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-                    {filterOptions.map((t) => (
-                        <TouchableOpacity
-                            key={t}
-                            style={[styles.chip, filter === t && styles.chipActive]}
-                            onPress={() => setFilter(t)}
-                        >
-                            <Text style={[styles.chipText, filter === t && styles.chipTextActive]}>{t}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
-                {Object.keys(groupedLogs).length === 0 ? (
-                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No logs found.</Text>
-                     </View>
-                ) : (
-                    Object.entries(groupedLogs).reverse().map(([month, monthLogs]) => (
-                        <View key={month}>
-                            <Text style={styles.monthHeader}>{month}</Text>
-                            <View style={styles.listContainer}>
-                                {monthLogs.slice().reverse().map(log => (
-                                    <LogItem key={log.id} log={log} />
-                                ))}
-                            </View>
-                        </View>
-                    ))
-                )}
-            </View>
-        </ScrollView>
-    );
+const ActivityGrid=({logs,selected,onSelect}:{logs:WorkoutLog[];selected:Date|null;onSelect:(d:Date)=>void})=>{
+ const days=Array.from({length:28},(_,i)=>subDays(new Date(),27-i));
+ return <Card><View style={styles.gridHeader}><View><Text style={styles.gridTitle}>Last 28 days</Text><Text style={styles.gridSub}>Tap a day to filter your sessions</Text></View><View style={styles.legend}><View style={styles.legendDot}/><Text style={styles.legendText}>Trained</Text></View></View><View style={styles.grid}>{days.map(d=>{const trained=logs.some(l=>isSameDay(new Date(l.startTime),d)),active=selected&&isSameDay(selected,d);return <TouchableOpacity accessibilityLabel={`${format(d,'MMMM d')}, ${trained?'workout completed':'no workout'}`} key={d.toISOString()} onPress={()=>onSelect(d)} style={[styles.day,trained&&styles.dayTrained,active&&styles.daySelected]}><Text style={[styles.dayText,trained&&styles.dayTextTrained]}>{format(d,'d')}</Text></TouchableOpacity>})}</View></Card>
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'black' },
-  scrollContent: { paddingBottom: 96 },
-  content: { padding: 16, gap: 20 },
-
-  // Heatmap Styles
-  heatmapContainer: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
-    gap: 8,
-  },
-  heatmapGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  heatmapDayColumn: {
-    alignItems: 'center',
-    gap: 4,
-    flex: 1,
-  },
-  heatmapDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 3,
-    backgroundColor: '#334155',
-  },
-  heatmapDotActive: {
-    backgroundColor: '#4ade80',
-    shadowColor: '#4ade80',
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-  },
-  heatmapLabel: { color: 'white', fontSize: 9, fontWeight: 'bold' },
-  heatmapSubLabel: { color: '#64748b', fontSize: 8 },
-
-  // Stats
-  statsGrid: { flexDirection: 'row', gap: 12 },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#1e293b',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
-    alignItems: 'center',
-  },
-  statValue: { fontSize: 22, fontWeight: 'bold', color: 'white' },
-  statUnit: { fontSize: 14, color: '#94a3b8' },
-  statLabel: { fontSize: 10, fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', marginTop: 4 },
-
-  // Filters
-  filterScroll: { maxHeight: 40, marginBottom: 8 },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#334155',
-    marginRight: 8,
-  },
-  chipActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  chipText: { color: '#94a3b8', fontSize: 12, fontWeight: '600' },
-  chipTextActive: { color: 'white' },
-
-  // List Headers
-  monthHeader: {
-    color: '#94a3b8',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    marginTop: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  listContainer: { gap: 12 },
-  emptyState: { paddingVertical: 40, alignItems: 'center' },
-  emptyText: { color: '#64748b' },
+const Stat=({icon:Icon,value,label,energy}:any)=><Card style={styles.stat}><Icon size={17} color={energy?theme.colors.energy:theme.colors.primary}/><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></Card>;
+const styles=StyleSheet.create({
+ container:{flex:1,backgroundColor:theme.colors.canvas},scroll:{paddingBottom:110},content:{paddingHorizontal:16,gap:20,maxWidth:620,width:'100%',alignSelf:'center'},gridHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14},gridTitle:{...theme.type.label,color:theme.colors.text},gridSub:{...theme.type.caption,color:theme.colors.textMuted,marginTop:2},legend:{flexDirection:'row',alignItems:'center',gap:5},legendDot:{width:7,height:7,borderRadius:3.5,backgroundColor:theme.colors.success},legendText:{fontSize:10,color:theme.colors.textMuted},grid:{flexDirection:'row',flexWrap:'wrap',gap:7},day:{width:'11.7%',aspectRatio:1,borderRadius:8,backgroundColor:theme.colors.surfaceElevated,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'transparent'},dayTrained:{backgroundColor:'rgba(52,211,153,.18)'},daySelected:{borderColor:theme.colors.primary},dayText:{fontSize:10,fontWeight:'600',color:theme.colors.textSubtle},dayTextTrained:{color:theme.colors.success},
+ stats:{flexDirection:'row',gap:9},stat:{flex:1,alignItems:'center',padding:12,gap:4},statValue:{fontSize:21,fontWeight:'800',color:theme.colors.text,fontVariant:['tabular-nums']},statLabel:{...theme.type.caption,color:theme.colors.textMuted},filters:{gap:8,paddingRight:12},selection:{height:42,borderRadius:12,backgroundColor:theme.colors.primarySoft,paddingHorizontal:13,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},selectionText:{...theme.type.caption,color:theme.colors.primary},clear:{...theme.type.label,color:theme.colors.primary},list:{gap:10}
 });
+

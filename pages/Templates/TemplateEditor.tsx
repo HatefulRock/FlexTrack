@@ -41,7 +41,7 @@ export const TemplateEditor = ({
     };
 
     const addExercise = () => {
-        setExercises([...exercises, { id: generateId(), name: '', type: 'reps', targetSets: 3, targetReps: 10, restSeconds: 60 }]);
+        setExercises([...exercises, { id: generateId(), name: '', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 10, restSeconds: 60 }]);
     };
 
     const removeExercise = (id: string) => {
@@ -66,7 +66,7 @@ export const TemplateEditor = ({
                 onBack={onCancel}
                 rightAction={
                     <TouchableOpacity onPress={handleSave} style={styles.saveBtn}>
-                        <Save size={20} color="#0ea5e9" />
+                        <Save size={20} color="#38BDF8" />
                         <Text style={styles.saveBtnText}>Save</Text>
                     </TouchableOpacity>
                 }
@@ -157,6 +157,11 @@ export const TemplateEditor = ({
                                             </TouchableOpacity>
                                         ))}
                                     </View>
+                                    {ex.type === 'reps' && <View style={[styles.segmentContainer, styles.loadModes]}>
+                                        {(['external', 'bodyweight', 'assisted'] as const).map(mode => <TouchableOpacity key={mode} onPress={() => updateExercise(ex.id, 'loadMode', mode)} style={[styles.segmentBtn, (ex.loadMode || 'external') === mode && styles.segmentBtnActive]}>
+                                            <Text style={[styles.segmentText, (ex.loadMode || 'external') === mode ? styles.segmentTextActive : styles.segmentTextInactive]}>{mode === 'external' ? 'Weighted' : mode === 'bodyweight' ? 'Bodyweight' : 'Assisted'}</Text>
+                                        </TouchableOpacity>)}
+                                    </View>}
                                 </View>
 
                                 {/* Row 2: Inputs Grid */}
@@ -184,15 +189,15 @@ export const TemplateEditor = ({
                                                     style={styles.bigInput}
                                                 />
                                             </View>
-                                            <View style={styles.inputGroup}>
-                                                <Text style={styles.inputLabel}>KG</Text>
+                                            {(ex.loadMode || 'external') !== 'bodyweight' && <View style={styles.inputGroup}>
+                                                <Text style={styles.inputLabel}>{ex.loadMode === 'assisted' ? 'ASSISTANCE (KG)' : 'WEIGHT (KG)'}</Text>
                                                 <TextInput
                                                     value={ex.targetWeight?.toString() || '0'}
                                                     onChangeText={txt => updateExercise(ex.id, 'targetWeight', parseFloat(txt) || 0)}
                                                     keyboardType="numeric"
                                                     style={styles.bigInput}
                                                 />
-                                            </View>
+                                            </View>}
                                         </View>
                                     )}
 
@@ -265,7 +270,7 @@ export const TemplateEditor = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'black',
+        backgroundColor: '#080B10',
     },
     scrollContent: {
         padding: 20,
@@ -281,7 +286,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     saveBtnText: {
-        color: '#0ea5e9',
+        color: '#38BDF8',
         fontWeight: 'bold',
         fontSize: 14,
     },
@@ -299,9 +304,9 @@ const styles = StyleSheet.create({
     mainNameInput: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: 'white',
+        color: '#F7F9FC',
         borderBottomWidth: 2,
-        borderBottomColor: '#334155',
+        borderBottomColor: '#263245',
         paddingVertical: 8,
     },
     daysRow: {
@@ -314,11 +319,11 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#1e293b',
+        backgroundColor: '#111722',
     },
     dayActive: {
-        backgroundColor: '#0ea5e9',
-        shadowColor: '#0ea5e9',
+        backgroundColor: '#38BDF8',
+        shadowColor: '#38BDF8',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.5,
         shadowRadius: 4,
@@ -326,26 +331,26 @@ const styles = StyleSheet.create({
     },
     dayInactive: {
         borderWidth: 1,
-        borderColor: '#334155',
+        borderColor: '#263245',
     },
     dayText: {
         fontSize: 14,
         fontWeight: 'bold',
     },
-    dayTextActive: { color: 'white' },
+    dayTextActive: { color: '#F7F9FC' },
     dayTextInactive: { color: '#64748b' },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: 'white',
+        color: '#F7F9FC',
         marginBottom: 16,
     },
     card: {
-        backgroundColor: '#1e293b',
+        backgroundColor: '#111722',
         padding: 16,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#334155',
+        borderColor: '#263245',
     },
     cardHeader: {
         flexDirection: 'row',
@@ -357,7 +362,7 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#182130',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -368,12 +373,16 @@ const styles = StyleSheet.create({
     },
     exNameInput: {
         flex: 1,
+        minWidth: 0,
         fontSize: 20,
         fontWeight: 'bold',
-        color: 'white',
+        color: '#F7F9FC',
     },
     trashBtn: {
-        padding: 8,
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         borderRadius: 8,
     },
@@ -382,7 +391,7 @@ const styles = StyleSheet.create({
     },
     segmentContainer: {
         flexDirection: 'row',
-        backgroundColor: '#0f172a',
+        backgroundColor: '#182130',
         borderRadius: 12,
         padding: 4,
     },
@@ -393,14 +402,17 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     segmentBtnActive: {
-        backgroundColor: '#334155',
+        backgroundColor: '#263245',
     },
     segmentText: {
         fontSize: 12,
         fontWeight: '600',
     },
-    segmentTextActive: { color: 'white' },
+    segmentTextActive: { color: '#F7F9FC' },
     segmentTextInactive: { color: '#64748b' },
+    loadModes: {
+        marginTop: 8,
+    },
     inputsGrid: {
         flexDirection: 'row',
         gap: 12,
@@ -418,31 +430,31 @@ const styles = StyleSheet.create({
     bigInput: {
         width: '100%',
         height: 48,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#182130',
         borderRadius: 12,
         textAlign: 'center',
-        color: 'white',
+        color: '#F7F9FC',
         fontSize: 18,
         fontWeight: 'bold',
         borderWidth: 1,
-        borderColor: '#334155',
+        borderColor: '#263245',
     },
     restInput: {
-        borderColor: '#334155',
+        borderColor: '#263245',
         color: '#94a3b8'
     },
     unitToggle: {
         width: '100%',
         height: 48,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#182130',
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: '#334155',
+        borderColor: '#263245',
     },
     unitText: {
-        color: '#0ea5e9',
+        color: '#38BDF8',
         fontWeight: 'bold',
     },
     addBtn: {
@@ -450,7 +462,7 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         borderRadius: 16,
         borderWidth: 2,
-        borderColor: '#334155',
+        borderColor: '#263245',
         borderStyle: 'dashed',
         flexDirection: 'row',
         alignItems: 'center',
@@ -463,3 +475,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
 });
+
+
+
+

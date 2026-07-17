@@ -65,17 +65,18 @@ export const MuscleBreakdown = ({ logs }: { logs: WorkoutLog[] }) => {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#1e293b',
+        backgroundColor: '#111722',
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,
-        borderColor: '#334155',
+        borderColor: '#263245',
         marginBottom: 24,
     },
     title: {
-        color: 'white',
+        color: '#F7F9FC',
         fontWeight: 'bold',
         fontSize: 16,
         marginBottom: 12,
     }
 });
+

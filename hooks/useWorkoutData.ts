@@ -34,7 +34,7 @@ export const useWorkoutData = () => {
         }
 
         if (storedLogs) setLogs(JSON.parse(storedLogs));
-        if (storedProfile) setUserProfile(JSON.parse(storedProfile));
+        if (storedProfile) { const profile = JSON.parse(storedProfile); setUserProfile({ ...profile, weightLogs: Array.isArray(profile.weightLogs) ? profile.weightLogs : [] }); }
 
       } catch (e) {
         console.error("❌ Failed to load data", e);
@@ -60,8 +60,8 @@ export const useWorkoutData = () => {
   };
 
   const saveUserProfile = async (newProfile: UserProfile) => {
-    setUserProfile(newProfile);
     await AsyncStorage.setItem('user-profile', JSON.stringify(newProfile));
+    setUserProfile(newProfile);
     console.log("💾 Profile saved!");
   };
 
