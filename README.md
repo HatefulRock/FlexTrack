@@ -227,7 +227,7 @@ UserProfile {
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/flextrack.git
+git clone https://github.com/HatefulRock/FlexTrack.git
 cd flextrack/flex-track
 
 # Install dependencies

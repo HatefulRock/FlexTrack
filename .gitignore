@@ -11,6 +11,21 @@ node_modules
 dist
 dist-ssr
 *.local
+.expo/
+.eas/
+
+# Local credentials and signing material
+.npmrc
+credentials.json
+google-services.json
+GoogleService-Info.plist
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
 
 # Editor directories and files
 .vscode/*

@@ -2,6 +2,7 @@
   "expo": {
     "name": "flex-track",
     "slug": "flex-track",
+    "description": "A local-first workout tracker with reusable routines, guided sessions, quick activity logging, and progress analytics.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/flextrack.png",
