@@ -1,4 +1,4 @@
-import { ExerciseLog, LoadMode, WorkoutLog } from '../types';
+import { ExerciseLog, WorkoutLog } from '../types';
 
 export type ProgressKind = 'external' | 'bodyweight' | 'assisted' | 'distance' | 'timer';
 export interface MetricOption { key: string; label: string; subtitle: string; unit: string; better: 'high' | 'low'; }

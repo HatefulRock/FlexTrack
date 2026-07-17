@@ -8,5 +8,5 @@ export const formatSchedule = (days: number[] | undefined) => {
     if (days.length === 7) return 'Every Day';
     if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Weekends';
     if (days.length === 5 && !days.includes(0) && !days.includes(6)) return 'Weekdays';
-    return days.sort().map(d => getShortDayName(d)).join(', ');
+    return [...days].sort((a, b) => a - b).map(d => getShortDayName(d)).join(', ');
 };

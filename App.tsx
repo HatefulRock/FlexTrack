@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 // 1. Updated Imports
 import { View, StyleSheet, Alert, StatusBar, ActivityIndicator } from 'react-native';
 import { theme } from './constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ViewState, WorkoutTemplate, WorkoutLog } from './types';
-import { useWorkoutData } from './hooks/useWorkoutData';
+import { useWorkoutData } from './hooks/useWorkoutDataSafe';
 
 // Layout
 import { Navigation } from './components/layout/Navigation';
@@ -18,8 +18,9 @@ import { AICreatorPage } from './pages/AICreator/AICreatorPage';
 import { ActiveWorkoutPage } from './pages/ActiveWorkout/ActiveWorkoutPage';
 import { WorkoutSummaryPage } from './pages/ActiveWorkout/WorkoutSummaryPage';
 import { HistoryPage } from './pages/History/HistoryPage';
-import { StatsPage } from './pages/Stats/StatsPage';
 import { QuickLogPage } from './pages/QuickLog/QuickLogPage';
+
+const StatsPage = lazy(() => import('./pages/Stats/StatsPage').then(module => ({ default: module.StatsPage })));
 
 const App = () => {
   const [view, setView] = useState<ViewState | 'template-editor'>('dashboard');
@@ -54,7 +55,7 @@ const App = () => {
 
   const handleFinishWorkout = (log: WorkoutLog | null) => {
     if (log) {
-        addLog(log);
+        void addLog(log).catch(() => Alert.alert('Save failed', 'This workout could not be written to local storage.'));
         setLastLog(log);
         setView('workout-summary');
     } else {
@@ -64,7 +65,7 @@ const App = () => {
   };
 
   const handleSaveTemplate = (t: WorkoutTemplate) => {
-    saveTemplate(t);
+    void saveTemplate(t).catch(() => Alert.alert('Save failed', 'This routine could not be written to local storage.'));
     setEditingTemplate(null);
     setView('templates');
   };
@@ -75,13 +76,13 @@ const App = () => {
       "Are you sure you want to delete this workout?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteTemplate(id) }
+        { text: "Delete", style: "destructive", onPress: () => { void deleteTemplate(id).catch(() => Alert.alert('Delete failed', 'The routine could not be removed from local storage.')); } }
       ]
     );
   };
 
   const handleCreateAI = (t: WorkoutTemplate) => {
-    saveTemplate(t);
+    void saveTemplate(t).catch(() => Alert.alert('Save failed', 'This routine could not be written to local storage.'));
     setView('templates');
   };
 
@@ -146,18 +147,20 @@ const App = () => {
           )}
 
           {view === 'quick-log' && (
-              <QuickLogPage onSave={(log) => { addLog(log); setView('history'); }} onCancel={() => setView('dashboard')} />
+              <QuickLogPage onSave={(log) => { void addLog(log).catch(() => Alert.alert('Save failed', 'This activity could not be written to local storage.')); setView('history'); }} onCancel={() => setView('dashboard')} />
           )}
           {view === 'history' && (
               <HistoryPage logs={logs} />
           )}
 
           {view === 'stats' && (
+            <Suspense fallback={<View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>}>
               <StatsPage 
                   logs={logs} 
                   userProfile={userProfile} 
                   setUserProfile={setUserProfile} 
               />
+            </Suspense>
           )}
         </View>
 

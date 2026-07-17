@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ChevronLeft, ChevronRight, LogOut, Zap } from 'lucide-react-native';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -12,7 +12,7 @@ import { SetList } from './SetList';
 import { Button, EmptyState } from '../../components/ui/Primitives';
 import { theme } from '../../constants/theme';
 
-interface Props { template: WorkoutTemplate; previousLogs: WorkoutLog[]; onFinish: (log: WorkoutLog) => void; }
+interface Props { template: WorkoutTemplate; previousLogs: WorkoutLog[]; onFinish: (log: WorkoutLog | null) => void; }
 
 export const ActiveWorkoutPage = ({ template, previousLogs, onFinish }: Props) => {
   useKeepAwake();
@@ -22,7 +22,7 @@ export const ActiveWorkoutPage = ({ template, previousLogs, onFinish }: Props) =
   const [restExpanded,setRestExpanded]=useState(false);
   const [logs,setLogs]=useState<ExerciseLog[]>(template.exercises.map(e=>({
     exerciseId:e.id,exerciseName:e.name,exerciseType:e.type,loadMode:e.type==='reps'?(e.loadMode||'external'):undefined,distanceUnit:e.targetDistanceUnit,completed:false,
-    sets:Array(e.targetSets||1).fill(0).map((_,i)=>({setNumber:i+1,completed:false,reps:e.targetReps,weight:e.loadMode==='bodyweight'?undefined:e.targetWeight,distance:e.targetDistance,durationSeconds:e.targetDurationSeconds,notes:''}))
+    sets:Array.from({ length: Math.min(100, Math.max(1, Math.floor(e.targetSets ?? 1))) },(_,i)=>({setNumber:i+1,completed:false,reps:e.targetReps,weight:e.loadMode==='bodyweight'?undefined:e.targetWeight,distance:e.targetDistance,durationSeconds:e.targetDurationSeconds,notes:''}))
   })));
   const {timers,timerRunning,restTimer,isResting,toggleTimer,startRest,cancelRest,adjustRest}=useWorkoutTimer();
   const currentExercise=template.exercises[activeExerciseIndex], currentLog=logs[activeExerciseIndex];
@@ -32,32 +32,36 @@ export const ActiveWorkoutPage = ({ template, previousLogs, onFinish }: Props) =
     if(!currentExercise)return undefined;
     const prior=[...previousLogs].sort((a,b)=>(b.endTime||b.startTime)-(a.endTime||a.startTime)).find(l=>l.exercises.some(e=>e.exerciseId===currentExercise.id));
     return prior?.exercises.find(e=>e.exerciseId===currentExercise.id)?.sets;
-  },[currentExercise?.id,previousLogs]);
+  },[currentExercise,previousLogs]);
 
-  const finishWorkout=()=>{cancelRest();onFinish({id:generateId(),templateId:template.id,templateName:template.name,source:'routine',startTime,endTime:Date.now(),exercises:logs.map(e=>({...e,completed:e.sets.length>0&&e.sets.every(s=>s.completed)}))})};
+  const finishWorkout=()=>{cancelRest();onFinish({id:generateId(),templateId:template.id,templateName:template.name,source:'routine',startTime,endTime:Date.now(),exercises:logs.map((e,eIndex)=>({...e,sets:e.sets.map((set,setIndex)=>{const elapsed=timers[`${eIndex}-${setIndex}`]||0;return e.exerciseType==='timer'&&elapsed>0?{...set,durationSeconds:elapsed}:set}),completed:e.sets.length>0&&e.sets.every(s=>s.completed)}))})};
   const confirmExit=()=>Alert.alert('Leave this workout?','You can save completed sets or discard this session.',[
-    {text:'Keep training',style:'cancel'},{text:'Discard',style:'destructive',onPress:()=>onFinish(null as any)},{text:'Save & end',onPress:finishWorkout}
+    {text:'Keep training',style:'cancel'},{text:'Discard',style:'destructive',onPress:()=>onFinish(null)},{text:'Save & end',onPress:finishWorkout}
   ]);
+  const confirmExitRef=useRef(confirmExit);
+  confirmExitRef.current=confirmExit;
 
-  useEffect(()=>{const handler=BackHandler.addEventListener('hardwareBackPress',()=>{if(Keyboard.isVisible?.()){Keyboard.dismiss();return true}if(restExpanded){setRestExpanded(false);return true}confirmExit();return true});return()=>handler.remove()},[restExpanded,logs]);
+  useEffect(()=>{const handler=BackHandler.addEventListener('hardwareBackPress',()=>{if(Keyboard.isVisible?.()){Keyboard.dismiss();return true}if(restExpanded){setRestExpanded(false);return true}confirmExitRef.current();return true});return()=>handler.remove()},[restExpanded]);
 
   const toggleSetComplete=(i:number)=>{
+    const key=`${activeExerciseIndex}-${i}`, wasRunning=timerRunning[key]===true;
     setLogs(current=>current.map((exercise,eIndex)=>{
       if(eIndex!==activeExerciseIndex)return exercise;
-      const sets=exercise.sets.map((set,sIndex)=>sIndex===i?{...set,completed:!set.completed}:set);
+      const sets=exercise.sets.map((set,sIndex)=>sIndex===i?{...set,completed:!set.completed,...(exercise.exerciseType==='timer'&&!set.completed&&timers[key]>0?{durationSeconds:timers[key]}:{})}:set);
       return {...exercise,sets,completed:sets.every(s=>s.completed)};
     }));
     const set=currentLog.sets[i];
+    if(wasRunning)toggleTimer(key);
     if(!set.completed&&!isResting){const seconds=currentExercise.restSeconds??60;if(seconds>0){startRest(seconds);setRestExpanded(false)}}
   };
-  const updateSet=(i:number,field:keyof SetLog,value:any)=>setLogs(current=>current.map((e,eIndex)=>eIndex===activeExerciseIndex?{...e,sets:e.sets.map((s,sIndex)=>sIndex===i?{...s,[field]:value}:s)}:e));
+  const updateSet=(i:number,field:keyof SetLog,value:SetLog[keyof SetLog])=>setLogs(current=>current.map((e,eIndex)=>eIndex===activeExerciseIndex?{...e,sets:e.sets.map((s,sIndex)=>sIndex===i?{...s,[field]:value}:s)}:e));
   const quickFinish=()=>{
-    setLogs(current=>current.map((e,eIndex)=>eIndex===activeExerciseIndex?{...e,completed:true,sets:e.sets.map(s=>({...s,completed:true,reps:s.reps||currentExercise.targetReps,weight:currentExercise.loadMode==='bodyweight'?undefined:(s.weight||currentExercise.targetWeight)}))}:e));
+    setLogs(current=>current.map((e,eIndex)=>eIndex===activeExerciseIndex?{...e,completed:true,sets:e.sets.map((s,i)=>({...s,completed:true,reps:s.reps??currentExercise.targetReps,weight:currentExercise.loadMode==='bodyweight'?undefined:(s.weight??currentExercise.targetWeight),...(e.exerciseType==='timer'&&(timers[`${eIndex}-${i}`]||0)>0?{durationSeconds:timers[`${eIndex}-${i}`]}:{})}))}:e));
   };
   const next=()=>{cancelRest();if(activeExerciseIndex<template.exercises.length-1)setActiveExerciseIndex(i=>i+1);else finishWorkout()};
   const prev=()=>{cancelRest();if(activeExerciseIndex>0)setActiveExerciseIndex(i=>i-1)};
 
-  if(!currentExercise||!currentLog)return <View style={styles.container}><EmptyState icon={Zap} title="Nothing to train yet" message="This routine has no exercises. Add at least one exercise before starting." action="Leave workout" onAction={()=>onFinish(null as any)}/></View>;
+  if(!currentExercise||!currentLog)return <View style={styles.container}><EmptyState icon={Zap} title="Nothing to train yet" message="This routine has no exercises. Add at least one exercise before starting." action="Leave workout" onAction={()=>onFinish(null)}/></View>;
 
   const completed=currentLog.sets.filter(s=>s.completed).length;
   return <View style={styles.container}>
@@ -69,7 +73,7 @@ export const ActiveWorkoutPage = ({ template, previousLogs, onFinish }: Props) =
         <ExerciseView exercise={currentExercise} index={activeExerciseIndex} total={template.exercises.length}/>
         <View style={styles.setHeading}><View><Text style={styles.setTitle}>Working sets</Text><Text style={styles.setProgress}>{completed} of {currentLog.sets.length} completed</Text></View>
           <TouchableOpacity onPress={quickFinish} style={styles.quick}><Zap size={15} color={theme.colors.energy}/><Text style={styles.quickText}>Complete all</Text></TouchableOpacity></View>
-        <SetList exercise={currentExercise} sets={currentLog.sets} historySets={historySets} exerciseIndex={activeExerciseIndex} timers={timers} timerRunning={timerRunning} onUpdateSet={updateSet} onToggleComplete={toggleSetComplete} onToggleTimer={i=>toggleTimer(`${activeExerciseIndex}-${i}`)}/>
+        <SetList exercise={currentExercise} sets={currentLog.sets} historySets={historySets} exerciseIndex={activeExerciseIndex} timers={timers} timerRunning={timerRunning} onUpdateSet={updateSet} onToggleComplete={toggleSetComplete} onToggleTimer={i=>{const key=`${activeExerciseIndex}-${i}`;if(timerRunning[key]&&timers[key]>0)updateSet(i,'durationSeconds',timers[key]);toggleTimer(key)}}/>
       </ScrollView>
     </KeyboardAvoidingView>
     {isResting&&<RestControl restTimer={restTimer} expanded={restExpanded} onToggleExpand={()=>setRestExpanded(v=>!v)} onAdd={()=>adjustRest(15)} onSubtract={()=>adjustRest(-15)} onSkip={cancelRest}/>}

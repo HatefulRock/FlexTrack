@@ -6,7 +6,7 @@ import { Exercise, SetLog } from '../../types';
 import { formatTime, parseTimeString } from '../../utils/time';
 import { theme } from '../../constants/theme';
 
-interface Props { exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number; timers: Record<string,number>; timerRunning: Record<string,boolean>; onUpdateSet:(index:number,field:keyof SetLog,value:any)=>void; onToggleComplete:(index:number)=>void; onToggleTimer:(index:number)=>void; }
+interface Props { exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number; timers: Record<string,number>; timerRunning: Record<string,boolean>; onUpdateSet:(index:number,field:keyof SetLog,value:SetLog[keyof SetLog])=>void; onToggleComplete:(index:number)=>void; onToggleTimer:(index:number)=>void; }
 
 export const SetList=({exercise,sets,historySets,exerciseIndex,timers,timerRunning,onUpdateSet,onToggleComplete,onToggleTimer}:Props)=>{
   const [notes,setNotes]=useState<Record<string,boolean>>({});

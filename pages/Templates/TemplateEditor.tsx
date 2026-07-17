@@ -8,7 +8,8 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView
+    SafeAreaView,
+    Alert
 } from 'react-native';
 import { Save, Plus, Trash2 } from 'lucide-react-native'; // Removed X if unused
 import { Header } from '../../components/layout/Header';
@@ -36,25 +37,50 @@ export const TemplateEditor = ({
         setScheduleDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort());
     };
 
-    const updateExercise = (id: string, field: keyof Exercise, value: any) => {
+    const updateExercise = <K extends keyof Exercise>(id: string, field: K, value: Exercise[K]) => {
         setExercises(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
     };
 
     const addExercise = () => {
-        setExercises([...exercises, { id: generateId(), name: '', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 10, restSeconds: 60 }]);
+        if (exercises.length >= 200) {
+            Alert.alert('Exercise limit reached', 'A routine can contain at most 200 exercises.');
+            return;
+        }
+        setExercises(current => [...current, { id: generateId(), name: '', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 10, restSeconds: 60 }]);
     };
 
     const removeExercise = (id: string) => {
-        setExercises(exercises.filter(e => e.id !== id));
+        setExercises(current => current.filter(e => e.id !== id));
     };
 
     const handleSave = () => {
-        if (!name.trim()) return;
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            Alert.alert('Routine name required', 'Give this routine a name before saving.');
+            return;
+        }
+        if (exercises.some(exercise => !exercise.name.trim())) {
+            Alert.alert('Exercise name required', 'Every exercise needs a name before this routine can be saved.');
+            return;
+        }
+        const bounded = (value: number | undefined, fallback: number, min: number, max: number) =>
+            Math.min(max, Math.max(min, Number.isFinite(value) ? Number(value) : fallback));
+        const normalizedExercises = exercises.map(exercise => ({
+            ...exercise,
+            name: exercise.name.trim(),
+            targetSets: Math.round(bounded(exercise.targetSets, 1, 1, 100)),
+            targetReps: Math.round(bounded(exercise.targetReps, 0, 0, 100_000)),
+            targetWeight: bounded(exercise.targetWeight, 0, 0, 100_000),
+            targetDurationSeconds: Math.round(bounded(exercise.targetDurationSeconds, 0, 0, 604_800)),
+            targetDistance: bounded(exercise.targetDistance, 0, 0, 1_000_000),
+            restSeconds: Math.round(bounded(exercise.restSeconds, 0, 0, 86_400)),
+        }));
         onSave({
             id: template?.id || generateId(),
-            name,
+            name: trimmedName,
             description: template?.description || '',
-            exercises,
+            tags: template?.tags,
+            exercises: normalizedExercises,
             scheduleDays
         });
     };
@@ -139,7 +165,7 @@ export const TemplateEditor = ({
                                 {/* Row 1: Type Selector */}
                                 <View style={styles.controlRow}>
                                     <View style={styles.segmentContainer}>
-                                        {['reps', 'timer', 'distance'].map((t) => (
+                                        {(['reps', 'timer', 'distance'] as const).map((t) => (
                                             <TouchableOpacity
                                                 key={t}
                                                 onPress={() => updateExercise(ex.id, 'type', t)}
@@ -231,7 +257,7 @@ export const TemplateEditor = ({
                                                 <TouchableOpacity
                                                     style={styles.unitToggle}
                                                     onPress={() => {
-                                                        const units = ['km', 'm', 'miles'];
+                                                        const units = ['km', 'm', 'miles'] as const;
                                                         const idx = units.indexOf(ex.targetDistanceUnit || 'km');
                                                         updateExercise(ex.id, 'targetDistanceUnit', units[(idx + 1) % 3]);
                                                     }}

@@ -1,9 +1,8 @@
 import path from 'path';
-import { defineConfig, loadEnv, transformWithEsbuild } from 'vite';
+import { defineConfig, transformWithEsbuild } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+export default defineConfig(() => {
   return {
     server: { port: 3000, host: '0.0.0.0' },
     optimizeDeps: { esbuildOptions: { loader: { '.js': 'jsx' } } },
@@ -19,10 +18,6 @@ export default defineConfig(({ mode }) => {
       },
       react(),
     ],
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: [
         { find: /^react-native$/, replacement: 'react-native-web' },

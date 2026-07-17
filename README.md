@@ -2,7 +2,7 @@
   <img src="./assets/images/flextrack.png" width="120" height="120" alt="FlexTrack Logo" />
 
   <h1>FlexTrack</h1>
-  <p><strong>AI-powered fitness tracker built with React Native & Expo</strong></p>
+  <p><strong>Local-first fitness tracker built with React Native & Expo</strong></p>
 
   <p>
     <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react" alt="React 19" />
@@ -10,7 +10,6 @@
     <img src="https://img.shields.io/badge/Expo-54-000020?style=flat-square&logo=expo" alt="Expo" />
     <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript" alt="TypeScript" />
     <img src="https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite" alt="Vite" />
-    <img src="https://img.shields.io/badge/Gemini_AI-1.5_Flash-4285F4?style=flat-square&logo=google" alt="Gemini AI" />
     <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey?style=flat-square" alt="Platform" />
   </p>
 </div>
@@ -19,7 +18,7 @@
 
 ## Overview
 
-FlexTrack is a mobile fitness tracking application that helps you plan, execute, and analyse your training. It comes with an AI workout generator powered by Google Gemini, a full active-workout experience with per-set logging, and a rich stats dashboard — all stored locally on device with no account required.
+FlexTrack is a mobile fitness tracking application that helps you plan, execute, and analyse your training. It includes a full active-workout experience with per-set logging and a rich stats dashboard — all stored locally on device with no account required.
 
 ---
 
@@ -108,13 +107,11 @@ FlexTrack is a mobile fitness tracking application that helps you plan, execute,
 - Weight-over-time line chart
 
 ### AI Workout Creator
-- Describe a workout in plain language (e.g. "a 45-minute upper body push day")
-- Powered by **Google Gemini 1.5 Flash** with a structured JSON schema response
-- Generated template is fully editable before saving
-- User-friendly error messages for quota limits, network errors, and safety filters
+- A placeholder screen is included for a future workout-generation feature
+- No AI provider or client-side API key is currently configured
 
 ### Navigation
-- Five-tab bottom navigation bar: Schedule · Workouts · **AI** (FAB) · History · Stats
+- Bottom navigation for Schedule · Workouts · History · Stats, with a Quick Start action
 - Active tab highlighted in primary blue
 - **Haptic selection feedback** on every tab press
 - Navigation bar hidden during active workout and AI creator screens
@@ -131,7 +128,6 @@ FlexTrack is a mobile fitness tracking application that helps you plan, execute,
 | Web bundler | Vite 6 + `react-native-web` |
 | Navigation | Manual view-state (`useState`) in `App.tsx` |
 | Persistence | `@react-native-async-storage/async-storage` |
-| AI | Google Gemini 1.5 Flash (`@google/generative-ai`) |
 | Charts | `react-native-chart-kit` + `react-native-svg` |
 | Date utilities | `date-fns` |
 | Icons | `lucide-react-native` |
@@ -151,10 +147,8 @@ flex-track/
 ├── types/
 │   └── index.ts                # All shared TypeScript types
 ├── hooks/
-│   ├── useWorkoutData.ts       # AsyncStorage CRUD for templates, logs, profile
+│   ├── useWorkoutDataSafe.ts   # Validated AsyncStorage CRUD for templates, logs, profile
 │   └── useWorkoutTimer.ts      # Per-exercise timers and rest countdown
-├── services/
-│   └── geminiService.ts        # Gemini API integration
 ├── utils/
 │   ├── helpers.ts              # generateId()
 │   ├── time.ts                 # formatTime(), parseTimeString()
@@ -250,18 +244,6 @@ cd flextrack/flex-track
 npm install
 ```
 
-### Environment Variables
-
-Create a `.env` file in `flex-track/`:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-Get a free API key at [Google AI Studio](https://aistudio.google.com/app/apikey).
-
-> The AI Creator feature is the only part that requires the API key. All other features work fully offline.
-
 ### Running the App
 
 **Web (Vite — recommended for development):**
@@ -318,9 +300,9 @@ Configuration is in `eas.json`.
 
 **State management** is intentionally simple: a single `useState<ViewState>` in `App.tsx` drives which screen renders. There is no Redux, Zustand, or React Context. This keeps the codebase easy to follow and fast to navigate.
 
-**Persistence** is handled entirely by `useWorkoutData`, a single hook that reads/writes three AsyncStorage keys on mount and after every mutation: `workout-templates`, `workout-logs`, `user-profile`. No sync layer or remote database is involved.
+**Persistence** is handled by `useWorkoutDataSafe`, which validates and bounds stored values and serializes writes to the three AsyncStorage keys: `workout-templates`, `workout-logs`, and `user-profile`. No sync layer or remote database is involved.
 
-**Performance** — expensive derivations (stats, filter options, streak, PRs, chart data) are wrapped in `useMemo` so they only recompute when their data dependencies change, not on every render.
+**Performance** — expensive derivations are memoized, and the chart-heavy Stats screen is loaded only when opened.
 
 ---
 
@@ -341,5 +323,5 @@ This project is licensed under the MIT License.
 ---
 
 <div align="center">
-  <sub>Built with React Native · Expo · TypeScript · Google Gemini</sub>
+  <sub>Built with React Native · Expo · TypeScript</sub>
 </div>
