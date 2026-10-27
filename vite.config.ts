@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(() => {
   return {
     server: { port: 3000, host: '0.0.0.0' },
+    // react-native-web's Animated reads `global`, which browsers don't define.
+    define: { global: 'globalThis' },
     optimizeDeps: { esbuildOptions: { loader: { '.js': 'jsx' } } },
     plugins: [
       {
@@ -25,6 +27,7 @@ export default defineConfig(() => {
         { find: /^expo-linear-gradient$/, replacement: path.resolve(__dirname, 'shims/linearGradient.tsx') },
         { find: /^expo-haptics$/, replacement: path.resolve(__dirname, 'shims/haptics.ts') },
         { find: /^expo-keep-awake$/, replacement: path.resolve(__dirname, 'shims/keepAwake.ts') },
+        { find: /^(\.{1,2}\/)+hooks\/useAppFonts$/, replacement: path.resolve(__dirname, 'hooks/useAppFonts.web.ts') },
         { find: /^react-native-svg$/, replacement: path.resolve(__dirname, 'node_modules/react-native-svg/lib/module/elements.web.js') },
         { find: '@', replacement: path.resolve(__dirname, '.') },
       ],
