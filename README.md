@@ -28,24 +28,24 @@ FlexTrack is a mobile fitness tracking application that helps you plan, execute,
 <table>
   <tr>
     <td align="center"><b>Today</b></td>
-    <td align="center"><b>Workouts</b></td>
-    <td align="center"><b>Active Workout</b></td>
-    <td align="center"><b>Workout Summary</b></td>
+    <td align="center"><b>Routines</b></td>
+    <td align="center"><b>Active Session</b></td>
+    <td align="center"><b>Session Summary</b></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/dashboard.png" width="200" alt="Dashboard" /></td>
-    <td><img src="docs/screenshots/workouts.png" width="200" alt="Workouts" /></td>
-    <td><img src="docs/screenshots/active-workout.png" width="200" alt="Active Workout" /></td>
-    <td><img src="docs/screenshots/summary.png" width="200" alt="Workout Summary" /></td>
+    <td><img src="docs/screenshots/workouts.png" width="200" alt="Routines" /></td>
+    <td><img src="docs/screenshots/active-workout.png" width="200" alt="Active session with a loaded barbell" /></td>
+    <td><img src="docs/screenshots/summary.png" width="200" alt="Session summary with a new record" /></td>
   </tr>
   <tr>
-    <td align="center"><b>Template Editor</b></td>
+    <td align="center"><b>Routine Editor</b></td>
     <td align="center"><b>History</b></td>
     <td align="center"><b>Training Progress</b></td>
     <td align="center"><b>Body Metrics</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/template-editor.png" width="200" alt="Template Editor" /></td>
+    <td><img src="docs/screenshots/template-editor.png" width="200" alt="Routine editor" /></td>
     <td><img src="docs/screenshots/history.png" width="200" alt="History" /></td>
     <td><img src="docs/screenshots/stats.png" width="200" alt="Training Progress" /></td>
     <td><img src="docs/screenshots/body-metrics.png" width="200" alt="Body Metrics" /></td>
@@ -78,7 +78,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 - Compare a set with values from the previous matching session
 - Mark sets individually or complete all sets in an exercise
 - Update an exercise's default weight during a session
-- Use the built-in plate calculator for externally loaded exercises
+- See the bar loaded plate by plate for the working weight, with ±2.5 kg steppers
 - Run per-set timers and an adjustable rest countdown with vibration feedback
 - Keep the screen awake and guard against accidentally leaving a session
 - Review duration, completed exercises, sets, volume, and per-exercise results after saving
@@ -92,7 +92,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 
 ### History
 
-- Browse a tappable 28-day activity grid
+- Browse a tappable four-week calendar coloured by what you trained
 - See total workouts, average duration, and current streak
 - Filter by routine or a selected day
 - Review sessions grouped by month with duration, volume, and exercise details
@@ -100,14 +100,14 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 ### Progress
 
 - Derives personal records from the exercise data actually logged
-- Shows a 14-day consistency chart and Push / Pull / Legs / Cardio training split
-- Charts the last eight progression points for a selected exercise
+- Shows a 12-week heat strip of weekly sets per Push / Pull / Legs / Cardio
+- Charts progression for a selected exercise, with records marked
 - Chooses metrics for each modality, including weight, estimated 1RM, reps, assistance, duration, distance, and pace
-- Logs height and body weight, calculates BMI, and charts the five latest weight entries
+- Logs height and body weight, explains BMI in words, and charts weight over 30 days, 90 days or all time
 
 ### Navigation and feedback
 
-- Bottom tabs for Today, Workouts, History, and Progress
+- Bottom tabs for Today, Routines, History, and Progress
 - Central Quick Start sheet for launching routines, logging completed activity, or creating a routine
 - Haptic feedback for navigation, workout starts, and completed sets on supported devices
 - Focused full-screen layouts for routine editing, active workouts, summaries, and Quick Log
@@ -124,7 +124,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 | Web bundler | Vite 6 + `react-native-web` |
 | Navigation | Manual view-state (`useState`) in `App.tsx` |
 | Persistence | `@react-native-async-storage/async-storage` |
-| Charts | `react-native-chart-kit` + `react-native-svg` |
+| Charts | Hand-built with `react-native-svg` |
 | Date utilities | `date-fns` |
 | Icons | `lucide-react-native` |
 | Haptics | `expo-haptics` |
