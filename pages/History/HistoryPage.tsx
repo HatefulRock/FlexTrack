@@ -14,10 +14,11 @@ import { sessionMs } from './historyModel';
 export const HistoryPage = ({ logs }: { logs: WorkoutLog[] }) => {
   const [filter, setFilter] = useState('All'), [selected, setSelected] = useState<Date | null>(null);
   const options = useMemo(() => ['All', ...Array.from(new Set(logs.map(l => l.templateName)))], [logs]);
-  const stats = useMemo(() => ({
-    avg: logs.length ? logs.reduce((n, l) => n + sessionMs(l), 0) / logs.length : 0,
-    streak: currentStreak(logs),
-  }), [logs]);
+  // Sessions logged without a duration don't pull the average towards zero.
+  const stats = useMemo(() => {
+    const timed = logs.map(sessionMs).filter(ms => ms > 0);
+    return { avg: timed.length ? timed.reduce((n, ms) => n + ms, 0) / timed.length : 0, streak: currentStreak(logs) };
+  }, [logs]);
   const shown = useMemo(() => logs.filter(l => (filter === 'All' || l.templateName === filter) && (!selected || isSameDay(new Date(l.startTime), selected)))
     .sort((a, b) => b.startTime - a.startTime), [logs, filter, selected]);
   const grouped = useMemo(() => {
@@ -50,7 +51,7 @@ export const HistoryPage = ({ logs }: { logs: WorkoutLog[] }) => {
         </PressableScale>
       </View>}
       {!logs.length ? <EmptyState icon={HistoryIcon} title="No sessions yet" message="Finish a routine or quick-log a run and it lands here, filling the calendar by training split: every set, weight and minute you put in." /> :
-        !shown.length ? <EmptyState icon={CalendarDays} title={selected ? 'Rest day' : 'No sessions match'} message={selected && filter === 'All' ? `Nothing logged on ${format(selected, 'EEEE, MMMM d')}. Tap a filled day to see its session.` : `No ${filter} session${selected ? ` on ${format(selected, 'MMMM d')}` : ''}.`} action="Clear filters" onAction={clear} /> :
+        !shown.length ? <EmptyState icon={CalendarDays} title={selected && filter === 'All' ? 'Rest day' : 'No sessions match'} message={selected && filter === 'All' ? `Nothing logged on ${format(selected, 'EEEE, MMMM d')}. Tap a filled day to see its session.` : `No ${filter} session${selected ? ` on ${format(selected, 'MMMM d')}` : ''}.`} action="Clear filters" onAction={clear} /> :
           Object.entries(grouped).map(([month, items]) => <View key={month}>
             <SectionHeader title={month} />
             <View style={styles.list}>{items.map((l, i) => <LogItem key={l.id} log={l} first={i === 0} />)}</View>

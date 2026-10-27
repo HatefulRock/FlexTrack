@@ -9,14 +9,37 @@ import { CATEGORY_LABEL, categoryColor } from '../../utils/training';
 import { CATEGORY_ORDER, CategoryShare, labelOn, mergeShares, sessionCategories } from './historyModel';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const WEEKS = 4;
 
-// Last four Sunday-to-Saturday weeks. A trained day is split into vertical stripes, one per category it trained, width = completed sets.
+const shareText = (s: CategoryShare) => `${CATEGORY_LABEL[s.category]} ${s.sets} ${s.sets === 1 ? 'set' : 'sets'}`;
+
+const DayCell = ({ day, today, shares, selected, onSelect }: { day: Date; today: Date; shares: CategoryShare[]; selected: Date | null; onSelect: (d: Date) => void }) => {
+  const future = isAfter(day, today), isToday = isSameDay(day, today), isSelected = !!selected && isSameDay(selected, day);
+  const fills = shares.map(s => categoryColor(s.category));
+  const label = shares.length ? labelOn(fills) : { color: future ? theme.colors.textSubtle : theme.colors.textMuted, backed: false };
+  const a11y = `${format(day, 'EEEE, MMMM d')}${isToday ? ', today' : ''}, ${shares.length ? shares.map(shareText).join(', ') : 'no session'}`;
+  const body = <>
+    {shares.length > 0 && <View style={styles.stripes}>{shares.map((s, i) => <View key={s.category} style={{ flex: s.sets, backgroundColor: fills[i] }} />)}</View>}
+    <View style={[styles.labelWrap, label.backed && styles.labelBacked]}>
+      {day.getDate() === 1 && <Text style={[styles.month, { color: label.color }]}>{format(day, 'MMM')}</Text>}
+      <Text style={[styles.dayNum, { color: label.color }]}>{format(day, 'd')}</Text>
+    </View>
+  </>;
+  return <View style={[styles.cellWrap, (isToday || isSelected) && styles.outlined, !!selected && !isSelected && styles.dimmed]}>
+    {future ? <View style={[styles.cell, styles.cellFuture]}>{body}</View> :
+      <PressableScale accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ selected: isSelected }} scaleTo={0.92}
+        onPress={() => { Haptics.selectionAsync(); onSelect(day); }} style={[styles.cell, !shares.length && styles.cellEmpty]}>{body}</PressableScale>}
+  </View>;
+};
+
+// The last four Sunday-to-Saturday weeks. A trained day is split into vertical stripes, one per category it trained, width = completed sets.
 export const TrainingCalendar = ({ logs, selected, onSelect }: { logs: WorkoutLog[]; selected: Date | null; onSelect: (d: Date) => void }) => {
-  const today = startOfDay(new Date());
+  const todayMs = startOfDay(new Date()).getTime();
+  const today = useMemo(() => new Date(todayMs), [todayMs]);
   const weeks = useMemo(() => {
-    const first = startOfWeek(subWeeks(today, 3));
-    return Array.from({ length: 4 }, (_, w) => Array.from({ length: 7 }, (_, d) => addDays(first, w * 7 + d)));
-  }, [today.getTime()]);
+    const first = startOfWeek(subWeeks(today, WEEKS - 1));
+    return Array.from({ length: WEEKS }, (_, w) => Array.from({ length: 7 }, (_, d) => addDays(first, w * 7 + d)));
+  }, [today]);
   const byDay = useMemo(() => {
     const lists = new Map<string, CategoryShare[][]>();
     logs.forEach(l => { const key = new Date(l.startTime).toDateString(); lists.set(key, [...(lists.get(key) || []), sessionCategories(l)]); });
@@ -28,33 +51,15 @@ export const TrainingCalendar = ({ logs, selected, onSelect }: { logs: WorkoutLo
 
   return <Card style={styles.card}>
     <View style={styles.head}>
-      <Text accessibilityRole="header" style={styles.title}>Last 4 weeks</Text>
+      <Text accessibilityRole="header" style={styles.title}>Last {WEEKS} weeks</Text>
       {present.length > 0 && <View style={styles.legend}>{present.map(c => <View key={c} style={styles.legendItem}>
         <View style={[styles.swatch, { backgroundColor: categoryColor(c) }]} /><Text style={styles.legendText}>{CATEGORY_LABEL[c]}</Text>
       </View>)}</View>}
     </View>
     <View style={styles.row}>{WEEKDAYS.map((d, i) => <Text key={i} style={styles.weekday}>{d}</Text>)}</View>
-    {weeks.map((week, w) => <View key={w} style={styles.row}>{week.map(day => {
-      const cats = byDay.get(day.toDateString()) || [];
-      const future = isAfter(day, today), isToday = isSameDay(day, today), isSelected = !!selected && isSameDay(selected, day);
-      const fills = cats.map(s => categoryColor(s.category));
-      const label = cats.length ? labelOn(fills) : { color: future ? theme.colors.textSubtle : theme.colors.textMuted, backed: false };
-      const first = day.getDate() === 1;
-      const a11y = `${format(day, 'EEEE, MMMM d')}${isToday ? ', today' : ''}, ${cats.length ? `${cats.map(s => `${CATEGORY_LABEL[s.category]} ${s.sets} ${s.sets === 1 ? 'set' : 'sets'}`).join(', ')}` : 'no session'}`;
-      const body = <>
-        {cats.length > 0 && <View style={styles.stripes}>{cats.map((s, i) => <View key={s.category} style={{ flex: s.sets, backgroundColor: fills[i] }} />)}</View>}
-        <View style={[styles.labelWrap, label.backed && styles.labelBacked]}>
-          {first && <Text style={[styles.month, { color: label.color }]}>{format(day, 'MMM')}</Text>}
-          <Text style={[styles.dayNum, { color: label.color }]}>{format(day, 'd')}</Text>
-        </View>
-      </>;
-      const dim = !!selected && !isSelected;
-      return <View key={day.toISOString()} style={[styles.cellWrap, (isToday || isSelected) && styles.outlined, dim && styles.dimmed]}>
-        {future ? <View style={[styles.cell, styles.cellFuture]}>{body}</View> :
-          <PressableScale accessibilityRole="button" accessibilityLabel={a11y} accessibilityState={{ selected: isSelected }} scaleTo={0.92}
-            onPress={() => { Haptics.selectionAsync(); onSelect(day); }} style={[styles.cell, !cats.length && styles.cellEmpty]}>{body}</PressableScale>}
-      </View>;
-    })}</View>)}
+    {weeks.map((week, w) => <View key={w} style={styles.row}>{week.map(day =>
+      <DayCell key={day.toISOString()} day={day} today={today} shares={byDay.get(day.toDateString()) || []} selected={selected} onSelect={onSelect} />)}
+    </View>)}
   </Card>;
 };
 

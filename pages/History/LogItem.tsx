@@ -7,16 +7,16 @@ import { ExerciseLog, SetLog, WorkoutLog } from '../../types';
 import { formatTime } from '../../utils/time';
 import { theme } from '../../constants/theme';
 import { PressableScale, useReducedMotion } from '../../components/ui/Primitives';
-import { CATEGORY_LABEL, categoryColor, estimate1RM, formatDuration, formatNumber, logVolume } from '../../utils/training';
+import { CATEGORY_LABEL, categoryColor, estimate1RM, formatDecimal, formatDuration, formatNumber, logVolume } from '../../utils/training';
 import { ACTIVITY_LABEL, sessionCategories, sessionMs } from './historyModel';
 
-const num = (n = 0) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+const num = (n = 0) => formatDecimal(n);
 
 const distanceText = (log: WorkoutLog) => {
   const e = log.exercises.find(x => x.sets.some(s => s.completed && (s.distance || 0) > 0));
   if (!e) return '';
   const total = e.sets.filter(s => s.completed).reduce((n, s) => n + (s.distance || 0), 0);
-  return `${num(Math.round(total * 100) / 100)} ${e.distanceUnit || 'km'}`;
+  return `${num(total)} ${e.distanceUnit || 'km'}`;
 };
 
 // Each completed set as text plus a score; the highest score is the best set.
@@ -45,7 +45,7 @@ export const LogItem = ({ log, first = false }: { log: WorkoutLog; first?: boole
   const turn = useRef(new Animated.Value(0)).current;
   const date = new Date(log.startTime);
   const shares = sessionCategories(log);
-  const categoryText = shares.map(s => CATEGORY_LABEL[s.category]).join(' · ');
+  const categoryNames = shares.map(s => CATEGORY_LABEL[s.category]);
   const quick = log.source === 'quick';
   const volume = logVolume(log), distance = distanceText(log), ms = sessionMs(log);
   const meta = [
@@ -66,7 +66,7 @@ export const LogItem = ({ log, first = false }: { log: WorkoutLog; first?: boole
 
   return <View style={[styles.item, !first && styles.divided]}>
     <PressableScale accessibilityRole="button" accessibilityState={{ expanded: open }} scaleTo={0.98} onPress={toggle}
-      accessibilityLabel={`${log.templateName}, ${format(date, 'EEEE, MMMM d')}, ${shares.map(s => CATEGORY_LABEL[s.category]).join(' and ')}, ${meta.join(', ')}`} style={styles.row}>
+      accessibilityLabel={`${log.templateName}, ${format(date, 'EEEE, MMMM d')}, ${categoryNames.join(' and ')}, ${meta.join(', ')}`} style={styles.row}>
       <View style={styles.dateBlock}>
         <Text style={styles.dateDay}>{format(date, 'd')}</Text>
         <Text style={styles.dateMonth}>{format(date, 'MMM')}</Text>
@@ -76,14 +76,14 @@ export const LogItem = ({ log, first = false }: { log: WorkoutLog; first?: boole
         <View style={styles.sub}>
           <Text style={styles.subText}>{format(date, 'EEEE')}</Text>
           <View style={styles.swatches}>{shares.map(s => <View key={s.category} style={[styles.swatch, { backgroundColor: categoryColor(s.category) }]} />)}</View>
-          <Text style={styles.subText} numberOfLines={1}>{categoryText}{quick ? ' · Quick log' : ''}</Text>
+          <Text style={styles.subText} numberOfLines={1}>{categoryNames.join(' · ')}{quick ? ' · Quick log' : ''}</Text>
         </View>
         <Text style={styles.meta} numberOfLines={1}>{meta.join('  ·  ')}</Text>
       </View>
       <Animated.View style={{ transform: [{ rotate }] }}><ChevronDown size={20} color={theme.colors.textMuted} /></Animated.View>
     </PressableScale>
     {open && <View style={styles.details}>
-      {log.exercises.map((e, i) => <View key={e.exerciseId || i} style={styles.exercise}>
+      {log.exercises.map((e, i) => <View key={`${e.exerciseId}-${i}`} style={styles.exercise}>
         <Text style={styles.exerciseName}>{e.exerciseName}</Text>
         <SetLine e={e} />
       </View>)}

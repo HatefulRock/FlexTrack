@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityCategory, WorkoutLog } from '../../types';
+import { ActivityCategory, Exercise, WorkoutLog } from '../../types';
 import { Header } from '../../components/layout/Header';
 import { Button, Chip } from '../../components/ui/Primitives';
 import { theme } from '../../constants/theme';
@@ -13,8 +13,11 @@ const categories: { key: ActivityCategory; label: string }[] = [
   { key: 'strength', label: 'Strength' }, { key: 'run', label: 'Run' }, { key: 'walk', label: 'Walk' },
   { key: 'cycle', label: 'Cycle' }, { key: 'timed', label: 'Timed' }, { key: 'other', label: 'Other' },
 ];
-const units: { key: 'm' | 'km' | 'miles'; label: string }[] = [{ key: 'm', label: 'm' }, { key: 'km', label: 'km' }, { key: 'miles', label: 'miles' }];
+type DistanceUnit = NonNullable<Exercise['targetDistanceUnit']>;
+const units: { key: DistanceUnit; label: string }[] = [{ key: 'm', label: 'm' }, { key: 'km', label: 'km' }, { key: 'miles', label: 'miles' }];
 type DateMode = 'today' | 'yesterday' | 'pick';
+// A finish this far past the clock is a typo, not a clock that runs slightly ahead.
+const FUTURE_TOLERANCE_MS = 60_000;
 type Errors = Partial<Record<'title' | 'date' | 'time' | 'distance' | 'duration', string>>;
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -54,14 +57,14 @@ export const QuickLogPage = ({ onSave, onCancel }: { onSave: (log: WorkoutLog) =
   const [timeMode, setTimeMode] = useState<'now' | 'set'>('now');
   const [timeText, setTimeText] = useState(timeValue(opened));
   const [distance, setDistance] = useState('');
-  const [unit, setUnit] = useState<'km' | 'm' | 'miles'>('km');
+  const [unit, setUnit] = useState<DistanceUnit>('km');
   const [duration, setDuration] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Errors>({});
 
   const cardio = ['run', 'walk', 'cycle'].includes(category);
   const timed = cardio || category === 'timed';
-  const clear = (k: keyof Errors) => errors[k] && setErrors(e => ({ ...e, [k]: undefined }));
+  const clear = (k: keyof Errors) => { if (errors[k]) setErrors(e => ({ ...e, [k]: undefined })); };
 
   const choose = (next: ActivityCategory) => {
     // Keep a name the lifter typed; replace one that was only the default.
@@ -89,7 +92,9 @@ export const QuickLogPage = ({ onSave, onCancel }: { onSave: (log: WorkoutLog) =
     if (day && clock) {
       const d = new Date(day.getFullYear(), day.getMonth(), day.getDate(), clock.h, clock.m, timeMode === 'now' ? now.getSeconds() : 0);
       endedAt = d.getTime();
-      if (endedAt > now.getTime() + 60_000) next[dateMode === 'pick' ? 'date' : 'time'] = 'That is in the future. Pick when you finished.';
+      // A later day is the date's fault; a later time today is the time's.
+      const laterDay = dateValue(day) > dateValue(now);
+      if (endedAt > now.getTime() + FUTURE_TOLERANCE_MS) next[laterDay ? 'date' : 'time'] = 'That is in the future. Pick when you finished.';
     }
     const distanceNumber = Number(distance.replace(',', '.'));
     if (cardio && (!distance.trim() || !Number.isFinite(distanceNumber) || distanceNumber <= 0)) next.distance = 'Enter a distance greater than zero.';
@@ -143,7 +148,7 @@ export const QuickLogPage = ({ onSave, onCancel }: { onSave: (log: WorkoutLog) =
       {cardio && <FieldBlock label="Distance" error={errors.distance}>
         <View style={styles.row}>
           <Input label={`Distance in ${unit}`} value={distance} onChange={v => { setDistance(v); clear('distance'); }} placeholder="e.g. 5" keyboard="decimal-pad" invalid={!!errors.distance} style={styles.flex} maxLength={8} />
-          <View style={styles.unit}><Segments<'m' | 'km' | 'miles'> label="Distance unit" options={units} value={unit} onChange={setUnit} columns={3} /></View>
+          <View style={styles.unit}><Segments<DistanceUnit> label="Distance unit" options={units} value={unit} onChange={setUnit} columns={3} /></View>
         </View>
       </FieldBlock>}
 
@@ -168,7 +173,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 32, gap: 24, maxWidth: 620, width: '100%', alignSelf: 'center' },
   intro: { ...theme.type.body, color: c.textMuted },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
-  timeInput: { width: 96, textAlign: 'center' } as any,
+  timeInput: { width: 96, textAlign: 'center' },
   row: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   unit: { width: 192 },
   footer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 8, backgroundColor: c.canvas, maxWidth: 620, width: '100%', alignSelf: 'center' },

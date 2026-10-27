@@ -6,8 +6,9 @@ export interface ProgressionSuggestion { weight?: number; reps: number; reason: 
 export const PROGRESSION_STEP_KG = 2.5;
 
 // Double progression. Every working set last session done at the routine's target reps (or more) earns the next step:
-// +2.5 kg on external load, one more rep than last time's weakest set on bodyweight, 2.5 kg less than the least assistance used. A missed set holds: null, and the
-// lifter repeats last time's values. Timer and distance work never get a suggestion.
+// +2.5 kg on external load, one more rep than last time's weakest set on bodyweight, 2.5 kg less than the least
+// assistance used. A missed set holds: null, and the lifter repeats last time's values. Timer and distance work never
+// get a suggestion.
 export const suggestProgression = (exercise: Exercise, last?: ExerciseLog | null): ProgressionSuggestion | null => {
   if (exercise.type !== 'reps' || !last?.sets.length) return null;
   const target = Math.floor(exercise.targetReps ?? 0);

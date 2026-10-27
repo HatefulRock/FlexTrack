@@ -19,6 +19,11 @@ const loadAll = () => loading ??= Promise.all(Object.entries(faces).map(([family
 
 export const useAppFonts = () => {
   const [ready, setReady] = useState(false);
-  useEffect(() => { let alive = true; loadAll().catch(() => undefined).finally(() => { if (alive) setReady(true); }); return () => { alive = false; }; }, []);
+  useEffect(() => {
+    let alive = true;
+    // A font that fails to load falls back to the CSS stack; never block the app on it.
+    loadAll().catch(() => undefined).finally(() => { if (alive) setReady(true); });
+    return () => { alive = false; };
+  }, []);
   return ready;
 };

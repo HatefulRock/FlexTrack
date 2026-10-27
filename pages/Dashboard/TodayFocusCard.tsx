@@ -1,19 +1,19 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { format, isSameDay } from 'date-fns';
+import { addDays, format, isSameDay } from 'date-fns';
 import { WorkoutLog, WorkoutTemplate } from '../../types';
 import { theme } from '../../constants/theme';
 import { Button, PressableScale } from '../../components/ui/Primitives';
 import { CategoryLegend, CategoryStrip, routineSummary } from './CategoryStrip';
 import { FilledPlay } from './FilledPlay';
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
 // The next scheduled routine after today, within the coming week.
-const nextScheduled = (templates: WorkoutTemplate[], today: number) => {
+const nextScheduled = (templates: WorkoutTemplate[], now: Date) => {
   for (let offset = 1; offset <= 7; offset++) {
-    const day = (today + offset) % 7, t = templates.find(x => x.scheduleDays?.includes(day));
-    if (t) return { template: t, when: offset === 1 ? 'tomorrow' : offset === 7 ? `next ${DAY_NAMES[day]}` : `on ${DAY_NAMES[day]}` };
+    const date = addDays(now, offset), template = templates.find(x => x.scheduleDays?.includes(date.getDay()));
+    if (!template) continue;
+    const dayName = format(date, 'EEEE');
+    return { template, when: offset === 1 ? 'tomorrow' : offset === 7 ? `next ${dayName}` : `on ${dayName}` };
   }
   return null;
 };
@@ -53,7 +53,7 @@ export const TodayFocusCard = ({ todaysWorkouts, templates = todaysWorkouts, log
     <Button label="New routine" onPress={onCreate ?? onBrowse} style={styles.start} />
   </View>;
 
-  const next = nextScheduled(templates, now.getDay());
+  const next = nextScheduled(templates, now);
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>Rest day</Text>
     <Text style={styles.body}>{next ? <>Next: <Text style={styles.strong}>{next.template.name}</Text> {next.when}</> : 'No routine is scheduled this week.'}</Text>

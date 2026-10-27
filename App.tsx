@@ -31,9 +31,14 @@ const App = () => {
   const [lastLog, setLastLog] = useState<WorkoutLog | null>(null);
   const [savedSession, setSavedSession] = useState<ActiveSession | null>(null);
   const [resumeSession, setResumeSession] = useState<ActiveSession | null>(null);
+  // Gates the first render: a read that resolved after the user had already started a new
+  // session would resurrect the old one as a resume card.
+  const [sessionChecked, setSessionChecked] = useState(false);
   const fontsReady = useAppFonts();
 
-  useEffect(() => { void loadActiveSession().then(setSavedSession); }, []);
+  useEffect(() => {
+    void loadActiveSession().then(session => { setSavedSession(session); setSessionChecked(true); });
+  }, []);
 
   const {
     templates,
@@ -46,7 +51,7 @@ const App = () => {
     addLog
   } = useWorkoutData();
 
-  if (loading || !fontsReady) {
+  if (loading || !fontsReady || !sessionChecked) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -123,7 +128,6 @@ const App = () => {
           {view === 'dashboard' && (
               <DashboardPage 
                   templates={templates} 
-                  
                   logs={logs}
                   startWorkout={handleStartWorkout}
                   setView={setView}
@@ -160,7 +164,7 @@ const App = () => {
 
           {view === 'active-workout' && activeTemplate && (
               <ActiveWorkoutPage 
- template={activeTemplate}
+                  template={activeTemplate}
                   resume={resumeSession}
                   previousLogs={logs}
                   onUpdateTemplate={handleUpdateActiveTemplate}

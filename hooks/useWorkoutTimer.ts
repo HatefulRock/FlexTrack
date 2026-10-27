@@ -3,6 +3,9 @@ import { AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { cancelRestEnd, ensureRestNotificationPermission, scheduleRestEnd } from '../utils/restNotification';
 
+// Beyond this the end-of-rest tick ran late because the app was suspended, not because of interval jitter.
+const LATE_CUE_MS = 2000;
+
 // Set timers count up; the rest timer counts down from a fixed end timestamp so ±15 s and backgrounding stay exact.
 export const useWorkoutTimer = () => {
   const [timers, setTimers] = useState<{ [key: string]: number }>({}); // Per set timers
@@ -11,8 +14,8 @@ export const useWorkoutTimer = () => {
   const [restTotal, setRestTotal] = useState(0);
   const [restTimer, setRestTimer] = useState(0);
   const lastCue = useRef<number | null>(null);
+  // Mirrors restEndsAt for synchronous reads: two ±15 s taps can land before a re-render.
   const endsAtRef = useRef<number | null>(null);
-  endsAtRef.current = restEndsAt;
 
   // Lock-screen alert for the end of rest. `notifyGen` invalidates async schedules overtaken by a skip, ±15 s or a new rest.
   const notifyId = useRef<string | null>(null);
@@ -60,10 +63,14 @@ export const useWorkoutTimer = () => {
     const tick = () => {
       const left = Math.ceil((restEndsAt - Date.now()) / 1000);
       if (left <= 0) {
+        endsAtRef.current = null;
         setRestTimer(0);
         setRestEndsAt(null);
         clearRestNotification();
-        if (lastCue.current !== 0) { lastCue.current = 0; void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }
+        // Coming back from the background long after rest ended: the notification already said so, don't buzz now.
+        const onTime = Date.now() - restEndsAt < LATE_CUE_MS;
+        if (lastCue.current !== 0 && onTime) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        lastCue.current = 0;
         return;
       }
       setRestTimer(left);

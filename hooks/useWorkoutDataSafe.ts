@@ -46,7 +46,7 @@ const sanitizeExercise = (value: unknown): Exercise | null => {
     targetDurationSeconds: Math.round(finite(value.targetDurationSeconds, 0, 0, 604_800)),
     targetDistance: finite(value.targetDistance, 0, 0, 1_000_000),
     targetDistanceUnit,
-    restSeconds: Math.round(finite(value.restSeconds, 0, 0, 86_400)),
+    restSeconds: Math.round(finite(value.restSeconds, 60, 0, 86_400)),
     notes: text(value.notes, '', 2_000) || undefined,
   };
 };
@@ -124,8 +124,11 @@ export const useWorkoutData = () => {
   const templateRef = useRef<WorkoutTemplate[]>([]);
   const logRef = useRef<WorkoutLog[]>([]);
   const writeQueue = useRef<Record<string, Promise<void>>>({});
+  // When the initial read fails, the stored data is unknown: refuse writes rather than overwrite it with defaults.
+  const loadFailed = useRef(false);
 
   const persist = useCallback((key: string, value: unknown) => {
+    if (loadFailed.current) return Promise.reject(new Error('Local storage could not be read'));
     const previous = writeQueue.current[key] ?? Promise.resolve();
     const next = previous.catch(() => undefined).then(() => AsyncStorage.setItem(key, JSON.stringify(value)));
     writeQueue.current[key] = next;
@@ -149,6 +152,7 @@ export const useWorkoutData = () => {
       })
       .catch(() => {
         if (!mounted) return;
+        loadFailed.current = true;
         const defaults = STARTER_TEMPLATES;
         templateRef.current = defaults;
         logRef.current = [];

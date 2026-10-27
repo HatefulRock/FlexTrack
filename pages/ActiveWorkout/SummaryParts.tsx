@@ -3,14 +3,18 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { ExerciseLog } from '../../types';
 import { theme } from '../../constants/theme';
-import { CATEGORY_LABEL, RecordHit, categoryColor, exerciseCategory } from '../../utils/training';
+import { CATEGORY_LABEL, RecordHit, categoryColor, exerciseCategory, formatDecimal as num } from '../../utils/training';
 import { formatTime } from '../../utils/time';
 
 const c = theme.colors;
-export const num = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 // The judges' verdict on the session: a white light for each third of the sets done, red for the rest.
-export const whiteLights = (done: number, total: number) => total > 0 && done === total ? 3 : total > 0 && done * 3 >= total * 2 ? 2 : total > 0 && done * 3 >= total ? 1 : 0;
+export const whiteLights = (done: number, total: number) => {
+  if (total <= 0) return 0;
+  if (done === total) return 3;
+  if (done * 3 >= total * 2) return 2;
+  return done * 3 >= total ? 1 : 0;
+};
 export const lightsVerdict = (white: number) => white === 3 ? 'Good lift · every set done'
   : white === 2 ? '2 of 3 lights · at least two-thirds of the sets done'
   : white === 1 ? '1 of 3 lights · at least a third of the sets done'

@@ -34,7 +34,7 @@ export const Barbell = ({ weight, height = 92 }: { weight: number; height?: numb
     let offset = innerCollarW + 1;
     plates.forEach((p, i) => {
       const h = DIAMETER[p] * plateMax;
-      const w = pw - 1.5;
+      const w = Math.max(0, pw - 1.5);
       const px = x(offset, w);
       items.push(<G key={`p${i}`}>
         <Rect x={px} y={cy - h / 2} width={w} height={h} rx={2.5} fill={PLATE_COLORS[p as keyof typeof PLATE_COLORS]} />

@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { KeyboardTypeOptions, Platform, StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native';
+import { KeyboardTypeOptions, Platform, StyleProp, StyleSheet, Text, TextInput, TextStyle, View, ViewStyle } from 'react-native';
 import { PressableScale } from '../../components/ui/Primitives';
 import { theme } from '../../constants/theme';
 
@@ -17,10 +17,10 @@ export const FieldBlock = ({ label, hint, error, children, style }: { label: str
 );
 
 export const Input = ({ label, value, onChange, placeholder, keyboard = 'default', multiline = false, invalid = false, style, maxLength }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboard?: KeyboardTypeOptions; multiline?: boolean; invalid?: boolean; style?: StyleProp<ViewStyle>; maxLength?: number;
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboard?: KeyboardTypeOptions; multiline?: boolean; invalid?: boolean; style?: StyleProp<TextStyle>; maxLength?: number;
 }) => <TextInput accessibilityLabel={label} value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={c.textMuted}
   keyboardType={keyboard} multiline={multiline} maxLength={maxLength} selectionColor={c.primary} cursorColor={c.primary}
-  style={[styles.input, multiline && styles.multiline, invalid && styles.invalid, style as any]} />;
+  style={[styles.input, multiline && styles.multiline, invalid && styles.invalid, style]} />;
 
 // Equal-width segments: one row of a fixed grid, never wrapping pills.
 export function Segments<T extends string>({ options, value, onChange, columns, label, height = 48 }: {
@@ -29,7 +29,7 @@ export function Segments<T extends string>({ options, value, onChange, columns, 
   return <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.grid}>
     {options.map(o => {
       const active = o.key === value;
-      return <View key={o.key} style={[styles.segment, { width: `${100 / columns}%` as any }]}>
+      return <View key={o.key} style={[styles.segment, { width: `${100 / columns}%` as const }]}>
         <PressableScale accessibilityRole="radio" accessibilityLabel={o.label} accessibilityState={{ selected: active, checked: active }}
           onPress={() => onChange(o.key)} scaleTo={0.96} style={[styles.segmentFill, { minHeight: height }, active && styles.segmentActive]}>
           <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{o.label}</Text>

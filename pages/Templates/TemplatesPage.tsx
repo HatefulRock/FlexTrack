@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   addText: { ...theme.type.label, color: theme.colors.onPrimary },
   search: { height: 48, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.colors.borderStrong, backgroundColor: theme.colors.surface, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 2, gap: 10 },
   searchFocused: { borderColor: theme.colors.primary },
-  input: { flex: 1, height: '100%', ...theme.type.body, color: theme.colors.text, outlineStyle: 'none', outlineWidth: 0 } as any,
+  input: { flex: 1, height: '100%', ...theme.type.body, color: theme.colors.text, outlineWidth: 0 },
   clear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   count: { ...theme.type.caption, fontSize: 13, color: theme.colors.textMuted, marginTop: 16, marginBottom: 10 },
   list: { gap: 12 },
