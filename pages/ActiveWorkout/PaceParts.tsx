@@ -3,11 +3,11 @@ import { StyleSheet, Text, TextStyle } from 'react-native';
 import { Exercise, ExerciseLog, SetLog, WorkoutLog } from '../../types';
 import { theme } from '../../constants/theme';
 import { formatTime } from '../../utils/time';
-import { formatNumber } from '../../utils/training';
+import { differenceInCalendarDays, format } from 'date-fns';
+import { formatDecimal as num, formatNumber } from '../../utils/training';
 
 type SetValues = Pick<SetLog, 'reps' | 'weight' | 'distance' | 'durationSeconds'>;
 const MINUS = '−';
-const num = (v: number) => (Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100));
 const mode = (e: Exercise) => e.loadMode || 'external';
 
 // Last time's set in shorthand: "85 × 6", "8 reps", "8 reps · 20 kg assist", "1:00", "5 km".
@@ -74,23 +74,19 @@ export const routinePace = (logs: ExerciseLog[], previous: WorkoutLog) => {
   return { delta: Math.round(delta * 10) / 10, compared };
 };
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 // "earlier today", "yesterday", "last Tuesday", "12 Oct".
 export const sessionDayLabel = (at: number, now = Date.now()) => {
-  const day = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
-  const days = Math.round((day(now) - day(at)) / 86_400_000);
-  const d = new Date(at);
+  const days = differenceInCalendarDays(now, at);
   if (days <= 0) return 'earlier today';
   if (days === 1) return 'yesterday';
-  if (days < 7) return `last ${DAY_NAMES[d.getDay()]}`;
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  if (days < 7) return `last ${format(at, 'EEEE')}`;
+  return format(at, 'd MMM');
 };
 
-// Quiet header line: "+240 kg vs last Tuesday", "Even with last Tuesday".
+// Quiet header line: "+240 kg vs last Tuesday", "Even with last Tuesday". Silent until a set can be compared.
 export const RoutinePace = ({ logs, previous, style }: { logs: ExerciseLog[]; previous: WorkoutLog; style?: TextStyle }) => {
-  const { delta } = routinePace(logs, previous);
+  const { delta, compared } = routinePace(logs, previous);
+  if (!compared) return null;
   const when = sessionDayLabel(previous.endTime || previous.startTime);
   const abs = Math.abs(delta), amount = abs >= 1000 ? formatNumber(abs) : num(abs);
   const text = delta === 0 ? `Even with ${when}` : `${delta > 0 ? '+' : MINUS}${amount} kg vs ${when}`;

@@ -21,7 +21,16 @@ const drawText = (ctx: CanvasRenderingContext2D, o: Extract<Op, { kind: 'text' }
   const m = ctx.measureText('Hg');
   const ascent = m.fontBoundingBoxAscent ?? o.runs[0].size * 0.8, descent = m.fontBoundingBoxDescent ?? o.runs[0].size * 0.2;
   const baseline = o.y + (o.lh - (ascent + descent)) / 2 + ascent;
-  const texts = o.runs.map((r, i) => { ctx.font = font(r); return o.runs.length === 1 && i === 0 ? ellipsize(ctx, r.text, o.w) : r.text; });
+  // Runs share the box width: each is cut to the room the earlier runs leave, so a long name never runs under the next column.
+  let used = 0;
+  const texts = o.runs.map(r => {
+    ctx.font = font(r);
+    const room = o.w - used;
+    if (room <= 0) return '';
+    const t = ellipsize(ctx, r.text, room);
+    used += ctx.measureText(t).width;
+    return t;
+  });
   const widths = o.runs.map((r, i) => { ctx.font = font(r); return ctx.measureText(texts[i]).width; });
   let x = o.align === 'right' ? o.x + o.w - widths.reduce((a, b) => a + b, 0) : o.x;
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';

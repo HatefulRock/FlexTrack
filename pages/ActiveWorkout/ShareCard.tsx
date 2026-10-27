@@ -12,9 +12,9 @@ export const ShareCard = forwardRef<View, { data: ShareData; width: number }>(({
     style={{ width, height: CARD_H * s, backgroundColor: theme.colors.canvas, overflow: 'hidden' }}>
     {ops.map((o, i) => o.kind === 'rect'
       ? <View key={i} style={{ position: 'absolute', left: o.x * s, top: o.y * s, width: o.w * s, height: o.h * s, borderRadius: o.r * s, backgroundColor: o.color }} />
-      : <Text key={i} numberOfLines={1} style={{ position: 'absolute', left: o.x * s, top: o.y * s, width: o.w * s, height: o.lh * s, lineHeight: o.lh * s, textAlign: o.align,
+      : <Text key={i} numberOfLines={1} allowFontScaling={false} style={{ position: 'absolute', left: o.x * s, top: o.y * s, width: o.w * s, height: o.lh * s, lineHeight: o.lh * s, textAlign: o.align,
         fontFamily: o.runs[0].family, fontSize: o.runs[0].size * s, color: o.runs[0].color, fontVariant: ['tabular-nums'] }}>
-        {o.runs.length === 1 ? o.runs[0].text : o.runs.map((r, j) => <Text key={j} style={{ fontFamily: r.family, fontSize: r.size * s, color: r.color }}>{r.text}</Text>)}
+        {o.runs.length === 1 ? o.runs[0].text : o.runs.map((r, j) => <Text key={j} allowFontScaling={false} style={{ fontFamily: r.family, fontSize: r.size * s, color: r.color }}>{r.text}</Text>)}
       </Text>)}
   </View>;
 });

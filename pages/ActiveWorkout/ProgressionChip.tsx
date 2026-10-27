@@ -6,8 +6,7 @@ import { theme } from '../../constants/theme';
 import { PressableScale } from '../../components/ui/Primitives';
 import { showAlert } from '../../components/ui/Dialog';
 import { PROGRESSION_STEP_KG, ProgressionSuggestion } from '../../utils/progression';
-
-const kg = (v: number) => (Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100));
+import { formatDecimal as kg } from '../../utils/training';
 
 // The step this suggestion takes, as printed, spoken and offered in the dialog.
 const stepCopy = (exercise: Exercise) => {
