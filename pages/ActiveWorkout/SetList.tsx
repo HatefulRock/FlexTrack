@@ -7,11 +7,15 @@ import { formatTime, parseTimeString } from '../../utils/time';
 import { fonts, theme } from '../../constants/theme';
 import { Button, PressableScale, useReducedMotion } from '../../components/ui/Primitives';
 import { Barbell } from './Barbell';
+import { PaceMark, paceDelta, paceLabel } from './PaceParts';
+import { ProgressionChip } from './ProgressionChip';
+import { ProgressionSuggestion } from '../../utils/progression';
 
 interface Props {
   exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number;
   timers: Record<string, number>; timerRunning: Record<string, boolean>;
   currentIndex: number; lightsTrigger: number; lightsSet?: number; nextLabel?: string;
+  suggestion?: ProgressionSuggestion | null; onUseLastValues?: () => void;
   onUpdateSet: (index: number, field: keyof SetLog, value: SetLog[keyof SetLog]) => void; onSetDefaultWeight: (weight: number) => void;
   onToggleComplete: (index: number) => void; onToggleTimer: (index: number) => void; onFocusSet: (index: number) => void; onCompleteAll: () => void;
 }
@@ -78,11 +82,14 @@ const NumberStepper = ({ label, unit, value, step, onChange, onEdit }: { label: 
   </View>;
 };
 
-export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, timerRunning, currentIndex, lightsTrigger, lightsSet = -1, nextLabel, onUpdateSet, onSetDefaultWeight, onToggleComplete, onToggleTimer, onFocusSet, onCompleteAll }: Props) => {
+export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, timerRunning, currentIndex, lightsTrigger, lightsSet = -1, nextLabel, suggestion, onUseLastValues, onUpdateSet, onSetDefaultWeight, onToggleComplete, onToggleTimer, onFocusSet, onCompleteAll }: Props) => {
   const [notes, setNotes] = useState<Record<string, boolean>>({});
   const [defaultCandidate, setDefaultCandidate] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const mode = loadMode(exercise);
-  const lastTime = (i: number) => { const h = historySets?.[i]; return h ? `Last time ${describeSet(exercise, h)}` : 'No previous session'; };
+  const lastTime = (i: number) => { const h = historySets?.[i]; return h ? `Last ${paceLabel(exercise, h)}` : 'No previous session'; };
+  const lastSpoken = (i: number) => { const h = historySets?.[i]; return h ? `, last time ${describeSet(exercise, h)}` : ''; };
+  // The chip explains a prefilled progression; once the lifter changes that value it is their number, and the delta mark takes over.
+  const offersProgression = (set: SetLog) => !!suggestion && !set.completed && set.reps === suggestion.reps && (mode === 'bodyweight' || set.weight === suggestion.weight);
   const distanceStep = exercise.targetDistanceUnit === 'm' ? 100 : exercise.targetDistanceUnit === 'miles' ? 0.25 : 0.5;
 
   const renderCard = (i: number) => {
@@ -90,9 +97,12 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
     const changedWeight = defaultCandidate?.exerciseId === exercise.id && defaultCandidate.setIndex === i && exercise.type === 'reps' && mode !== 'bodyweight'
       && typeof set.weight === 'number' && Number.isFinite(set.weight) && set.weight !== (exercise.targetWeight ?? 0);
     const weightEdit = () => setDefaultCandidate({ exerciseId: exercise.id, setIndex: i });
+    const chip = suggestion && onUseLastValues && offersProgression(set);
+    const live = exercise.type === 'timer' ? [] : paceDelta(exercise, set, historySets?.[i]);
     return <View key="current-card" style={styles.card}>
       <View style={styles.cardTop}>
         <Text style={[styles.lastTime, !historySets?.[i] && styles.lastTimeNone]} numberOfLines={1}>{lastTime(i)}</Text>
+        {chip ? <ProgressionChip exercise={exercise} suggestion={suggestion} onUseLast={onUseLastValues} /> : <PaceMark parts={live} />}
         <JudgeLights trigger={0} />
       </View>
 
@@ -150,19 +160,23 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
     const key = `${exerciseIndex}-${i}`;
     if (i === currentIndex) { rows.push(renderCard(i)); return; }
     const desc = describeSet(exercise, set, timers[key]);
+    const last = historySets?.[i] ? <Text style={styles.rowLast} numberOfLines={1}>{lastTime(i)}</Text> : null;
+    const delta = set.completed ? paceDelta(exercise, set, historySets?.[i]) : [];
+    const deltaSpoken = delta.length ? `, ${delta.map(d => d.spoken).join(', ')}` : '';
     rows.push(set.completed
-      ? <PressableScale key={key} scaleTo={0.98} accessibilityRole="checkbox" accessibilityState={{ checked: true }} accessibilityLabel={`Set ${set.setNumber} done, ${desc}. Tap to reopen`}
+      ? <PressableScale key={key} scaleTo={0.98} accessibilityRole="checkbox" accessibilityState={{ checked: true }} accessibilityLabel={`Set ${set.setNumber} done, ${desc}${lastSpoken(i)}${deltaSpoken}. Tap to reopen`}
           onPress={() => onToggleComplete(i)} style={styles.row}>
           <Text style={styles.rowNum}>{set.setNumber}</Text>
-          <Text style={styles.rowDone}>{desc}</Text>
+          <View style={styles.rowBody}><Text style={styles.rowDone}>{desc}</Text>{last}</View>
+          <PaceMark parts={delta} />
           {!!set.notes && <MessageSquare size={15} color={theme.colors.textMuted} />}
           {!!lightsTrigger && currentIndex >= 0 && i === lightsSet && <JudgeLights trigger={lightsTrigger} bare />}
           <View style={styles.tick}><Check size={16} color={theme.colors.onPrimary} strokeWidth={3.2} /></View>
         </PressableScale>
-      : <PressableScale key={key} scaleTo={0.98} accessibilityRole="button" accessibilityLabel={`Set ${set.setNumber}, ${desc}. Make current`}
+      : <PressableScale key={key} scaleTo={0.98} accessibilityRole="button" accessibilityLabel={`Set ${set.setNumber}, ${desc}${lastSpoken(i)}. Make current`}
           onPress={() => { void Haptics.selectionAsync(); onFocusSet(i); }} style={styles.row}>
           <Text style={[styles.rowNum, styles.rowDim]}>{set.setNumber}</Text>
-          <Text style={[styles.rowUpcoming]}>{desc}</Text>
+          <View style={styles.rowBody}><Text style={styles.rowUpcoming}>{desc}</Text>{last}</View>
           <View style={styles.ring} />
         </PressableScale>);
   });
@@ -215,8 +229,10 @@ const styles = StyleSheet.create({
   row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border, paddingHorizontal: 4 },
   rowNum: { ...theme.type.label, color: theme.colors.textMuted, width: 18, fontVariant: ['tabular-nums'] },
   rowDim: { color: theme.colors.textSubtle },
-  rowDone: { flex: 1, fontFamily: fonts.displayBold, fontSize: 22, lineHeight: 26, color: theme.colors.text, fontVariant: ['tabular-nums'] },
-  rowUpcoming: { flex: 1, ...theme.type.body, color: theme.colors.textSubtle, fontVariant: ['tabular-nums'] },
+  rowBody: { flex: 1, minWidth: 0, paddingVertical: 6 },
+  rowLast: { ...theme.type.caption, color: theme.colors.textSubtle, fontVariant: ['tabular-nums'] },
+  rowDone: { fontFamily: fonts.displayBold, fontSize: 22, lineHeight: 26, color: theme.colors.text, fontVariant: ['tabular-nums'] },
+  rowUpcoming: { ...theme.type.body, color: theme.colors.textSubtle, fontVariant: ['tabular-nums'] },
   tick: { width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.done, alignItems: 'center', justifyContent: 'center' },
   ring: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: theme.colors.border },
   completeAll: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', marginTop: 8 },

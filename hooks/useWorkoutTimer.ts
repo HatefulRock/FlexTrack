@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { cancelRestEnd, ensureRestNotificationPermission, scheduleRestEnd } from '../utils/restNotification';
 
 // Set timers count up; the rest timer counts down from a fixed end timestamp so ±15 s and backgrounding stay exact.
 export const useWorkoutTimer = () => {
@@ -12,6 +13,28 @@ export const useWorkoutTimer = () => {
   const lastCue = useRef<number | null>(null);
   const endsAtRef = useRef<number | null>(null);
   endsAtRef.current = restEndsAt;
+
+  // Lock-screen alert for the end of rest. `notifyGen` invalidates async schedules overtaken by a skip, ±15 s or a new rest.
+  const notifyId = useRef<string | null>(null);
+  const notifyGen = useRef(0);
+  const nextLabelRef = useRef<string | undefined>(undefined);
+  const clearRestNotification = () => {
+    notifyGen.current += 1;
+    const id = notifyId.current;
+    notifyId.current = null;
+    if (id) void cancelRestEnd(id);
+  };
+  const scheduleRestNotification = (endsAt: number) => {
+    clearRestNotification();
+    const gen = notifyGen.current;
+    void (async () => {
+      if (!(await ensureRestNotificationPermission()) || gen !== notifyGen.current) return;
+      const id = await scheduleRestEnd(endsAt, nextLabelRef.current);
+      if (gen === notifyGen.current) notifyId.current = id;
+      else void cancelRestEnd(id);
+    })();
+  };
+  useEffect(() => () => clearRestNotification(), []);
 
   const hasRunningTimer = useMemo(() => Object.values(timerRunning).some(Boolean), [timerRunning]);
   const lastTick = useRef(0);
@@ -39,6 +62,7 @@ export const useWorkoutTimer = () => {
       if (left <= 0) {
         setRestTimer(0);
         setRestEndsAt(null);
+        clearRestNotification();
         if (lastCue.current !== 0) { lastCue.current = 0; void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }
         return;
       }
@@ -55,17 +79,22 @@ export const useWorkoutTimer = () => {
     setTimerRunning(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const startRest = (seconds: number) => {
+  // nextLabel (optional) fills the notification body, e.g. "Bench Press · 85 kg × 6" → "Next: Bench Press · 85 kg × 6".
+  const startRest = (seconds: number, nextLabel?: string) => {
     const duration = Math.max(0, Math.floor(seconds));
     lastCue.current = null;
+    nextLabelRef.current = nextLabel;
     setRestTotal(duration);
     setRestTimer(duration);
     endsAtRef.current = duration > 0 ? Date.now() + duration * 1000 : null;
     setRestEndsAt(endsAtRef.current);
+    if (endsAtRef.current !== null) scheduleRestNotification(endsAtRef.current);
+    else clearRestNotification();
   };
 
   const cancelRest = () => {
     lastCue.current = null;
+    clearRestNotification();
     endsAtRef.current = null;
     setRestEndsAt(null);
     setRestTimer(0);
@@ -82,6 +111,7 @@ export const useWorkoutTimer = () => {
     setRestTimer(remaining);
     setRestTotal(total => Math.max(total, remaining));
     setRestEndsAt(next);
+    scheduleRestNotification(next);
   };
 
   return {

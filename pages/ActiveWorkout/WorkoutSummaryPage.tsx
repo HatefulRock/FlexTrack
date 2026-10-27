@@ -4,9 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { WorkoutLog } from '../../types';
 import { theme } from '../../constants/theme';
+import { Share2 } from 'lucide-react-native';
 import { Button, SectionHeader, useReducedMotion } from '../../components/ui/Primitives';
 import { detectRecords, formatDuration, formatNumber, logVolume } from '../../utils/training';
 import { ExerciseRow, JudgeLights, RecordCard, lightsVerdict, whiteLights } from './SummaryParts';
+import { buildShareData } from './ShareLayout';
+import { ShareSheet } from './ShareSheet';
 
 const c = theme.colors;
 const nd = theme.motion.nativeDriver;
@@ -30,6 +33,9 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
   }, [log, previousLogs]);
   const { totalSets, doneSets, volume, records, delta, duration } = stats;
   const complete = totalSets > 0 && doneSets === totalSets;
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareData = useMemo(() => buildShareData(log, stats), [log, stats]);
+  const openShare = () => { Haptics.selectionAsync().catch(() => undefined); setShareOpen(true); };
 
   const white = whiteLights(doneSets, totalSets);
   const title = records.length ? 'New record.' : complete ? 'Session complete.' : 'Partial session saved.';
@@ -123,9 +129,11 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
       </Animated.View>
     </ScrollView>
     <SafeAreaView edges={['bottom']} style={styles.footer}>
-      {onViewHistory && <View style={styles.flex}><Button label="View in history" variant="secondary" onPress={onViewHistory} /></View>}
+      {onViewHistory && <Button label="View in history" variant="secondary" onPress={onViewHistory} style={styles.footerButton} />}
+      <Button label="Share" icon={Share2} variant="secondary" accessibilityLabel="Share session as an image" onPress={openShare} style={styles.footerButton} />
       <View style={styles.flex}><Button label="Done" onPress={onDone} /></View>
     </SafeAreaView>
+    <ShareSheet visible={shareOpen} onClose={() => setShareOpen(false)} data={shareData} />
   </View>;
 };
 
@@ -155,5 +163,6 @@ const styles = StyleSheet.create({
   deltaFlat: { color: c.textMuted },
   records: { gap: 8 },
   list: { backgroundColor: c.surface, borderRadius: theme.radius.lg, overflow: 'hidden' },
+  footerButton: { paddingHorizontal: 16 },
   footer: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 8, backgroundColor: c.canvas, maxWidth: 620, width: '100%', alignSelf: 'center' },
 });

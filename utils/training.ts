@@ -34,7 +34,8 @@ export const formatDuration = (ms: number) => {
   return h ? `${h}h ${m.toString().padStart(2, '0')}m` : `${m}m`;
 };
 
-export const formatKg = (kg: number) => `${Number.isInteger(kg) ? kg : kg.toFixed(1)} kg`;
+// Up to two decimals so plate maths stays loadable: 33.75 kg a side, never a rounded 33.8.
+export const formatKg = (kg: number) => `${Number(kg.toFixed(2))} kg`;
 export const formatNumber = (n: number) => Math.round(n).toLocaleString('en-US');
 
 export const logVolume = (log: WorkoutLog) => log.exercises.reduce((sum, e) =>
