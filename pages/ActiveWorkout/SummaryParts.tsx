@@ -2,7 +2,7 @@ import React from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { ExerciseLog } from '../../types';
-import { fonts, theme } from '../../constants/theme';
+import { theme } from '../../constants/theme';
 import { CATEGORY_LABEL, RecordHit, categoryColor, exerciseCategory } from '../../utils/training';
 import { formatTime } from '../../utils/time';
 
@@ -25,9 +25,9 @@ export const JudgeLights = ({ scales, opacity, white }: { scales: Animated.Value
   </Animated.View>
 );
 
-const RECORD_KIND: Record<RecordHit['kind'], string> = { weight: 'Heaviest set', oneRM: 'Best estimated 1RM', reps: 'Most reps' };
-const recordValue = (r: RecordHit) => r.kind === 'reps' ? `${r.value} reps` : `${num(r.value)} kg`;
-const recordWas = (r: RecordHit) => r.kind === 'reps' ? `was ${r.previous}` : `was ${num(r.previous)} kg`;
+export const RECORD_KIND: Record<RecordHit['kind'], string> = { weight: 'Heaviest set', oneRM: 'Best estimated 1RM', reps: 'Most reps' };
+export const recordValue = (r: RecordHit) => r.kind === 'reps' ? `${r.value} reps` : `${num(r.value)} kg`;
+export const recordWas = (r: RecordHit) => r.kind === 'reps' ? `was ${r.previous}` : `was ${num(r.previous)} kg`;
 
 // A record is a yellow plate: the whole band is the colour, the number is the scoreboard.
 export const RecordCard = ({ record }: { record: RecordHit }) => (

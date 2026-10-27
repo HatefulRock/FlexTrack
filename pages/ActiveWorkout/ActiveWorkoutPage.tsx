@@ -11,6 +11,8 @@ import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
 import { RestDock, RestNext, RestOverlay } from './RestControl';
 import { ExerciseView, targetLabel } from './ExerciseView';
 import { describeSet, SetList } from './SetList';
+import { RoutinePace } from './PaceParts';
+import { ProgressionSuggestion, suggestProgression } from '../../utils/progression';
 import { Button, EmptyState, PressableScale, useReducedMotion } from '../../components/ui/Primitives';
 import { showAlert } from '../../components/ui/Dialog';
 import { theme } from '../../constants/theme';
@@ -23,26 +25,33 @@ interface Props {
 const byRecent = (logs: WorkoutLog[]) => [...logs].sort((a, b) => (b.endTime || b.startTime) - (a.endTime || a.startTime));
 
 // The most recent performance of this exercise: matched by id, then by name.
-const lastSetsFor = (exercise: Exercise, recent: WorkoutLog[]): SetLog[] | undefined => {
+const lastLogFor = (exercise: Exercise, recent: WorkoutLog[]): ExerciseLog | undefined => {
   for (const log of recent) {
     const hit = log.exercises.find(e => e.exerciseId === exercise.id) || log.exercises.find(e => e.exerciseName.toLowerCase() === exercise.name.toLowerCase());
-    if (hit?.sets.length) return hit.sets;
+    if (hit?.sets.length) return hit;
   }
   return undefined;
 };
+const lastSetsFor = (exercise: Exercise, recent: WorkoutLog[]): SetLog[] | undefined => lastLogFor(exercise, recent)?.sets;
 
-// Sets start from what the lifter did last time, set for set; the routine target fills any gap.
-const buildLogs = (template: WorkoutTemplate, recent: WorkoutLog[]): ExerciseLog[] => template.exercises.map(e => {
+// Set i as last time left it (the routine target fills any gap), or at the progression step when one was earned.
+const prefill = (e: Exercise, i: number, last?: SetLog[], suggestion?: ProgressionSuggestion | null): Pick<SetLog, 'reps' | 'weight'> => {
   const mode = e.type === 'reps' ? (e.loadMode || 'external') : undefined;
-  const last = e.type === 'reps' ? lastSetsFor(e, recent) : undefined;
+  if (suggestion) return { reps: suggestion.reps, weight: mode === 'bodyweight' ? undefined : suggestion.weight };
+  const h = e.type === 'reps' ? last?.[i] : undefined;
+  const reps = h && (h.reps ?? 0) > 0 ? h.reps : e.targetReps;
+  const weight = mode === 'bodyweight' ? undefined : h && typeof h.weight === 'number' && h.weight > 0 ? h.weight : e.targetWeight;
+  return { reps, weight };
+};
+
+// Sets start from what the lifter did last time, set for set, or from the earned progression.
+const buildLogs = (template: WorkoutTemplate, recent: WorkoutLog[], suggestions: (ProgressionSuggestion | null)[]): ExerciseLog[] => template.exercises.map((e, j) => {
+  const mode = e.type === 'reps' ? (e.loadMode || 'external') : undefined;
+  const last = lastSetsFor(e, recent);
   return {
     exerciseId: e.id, exerciseName: e.name, exerciseType: e.type, loadMode: mode, distanceUnit: e.targetDistanceUnit, completed: false,
-    sets: Array.from({ length: Math.min(100, Math.max(1, Math.floor(e.targetSets ?? 1))) }, (_, i) => {
-      const h = last?.[i];
-      const reps = h && (h.reps ?? 0) > 0 ? h.reps : e.targetReps;
-      const weight = mode === 'bodyweight' ? undefined : h && typeof h.weight === 'number' && h.weight > 0 ? h.weight : e.targetWeight;
-      return { setNumber: i + 1, completed: false, reps, weight, distance: e.targetDistance, durationSeconds: e.targetDurationSeconds, notes: '' };
-    }),
+    sets: Array.from({ length: Math.min(100, Math.max(1, Math.floor(e.targetSets ?? 1))) }, (_, i) =>
+      ({ setNumber: i + 1, completed: false, ...prefill(e, i, last, suggestions[j]), distance: e.targetDistance, durationSeconds: e.targetDurationSeconds, notes: '' })),
   };
 });
 
@@ -66,7 +75,11 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const recent = useMemo(() => byRecent(previousLogs), [previousLogs]);
   const [startTime] = useState(() => resume?.startTime ?? Date.now());
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(() => resume?.activeExerciseIndex ?? 0);
-  const [logs, setLogs] = useState<ExerciseLog[]>(() => resume?.logs ?? buildLogs(template, recent));
+  // Earned progressions, from the last performance of each exercise. A resumed session keeps its saved logs and is never re-prefilled.
+  const suggestions = useMemo(() => template.exercises.map(e => suggestProgression(e, lastLogFor(e, recent))), [template.exercises, recent]);
+  const [logs, setLogs] = useState<ExerciseLog[]>(() => resume?.logs ?? buildLogs(template, recent, suggestions));
+  // The last session of this routine, for the running comparison in the header.
+  const lastRoutineLog = useMemo(() => recent.find(l => l.templateId === template.id && l.exercises.length > 0), [recent, template.id]);
   const [restExpanded, setRestExpanded] = useState(false);
   const [focusSet, setFocusSet] = useState<number | null>(null);
   // Judge lights play for the set just completed (set -1: the whole exercise), on that exercise only, and only once.
@@ -151,9 +164,25 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
     setLights(l => ({ n: l.n + 1, exercise: activeExerciseIndex, set: i, at: Date.now() }));
     if (focusSet === i) setFocusSet(null);
     const seconds = currentExercise.restSeconds ?? 60;
-    if (seconds > 0 && !(exerciseDone && isLast)) startRest(seconds);
+    if (seconds > 0 && !(exerciseDone && isLast)) startRest(seconds, nextSetLabel(i));
+  };
+  // The lock-screen notification names what comes after this rest, e.g. "Bench Press · 85 kg × 6".
+  const nextSetLabel = (completedIndex: number): string | undefined => {
+    const k = currentLog.sets.findIndex((s, j) => j !== completedIndex && !s.completed);
+    if (k >= 0) return `${currentExercise.name} · ${describeSet(currentExercise, currentLog.sets[k])}`;
+    for (let j = activeExerciseIndex + 1; j < logs.length; j++) {
+      const open = logs[j].sets.findIndex(s => !s.completed);
+      if (open >= 0) return `${template.exercises[j].name} · ${describeSet(template.exercises[j], logs[j].sets[open])}`;
+    }
+    return undefined;
   };
   const updateSet = (i: number, field: keyof SetLog, value: SetLog[keyof SetLog]) => setLogs(current => current.map((e, eIndex) => eIndex === activeExerciseIndex ? { ...e, sets: e.sets.map((s, sIndex) => sIndex === i ? { ...s, [field]: value } : s) } : e));
+  // "Use last weight": the open sets of this exercise go back to last time's values; completed sets stay as lifted.
+  const revertToLast = () => {
+    const last = historySets;
+    setLogs(current => current.map((e, eIndex) => eIndex !== activeExerciseIndex ? e : { ...e, sets: e.sets.map((s, i) => s.completed ? s : { ...s, ...prefill(currentExercise, i, last) }) }));
+    void Haptics.selectionAsync();
+  };
   const updateDefaultWeight = (weight: number) => {
     if (!Number.isFinite(weight) || weight < 0) return;
     onUpdateTemplate({ ...template, exercises: template.exercises.map(exercise => exercise.id === currentExercise.id ? { ...exercise, targetWeight: weight } : exercise) });
@@ -206,6 +235,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
         <View style={styles.headerMeta}>
           <Text numberOfLines={1} style={styles.routineName}>{template.name}</Text>
           <Text style={styles.setCount}>{totals.done} of {totals.all} sets</Text>
+          {!!lastRoutineLog && <RoutinePace logs={logs} previous={lastRoutineLog} style={styles.pace} />}
         </View>
         <PressableScale scaleTo={0.95} accessibilityRole="button" accessibilityLabel="End session" onPress={confirmExit} style={styles.end}>
           <Text style={styles.endText}>End</Text>
@@ -224,6 +254,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
           <ExerciseView exercise={currentExercise} index={activeExerciseIndex} total={template.exercises.length}
             setNumber={currentIndex >= 0 ? currentIndex + 1 : undefined} setCount={currentLog.sets.length} />
           <SetList exercise={currentExercise} sets={currentLog.sets} historySets={historySets} exerciseIndex={activeExerciseIndex}
+            suggestion={suggestions[activeExerciseIndex]} onUseLastValues={revertToLast}
             timers={timers} timerRunning={timerRunning} currentIndex={currentIndex} lightsTrigger={lights.exercise === activeExerciseIndex && Date.now() - lights.at < 2500 ? lights.n : 0} lightsSet={lights.set} nextLabel={doneLabel}
             onUpdateSet={updateSet} onSetDefaultWeight={updateDefaultWeight} onToggleComplete={toggleSetComplete} onFocusSet={setFocusSet} onCompleteAll={quickFinish}
             onToggleTimer={i => { const key = `${activeExerciseIndex}-${i}`; if (timerRunning[key] && timers[key] > 0) updateSet(i, 'durationSeconds', timers[key]); toggleTimer(key); }} />
@@ -253,6 +284,7 @@ const styles = StyleSheet.create({
   headerMeta: { flex: 1, minWidth: 0 },
   routineName: { ...theme.type.label, color: theme.colors.text },
   setCount: { ...theme.type.caption, color: theme.colors.textMuted, fontVariant: ['tabular-nums'], marginTop: 1 },
+  pace: { marginTop: 1 },
   end: { minWidth: 64, height: 44, paddingHorizontal: 16, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceElevated, alignItems: 'center', justifyContent: 'center' },
   endText: { ...theme.type.label, color: theme.colors.text },
   progress: { flexDirection: 'row', gap: 2, height: 4, marginTop: 10 },
