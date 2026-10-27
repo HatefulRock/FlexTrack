@@ -1,52 +1,224 @@
-import React, { useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Calculator, Check, MessageSquarePlus, Pause, Play } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Check, MessageSquare, MessageSquarePlus, Minus, Pause, Play, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Exercise, SetLog } from '../../types';
 import { formatTime, parseTimeString } from '../../utils/time';
-import { theme } from '../../constants/theme';
+import { fonts, theme } from '../../constants/theme';
+import { Button, PressableScale, useReducedMotion } from '../../components/ui/Primitives';
+import { Barbell } from './Barbell';
 
-interface Props { exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number; timers: Record<string,number>; timerRunning: Record<string,boolean>; onUpdateSet:(index:number,field:keyof SetLog,value:SetLog[keyof SetLog])=>void; onSetDefaultWeight:(weight:number)=>void; onToggleComplete:(index:number)=>void; onToggleTimer:(index:number)=>void; }
+interface Props {
+  exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number;
+  timers: Record<string, number>; timerRunning: Record<string, boolean>;
+  currentIndex: number; lightsTrigger: number; lightsSet?: number; nextLabel?: string;
+  onUpdateSet: (index: number, field: keyof SetLog, value: SetLog[keyof SetLog]) => void; onSetDefaultWeight: (weight: number) => void;
+  onToggleComplete: (index: number) => void; onToggleTimer: (index: number) => void; onFocusSet: (index: number) => void; onCompleteAll: () => void;
+}
 
-export const SetList=({exercise,sets,historySets,exerciseIndex,timers,timerRunning,onUpdateSet,onSetDefaultWeight,onToggleComplete,onToggleTimer}:Props)=>{
-  const [notes,setNotes]=useState<Record<string,boolean>>({});
-  const [defaultCandidate,setDefaultCandidate]=useState<{exerciseId:string;setIndex:number}|null>(null);
-  const previous=(i:number)=>{const h=historySets?.[i];if(!h)return 'No previous set';if(exercise.type==='reps')return exercise.loadMode==='bodyweight'?`${h.reps||0} reps`:`${h.weight||0} kg × ${h.reps||0}`;if(exercise.type==='distance')return `${h.distance||0} ${exercise.targetDistanceUnit||'km'} · ${formatTime(h.durationSeconds||0)}`;return formatTime(h.durationSeconds||0)};
-  const plates=(weight:number)=>{if(weight<=20)return Alert.alert('Plate calculator','Use the empty 20 kg bar.');let left=(weight-20)/2;const result:number[]=[];[25,20,15,10,5,2.5,1.25].forEach(p=>{while(left>=p){result.push(p);left-=p}});Alert.alert('Load each side',result.length?result.map(p=>`${p} kg`).join(' + '):'No plates needed')};
-  const complete=(i:number)=>{Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);onToggleComplete(i)};
-  return <View style={styles.list}>{sets.map((set,i)=>{
-    const key=`${exerciseIndex}-${i}`,running=timerRunning[key],elapsed=timers[key]||0;
-    const changedWeight=defaultCandidate?.exerciseId===exercise.id&&defaultCandidate.setIndex===i&&exercise.type==='reps'&&(exercise.loadMode||'external')!=='bodyweight'&&typeof set.weight==='number'&&Number.isFinite(set.weight)&&set.weight!==(exercise.targetWeight??0);
-    return <View key={key} style={[styles.card,set.completed&&styles.cardDone]}>
-      <View style={styles.cardTop}><View style={[styles.number,set.completed&&styles.numberDone]}><Text style={[styles.numberText,set.completed&&styles.numberTextDone]}>{set.setNumber}</Text></View><View style={styles.previous}><Text style={styles.previousLabel}>PREVIOUS</Text><Text style={styles.previousValue}>{previous(i)}</Text></View>
-        <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{checked:set.completed}} accessibilityLabel={`Complete set ${set.setNumber}`} onPress={()=>complete(i)} style={[styles.check,set.completed&&styles.checkDone]}><Check size={22} color={set.completed?theme.colors.canvas:theme.colors.textSubtle} strokeWidth={3}/></TouchableOpacity></View>
-      <View style={styles.fields}>
-        {exercise.type==='reps'&&<><Field label="REPS" value={set.reps?.toString()||''} placeholder={exercise.targetReps?.toString()||'0'} onChange={v=>onUpdateSet(i,'reps',parseFloat(v)||0)}/>
-          {(exercise.loadMode||'external')!=='bodyweight'&&<View style={styles.weightWrap}><Field label={exercise.loadMode==='assisted'?'ASSISTANCE (KG)':'WEIGHT (KG)'} value={set.weight?.toString()||''} placeholder={exercise.targetWeight?.toString()||'0'} onChange={v=>{setDefaultCandidate({exerciseId:exercise.id,setIndex:i});onUpdateSet(i,'weight',parseFloat(v)||0)}}/>{exercise.loadMode!=='assisted'&&<TouchableOpacity accessibilityLabel="Open plate calculator" onPress={()=>plates(set.weight||0)} style={styles.calc}><Calculator size={16} color={theme.colors.textMuted}/></TouchableOpacity>}</View>}</>}
-        {exercise.type==='distance'&&<><Field label={`DISTANCE (${(exercise.targetDistanceUnit||'km').toUpperCase()})`} value={set.distance?.toString()||''} placeholder={exercise.targetDistance?.toString()||'0'} onChange={v=>onUpdateSet(i,'distance',parseFloat(v)||0)}/><Field label="TIME" value={set.durationSeconds?formatTime(set.durationSeconds):''} placeholder="0:00" keyboard="default" onChange={v=>onUpdateSet(i,'durationSeconds',parseTimeString(v))}/></>}
-        {exercise.type==='timer'&&<TouchableOpacity onPress={()=>onToggleTimer(i)} style={[styles.timer,running&&styles.timerRunning]}>{running?<Pause size={20} color={theme.colors.danger}/>:<Play size={20} color={theme.colors.primary}/>}<Text style={styles.timerText}>{formatTime(elapsed)}</Text><Text style={styles.timerHint}>{running?'Pause':'Start timer'}</Text></TouchableOpacity>}
-      </View>
-      {changedWeight&&<TouchableOpacity accessibilityRole="button" accessibilityLabel={`Use ${set.weight} kilograms as the default for ${exercise.name}`} onPress={()=>{setDefaultCandidate(null);onSetDefaultWeight(set.weight as number)}} style={styles.defaultAction}>
-        <Text style={styles.defaultActionText}>Use {set.weight} kg as default {exercise.loadMode==='assisted'?'assistance':'weight'}</Text>
-        <Text style={styles.defaultActionHint}>Future workouts</Text>
-      </TouchableOpacity>}
-      {notes[key]?<TextInput autoFocus placeholder="Add a note for this set…" placeholderTextColor={theme.colors.textSubtle} value={set.notes||''} onChangeText={v=>onUpdateSet(i,'notes',v)} style={styles.noteInput}/>
-        :<TouchableOpacity onPress={()=>setNotes(n=>({...n,[key]:true}))} style={styles.noteButton}><MessageSquarePlus size={15} color={theme.colors.textSubtle}/><Text style={styles.noteText}>{set.notes?'Edit note':'Add note'}</Text></TouchableOpacity>}
-    </View>})}</View>;
+export const fmtNum = (n: number) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
+const loadMode = (e: Exercise) => e.loadMode || 'external';
+
+// "85 kg × 6", "8 reps", "0:45", "5 km · 24:10": the set as the lifter says it.
+export const describeSet = (exercise: Exercise, set: Pick<SetLog, 'reps' | 'weight' | 'distance' | 'durationSeconds'>, elapsed = 0) => {
+  if (exercise.type === 'timer') return formatTime(elapsed || set.durationSeconds || 0);
+  if (exercise.type === 'distance') return `${fmtNum(set.distance || 0)} ${exercise.targetDistanceUnit || 'km'}${set.durationSeconds ? ` · ${formatTime(set.durationSeconds)}` : ''}`;
+  const reps = set.reps || 0;
+  if (loadMode(exercise) === 'bodyweight') return `${reps} reps`;
+  if (loadMode(exercise) === 'assisted') return `${reps} reps · ${fmtNum(set.weight || 0)} kg assist`;
+  return `${fmtNum(set.weight || 0)} kg × ${reps}`;
 };
 
-const Field=({label,value,placeholder,onChange,keyboard='decimal-pad'}:{label:string;value:string;placeholder:string;onChange:(v:string)=>void;keyboard?:any})=><View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput accessibilityLabel={label} value={value} placeholder={placeholder} placeholderTextColor={theme.colors.textSubtle} onChangeText={onChange} keyboardType={keyboard} selectTextOnFocus style={styles.input}/></View>;
+// Three white judges' lights: a good lift. They play on the set just completed, never on the set still to lift.
+// `hold` keeps them lit (an exercise with every set done); `bare` drops the unlit sockets so a row only shows them while they burn.
+const JudgeLights = ({ trigger, hold = false, bare = false }: { trigger: number; hold?: boolean; bare?: boolean }) => {
+  const lights = useRef([0, 1, 2].map(() => new Animated.Value(hold ? 1 : 0))).current;
+  const reduced = useReducedMotion();
+  useEffect(() => {
+    if (!trigger) return;
+    lights.forEach(v => v.setValue(0));
+    const t = (v: Animated.Value, toValue: number, duration: number) => Animated.timing(v, { toValue, duration, easing: theme.motion.easeOut, useNativeDriver: theme.motion.nativeDriver });
+    const on = Animated.stagger(80, lights.map(v => t(v, 1, 200)));
+    const anim = hold ? on : Animated.sequence([on, Animated.delay(1400), Animated.parallel(lights.map(v => t(v, 0, 300)))]);
+    const beats = [0, 1, 2].map(i => setTimeout(() => { void Haptics.selectionAsync(); }, 40 + i * 80));
+    anim.start();
+    return () => { anim.stop(); beats.forEach(clearTimeout); };
+  }, [trigger, lights, hold]);
+  return <View style={styles.lights} accessible={false} importantForAccessibility="no-hide-descendants">
+    {lights.map((v, i) => <View key={i} style={[styles.light, bare && styles.lightBare]}>
+      <Animated.View style={[styles.lightOn, { opacity: v, transform: reduced ? [] : [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }]} />
+    </View>)}
+  </View>;
+};
 
-const styles=StyleSheet.create({
-  list:{gap:12},card:{padding:14,borderRadius:theme.radius.lg,backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.border},cardDone:{backgroundColor:'rgba(52,211,153,0.06)',borderColor:'rgba(52,211,153,0.4)'},cardTop:{flexDirection:'row',alignItems:'center',marginBottom:13},
-  number:{width:34,height:34,borderRadius:11,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceElevated},numberDone:{backgroundColor:'rgba(52,211,153,0.14)'},numberText:{...theme.type.label,color:theme.colors.textSecondary},numberTextDone:{color:theme.colors.success},
-  previous:{flex:1,marginLeft:10},previousLabel:{fontSize:9,fontWeight:'800',letterSpacing:1,color:theme.colors.textSubtle},previousValue:{...theme.type.caption,color:theme.colors.textSecondary,marginTop:2,fontFamily:Platform.OS==='ios'?'Menlo':'monospace'},check:{width:46,height:46,borderRadius:14,alignItems:'center',justifyContent:'center',backgroundColor:theme.colors.surfaceElevated,borderWidth:1,borderColor:theme.colors.borderStrong},checkDone:{backgroundColor:theme.colors.success,borderColor:theme.colors.success},
-  fields:{flexDirection:'row',gap:10},field:{flex:1},fieldLabel:{fontSize:9,fontWeight:'800',letterSpacing:.8,color:theme.colors.textMuted,marginBottom:5},input:{height:48,borderRadius:12,backgroundColor:theme.colors.canvas,borderWidth:1,borderColor:theme.colors.borderStrong,color:theme.colors.text,textAlign:'center',fontSize:18,fontWeight:'700',fontVariant:['tabular-nums'],outlineStyle:'none'} as any,
-  weightWrap:{flex:1,flexDirection:'row',alignItems:'flex-end'},weightWrapField:{flex:1},calc:{width:40,height:48,marginLeft:-40,alignItems:'center',justifyContent:'center'},timer:{flex:1,height:54,borderRadius:12,backgroundColor:theme.colors.canvas,borderWidth:1,borderColor:theme.colors.borderStrong,flexDirection:'row',alignItems:'center',paddingHorizontal:14,gap:10},timerRunning:{borderColor:theme.colors.danger},timerText:{fontSize:20,fontWeight:'800',fontVariant:['tabular-nums'],color:theme.colors.text},timerHint:{...theme.type.caption,color:theme.colors.textMuted,marginLeft:'auto'},
-  defaultAction:{minHeight:40,marginTop:9,paddingHorizontal:11,borderRadius:10,backgroundColor:theme.colors.primarySoft,borderWidth:1,borderColor:'rgba(56, 189, 248, 0.3)',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},defaultActionText:{...theme.type.caption,color:theme.colors.primary,fontWeight:'700',flex:1},defaultActionHint:{fontSize:10,fontWeight:'700',color:theme.colors.textMuted,textTransform:'uppercase',letterSpacing:.5},
-  noteButton:{minHeight:38,flexDirection:'row',alignItems:'center',gap:6,marginTop:7},noteText:{...theme.type.caption,color:theme.colors.textSubtle},noteInput:{minHeight:42,marginTop:9,borderRadius:10,backgroundColor:theme.colors.canvas,borderWidth:1,borderColor:theme.colors.border,color:theme.colors.textSecondary,paddingHorizontal:12}
+const NumberStepper = ({ label, unit, value, step, onChange, onEdit }: { label: string; unit: string; value?: number; step: number; onChange: (v: number) => void; onEdit?: () => void }) => {
+  const [text, setText] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
+  const display = text ?? (value === undefined ? '' : fmtNum(value));
+  const bump = (d: number) => {
+    void Haptics.selectionAsync();
+    setText(null);
+    onEdit?.();
+    onChange(Math.max(0, Math.round(((value ?? 0) + d) * 100) / 100));
+  };
+  return <View style={styles.stepper}>
+    <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel={`Decrease ${label} by ${fmtNum(step)}`} onPress={() => bump(-step)} style={styles.stepBtn}>
+      <Minus size={24} color={theme.colors.text} strokeWidth={2.5} />
+    </PressableScale>
+    <View style={[styles.stepValue, focused && styles.stepValueFocused]}>
+      <TextInput accessibilityLabel={label} value={display} placeholder="0" placeholderTextColor={theme.colors.textSubtle}
+        onFocus={() => { setFocused(true); setText(display); }} onBlur={() => { setFocused(false); setText(null); }}
+        onChangeText={t => { const clean = t.replace(',', '.').replace(/[^0-9.]/g, ''); setText(clean); onEdit?.(); const n = parseFloat(clean); onChange(Number.isFinite(n) ? n : 0); }}
+        keyboardType="decimal-pad" selectTextOnFocus style={styles.stepInput} />
+      <Text style={styles.stepUnit}>{unit}</Text>
+    </View>
+    <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel={`Increase ${label} by ${fmtNum(step)}`} onPress={() => bump(step)} style={styles.stepBtn}>
+      <Plus size={24} color={theme.colors.text} strokeWidth={2.5} />
+    </PressableScale>
+  </View>;
+};
+
+export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, timerRunning, currentIndex, lightsTrigger, lightsSet = -1, nextLabel, onUpdateSet, onSetDefaultWeight, onToggleComplete, onToggleTimer, onFocusSet, onCompleteAll }: Props) => {
+  const [notes, setNotes] = useState<Record<string, boolean>>({});
+  const [defaultCandidate, setDefaultCandidate] = useState<{ exerciseId: string; setIndex: number } | null>(null);
+  const mode = loadMode(exercise);
+  const lastTime = (i: number) => { const h = historySets?.[i]; return h ? `Last time ${describeSet(exercise, h)}` : 'No previous session'; };
+  const distanceStep = exercise.targetDistanceUnit === 'm' ? 100 : exercise.targetDistanceUnit === 'miles' ? 0.25 : 0.5;
+
+  const renderCard = (i: number) => {
+    const set = sets[i], key = `${exerciseIndex}-${i}`, running = !!timerRunning[key], elapsed = timers[key] || 0;
+    const changedWeight = defaultCandidate?.exerciseId === exercise.id && defaultCandidate.setIndex === i && exercise.type === 'reps' && mode !== 'bodyweight'
+      && typeof set.weight === 'number' && Number.isFinite(set.weight) && set.weight !== (exercise.targetWeight ?? 0);
+    const weightEdit = () => setDefaultCandidate({ exerciseId: exercise.id, setIndex: i });
+    return <View key="current-card" style={styles.card}>
+      <View style={styles.cardTop}>
+        <Text style={[styles.lastTime, !historySets?.[i] && styles.lastTimeNone]} numberOfLines={1}>{lastTime(i)}</Text>
+        <JudgeLights trigger={0} />
+      </View>
+
+      {exercise.type === 'reps' && <>
+        {mode === 'external' && ((set.weight || 0) > 20 ? <Barbell weight={set.weight || 0} /> : <View style={styles.emptyBar}><Text style={styles.emptyBarText}>Empty bar</Text></View>)}
+        <View style={styles.steppers}>
+          {mode !== 'bodyweight' && <NumberStepper label={mode === 'assisted' ? 'Assistance' : 'Weight'} unit={mode === 'assisted' ? 'kg assist' : 'kg'} value={set.weight} step={2.5}
+            onEdit={weightEdit} onChange={v => onUpdateSet(i, 'weight', v)} />}
+          <NumberStepper label="Reps" unit="reps" value={set.reps} step={1} onChange={v => onUpdateSet(i, 'reps', Math.round(v))} />
+        </View>
+      </>}
+
+      {exercise.type === 'timer' && <View style={styles.timerBlock}>
+        <Text accessibilityRole="timer" style={styles.timerValue}>{formatTime(elapsed)}</Text>
+        {!!exercise.targetDurationSeconds && <Text style={styles.timerTarget}>Target {formatTime(exercise.targetDurationSeconds)}</Text>}
+        <Button variant="secondary" icon={running ? Pause : Play} label={running ? 'Pause' : elapsed > 0 ? 'Resume' : 'Start timer'} onPress={() => onToggleTimer(i)} style={styles.timerBtn} />
+      </View>}
+
+      {exercise.type === 'distance' && <View style={styles.steppers}>
+        <NumberStepper label="Distance" unit={exercise.targetDistanceUnit || 'km'} value={set.distance} step={distanceStep} onChange={v => onUpdateSet(i, 'distance', v)} />
+        <View style={styles.timeField}>
+          <Text style={styles.timeLabel}>Time</Text>
+          <TextInput accessibilityLabel="Time, minutes and seconds" defaultValue={set.durationSeconds ? formatTime(set.durationSeconds) : ''} placeholder="0:00" placeholderTextColor={theme.colors.textSubtle}
+            onChangeText={v => onUpdateSet(i, 'durationSeconds', parseTimeString(v))} selectTextOnFocus style={styles.timeInput} />
+        </View>
+      </View>}
+
+      <View style={styles.aux}>
+        <PressableScale scaleTo={0.95} accessibilityRole="button" accessibilityLabel={set.notes ? 'Edit note' : 'Add note'} onPress={() => setNotes(n => ({ ...n, [key]: !n[key] }))} style={styles.auxBtn}>
+          {set.notes ? <MessageSquare size={16} color={theme.colors.textSecondary} /> : <MessageSquarePlus size={16} color={theme.colors.textMuted} />}
+          <Text style={styles.auxText}>{set.notes ? 'Note' : 'Add note'}</Text>
+        </PressableScale>
+        {changedWeight && <PressableScale scaleTo={0.97} accessibilityRole="button" accessibilityLabel={`Use ${set.weight} kilograms as the default for ${exercise.name}`}
+          onPress={() => { setDefaultCandidate(null); onSetDefaultWeight(set.weight as number); }} style={styles.auxBtn}>
+          <Text style={styles.defaultText}>Use {fmtNum(set.weight as number)} kg as default</Text>
+        </PressableScale>}
+      </View>
+      {notes[key] && <TextInput autoFocus accessibilityLabel={`Note for set ${set.setNumber}`} placeholder="Note for this set" placeholderTextColor={theme.colors.textMuted}
+        value={set.notes || ''} onChangeText={v => onUpdateSet(i, 'notes', v)} style={styles.noteInput} />}
+
+      <Button label="Set done" icon={Check} accessibilityLabel={`Complete set ${set.setNumber}`} onPress={() => onToggleComplete(i)} style={styles.done} />
+    </View>;
+  };
+
+  const doneCard = <View key="done-card" style={styles.card}>
+    <View style={styles.cardTop}>
+      <Text accessibilityRole="header" style={styles.allDone}>All {sets.length} sets done</Text>
+      <JudgeLights trigger={lightsTrigger} hold />
+    </View>
+    {!!nextLabel && <Text style={styles.allDoneNext}>{nextLabel}</Text>}
+  </View>;
+
+  const rows: React.ReactNode[] = [];
+  sets.forEach((set, i) => {
+    const key = `${exerciseIndex}-${i}`;
+    if (i === currentIndex) { rows.push(renderCard(i)); return; }
+    const desc = describeSet(exercise, set, timers[key]);
+    rows.push(set.completed
+      ? <PressableScale key={key} scaleTo={0.98} accessibilityRole="checkbox" accessibilityState={{ checked: true }} accessibilityLabel={`Set ${set.setNumber} done, ${desc}. Tap to reopen`}
+          onPress={() => onToggleComplete(i)} style={styles.row}>
+          <Text style={styles.rowNum}>{set.setNumber}</Text>
+          <Text style={styles.rowDone}>{desc}</Text>
+          {!!set.notes && <MessageSquare size={15} color={theme.colors.textMuted} />}
+          {!!lightsTrigger && currentIndex >= 0 && i === lightsSet && <JudgeLights trigger={lightsTrigger} bare />}
+          <View style={styles.tick}><Check size={16} color={theme.colors.onPrimary} strokeWidth={3.2} /></View>
+        </PressableScale>
+      : <PressableScale key={key} scaleTo={0.98} accessibilityRole="button" accessibilityLabel={`Set ${set.setNumber}, ${desc}. Make current`}
+          onPress={() => { void Haptics.selectionAsync(); onFocusSet(i); }} style={styles.row}>
+          <Text style={[styles.rowNum, styles.rowDim]}>{set.setNumber}</Text>
+          <Text style={[styles.rowUpcoming]}>{desc}</Text>
+          <View style={styles.ring} />
+        </PressableScale>);
+  });
+  if (currentIndex < 0) rows.push(doneCard);
+
+  return <View>
+    <View style={styles.list}>{rows}</View>
+    {sets.some(s => !s.completed) && <PressableScale scaleTo={0.97} accessibilityRole="button" accessibilityLabel="Mark all sets of this exercise done" onPress={onCompleteAll} style={styles.completeAll}>
+      <Text style={styles.completeAllText}>Mark all sets done</Text>
+    </PressableScale>}
+  </View>;
+};
+
+const inputWeb = Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {};
+
+const styles = StyleSheet.create({
+  list: {},
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg, padding: 16, gap: 12, marginVertical: 8 },
+  cardTop: { minHeight: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  lastTime: { ...theme.type.body, color: theme.colors.textSecondary, flex: 1, fontVariant: ['tabular-nums'] },
+  lastTimeNone: { color: theme.colors.textMuted },
+  lights: { flexDirection: 'row', gap: 8 },
+  light: { width: 14, height: 14, borderRadius: 7, backgroundColor: theme.colors.surfaceElevated },
+  lightBare: { backgroundColor: 'transparent' },
+  lightOn: { width: 14, height: 14, borderRadius: 7, backgroundColor: theme.colors.done },
+  emptyBar: { height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: theme.radius.md, backgroundColor: theme.colors.canvas },
+  emptyBarText: { ...theme.type.label, color: theme.colors.textMuted },
+  steppers: { gap: 8 },
+  stepper: { flexDirection: 'row', alignItems: 'stretch', gap: 8, height: 64 },
+  stepBtn: { width: 56, height: 64, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceElevated, alignItems: 'center', justifyContent: 'center' },
+  stepValue: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: theme.radius.sm, backgroundColor: theme.colors.canvas, borderWidth: 1, borderColor: theme.colors.borderStrong, paddingHorizontal: 8 },
+  stepValueFocused: { borderColor: theme.colors.primary },
+  stepInput: { flex: 1, minWidth: 0, height: 62, textAlign: 'right', fontFamily: fonts.display, fontSize: 48, color: theme.colors.text, fontVariant: ['tabular-nums'], padding: 0, ...inputWeb },
+  stepUnit: { ...theme.type.label, color: theme.colors.textMuted, flex: 1, marginLeft: 8, marginTop: 10 },
+  timerBlock: { alignItems: 'center', gap: 4 },
+  timerValue: { ...theme.type.timer, fontVariant: ['tabular-nums'], fontSize: 72, lineHeight: 76, color: theme.colors.text },
+  timerTarget: { ...theme.type.body, color: theme.colors.textMuted },
+  timerBtn: { alignSelf: 'stretch', marginTop: 8, minHeight: 56 },
+  timeField: { height: 64, flexDirection: 'row', alignItems: 'center', borderRadius: theme.radius.sm, backgroundColor: theme.colors.canvas, borderWidth: 1, borderColor: theme.colors.borderStrong, paddingHorizontal: 12 },
+  timeLabel: { ...theme.type.label, color: theme.colors.textMuted, width: 56 },
+  timeInput: { flex: 1, height: 62, textAlign: 'center', fontFamily: fonts.display, fontSize: 40, color: theme.colors.text, fontVariant: ['tabular-nums'], padding: 0, ...inputWeb },
+  aux: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginVertical: -4 },
+  auxBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 4 },
+  auxText: { ...theme.type.label, color: theme.colors.textMuted },
+  defaultText: { ...theme.type.label, color: theme.colors.text, textDecorationLine: 'underline' },
+  noteInput: { ...theme.type.body, minHeight: 44, borderRadius: theme.radius.sm, backgroundColor: theme.colors.canvas, borderWidth: 1, borderColor: theme.colors.borderStrong, color: theme.colors.text, paddingHorizontal: 12, ...inputWeb },
+  done: { minHeight: 56 },
+  allDone: { ...theme.type.heading, color: theme.colors.text, flex: 1 },
+  allDoneNext: { ...theme.type.body, color: theme.colors.textMuted },
+  row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.border, paddingHorizontal: 4 },
+  rowNum: { ...theme.type.label, color: theme.colors.textMuted, width: 18, fontVariant: ['tabular-nums'] },
+  rowDim: { color: theme.colors.textSubtle },
+  rowDone: { flex: 1, fontFamily: fonts.displayBold, fontSize: 22, lineHeight: 26, color: theme.colors.text, fontVariant: ['tabular-nums'] },
+  rowUpcoming: { flex: 1, ...theme.type.body, color: theme.colors.textSubtle, fontVariant: ['tabular-nums'] },
+  tick: { width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.done, alignItems: 'center', justifyContent: 'center' },
+  ring: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: theme.colors.border },
+  completeAll: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', marginTop: 8 },
+  completeAllText: { ...theme.type.label, color: theme.colors.textMuted, textDecorationLine: 'underline' },
 });
-
-
-
-

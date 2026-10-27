@@ -1,0 +1,551 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-27T13:47:06+00:00",
+  "title": "Design System: FlexTrack",
+  "extensions": {
+    "colorMeta": {
+      "rubber-floor": {
+        "role": "neutral",
+        "displayName": "Rubber Floor",
+        "canonical": "#141516",
+        "tonalRamp": [
+          "#242628",
+          "#3F4245",
+          "#5A5E63",
+          "#757A80",
+          "#91969B",
+          "#AFB2B6",
+          "#CFD1D3",
+          "#F2F2F3"
+        ]
+      },
+      "rubber-surface": {
+        "role": "neutral",
+        "displayName": "Rubber Surface",
+        "canonical": "#1D1F21",
+        "tonalRamp": [
+          "#242629",
+          "#3E4247",
+          "#585E64",
+          "#737A82",
+          "#90969D",
+          "#AEB2B7",
+          "#CED1D4",
+          "#F1F2F3"
+        ]
+      },
+      "rubber-raised": {
+        "role": "neutral",
+        "displayName": "Rubber Raised",
+        "canonical": "#26292C",
+        "tonalRamp": [
+          "#232629",
+          "#3D4247",
+          "#575E65",
+          "#717A83",
+          "#8F969E",
+          "#ADB2B8",
+          "#CED1D4",
+          "#F1F2F3"
+        ]
+      },
+      "rubber-pressed": {
+        "role": "neutral",
+        "displayName": "Rubber Pressed",
+        "canonical": "#303438",
+        "tonalRamp": [
+          "#232629",
+          "#3D4247",
+          "#575E66",
+          "#717A84",
+          "#8E969E",
+          "#ADB2B8",
+          "#CED1D5",
+          "#F1F2F3"
+        ]
+      },
+      "list-hairline": {
+        "role": "neutral",
+        "displayName": "List Hairline",
+        "canonical": "#2E3236",
+        "tonalRamp": [
+          "#232629",
+          "#3D4248",
+          "#575E66",
+          "#717A84",
+          "#8E969F",
+          "#ACB2B9",
+          "#CDD1D5",
+          "#F1F2F3"
+        ]
+      },
+      "input-boundary": {
+        "role": "neutral",
+        "displayName": "Input Boundary",
+        "canonical": "#6B706C",
+        "tonalRamp": [
+          "#252726",
+          "#414441",
+          "#5C615D",
+          "#787D79",
+          "#949995",
+          "#B1B4B1",
+          "#D0D2D0",
+          "#F2F3F2"
+        ]
+      },
+      "chalk": {
+        "role": "primary",
+        "displayName": "Chalk",
+        "canonical": "#F2F1EC",
+        "tonalRamp": [
+          "#2D2B1F",
+          "#4F4B36",
+          "#706A4D",
+          "#918A63",
+          "#AAA483",
+          "#C1BCA4",
+          "#DAD7C8",
+          "#F5F4F0"
+        ]
+      },
+      "chalk-bright": {
+        "role": "primary",
+        "displayName": "Chalk Bright",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#424242",
+          "#5E5E5E",
+          "#7A7A7A",
+          "#969696",
+          "#B2B2B2",
+          "#D1D1D1",
+          "#F2F2F2"
+        ]
+      },
+      "chalk-secondary": {
+        "role": "neutral",
+        "displayName": "Chalk Secondary",
+        "canonical": "#C9C9C3",
+        "tonalRamp": [
+          "#282824",
+          "#46463F",
+          "#636359",
+          "#818174",
+          "#9C9C91",
+          "#B7B7AE",
+          "#D4D4CF",
+          "#F3F3F2"
+        ]
+      },
+      "chalk-muted": {
+        "role": "neutral",
+        "displayName": "Chalk Muted",
+        "canonical": "#A3A59F",
+        "tonalRamp": [
+          "#272725",
+          "#434440",
+          "#5F615B",
+          "#7C7E76",
+          "#989A93",
+          "#B3B5B0",
+          "#D2D3D0",
+          "#F2F3F2"
+        ]
+      },
+      "chalk-subtle": {
+        "role": "neutral",
+        "displayName": "Chalk Subtle",
+        "canonical": "#8E908B",
+        "tonalRamp": [
+          "#262725",
+          "#434441",
+          "#5F605C",
+          "#7B7D78",
+          "#979994",
+          "#B3B4B1",
+          "#D1D2D0",
+          "#F2F3F2"
+        ]
+      },
+      "plate-red-25": {
+        "role": "secondary",
+        "displayName": "Plate Red 25 (push, no-lift)",
+        "canonical": "#D2232A",
+        "tonalRamp": [
+          "#420B0D",
+          "#721317",
+          "#A21B20",
+          "#D2232A",
+          "#E14C52",
+          "#E97C80",
+          "#F2B0B3",
+          "#FBE9EA"
+        ]
+      },
+      "no-lift-text": {
+        "role": "secondary",
+        "displayName": "No-Lift Text",
+        "canonical": "#F0676B",
+        "tonalRamp": [
+          "#460709",
+          "#790C0F",
+          "#AC1115",
+          "#DF161C",
+          "#EC4146",
+          "#F17477",
+          "#F7ABAE",
+          "#FDE8E8"
+        ]
+      },
+      "plate-blue-20": {
+        "role": "secondary",
+        "displayName": "Plate Blue 20 (pull)",
+        "canonical": "#1E5BC6",
+        "tonalRamp": [
+          "#0A1F42",
+          "#113573",
+          "#194BA4",
+          "#2062D5",
+          "#4981E3",
+          "#7AA3EB",
+          "#AFC8F3",
+          "#E9F0FC"
+        ]
+      },
+      "plate-yellow-15": {
+        "role": "secondary",
+        "displayName": "Plate Yellow 15 (records only)",
+        "canonical": "#F3C316",
+        "tonalRamp": [
+          "#493A04",
+          "#7E6406",
+          "#B38E09",
+          "#E9B90C",
+          "#F5CC38",
+          "#F8DA6D",
+          "#FBE9A8",
+          "#FEF9E7"
+        ]
+      },
+      "plate-green-10": {
+        "role": "secondary",
+        "displayName": "Plate Green 10 (legs only)",
+        "canonical": "#1E9B4B",
+        "tonalRamp": [
+          "#0C401F",
+          "#166F36",
+          "#1F9E4D",
+          "#28CD63",
+          "#50DD83",
+          "#7FE6A4",
+          "#B2F0C8",
+          "#EAFBF0"
+        ]
+      },
+      "plate-charcoal-2-5": {
+        "role": "secondary",
+        "displayName": "Plate Charcoal 2.5",
+        "canonical": "#3A3D40",
+        "tonalRamp": [
+          "#242628",
+          "#3F4246",
+          "#5A5E63",
+          "#747A80",
+          "#91969C",
+          "#AFB2B6",
+          "#CFD1D3",
+          "#F2F2F3"
+        ]
+      },
+      "plate-chrome": {
+        "role": "secondary",
+        "displayName": "Plate Chrome (cardio, change plates)",
+        "canonical": "#B9BDC1",
+        "tonalRamp": [
+          "#242629",
+          "#3E4246",
+          "#595E64",
+          "#737A82",
+          "#90969D",
+          "#AEB2B7",
+          "#CED1D4",
+          "#F1F2F3"
+        ]
+      },
+      "category-other": {
+        "role": "neutral",
+        "displayName": "Category Other",
+        "canonical": "#5A5E62",
+        "tonalRamp": [
+          "#252628",
+          "#3F4245",
+          "#5A5E62",
+          "#757A80",
+          "#92969B",
+          "#AFB2B6",
+          "#CFD1D3",
+          "#F2F2F3"
+        ]
+      },
+      "scrim": {
+        "role": "neutral",
+        "displayName": "Scrim",
+        "canonical": "rgba(8, 9, 10, 0.82)"
+      }
+    },
+    "typographyMeta": {
+      "timer": {
+        "displayName": "Timer",
+        "purpose": "Elapsed session clock; rest overlay scales to 128px."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Screen titles, today's routine name, record values."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sheet, dialog and inline titles; section headers at 24/28."
+      },
+      "metric": {
+        "displayName": "Metric",
+        "purpose": "Scoreboard counts; steppers use the face at 48px."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "List-row titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text and meta."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Chips, row names, units."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "All button labels, sentence case."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Legends, axes, tab labels; 12px floor."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet",
+        "value": "0 -6px 18px rgba(0,0,0,0.4)",
+        "purpose": "Bottom sheets and web dialog only (RN: offset 0/-6, opacity 0.4, radius 18, elevation 12). Cards carry no shadow."
+      }
+    ],
+    "motion": [
+      {
+        "name": "easeOut",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Press scale, judge lights, default state changes."
+      },
+      {
+        "name": "easeInOut",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Symmetric transitions."
+      },
+      {
+        "name": "drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Bottom sheet rise (320ms) and exit (220ms)."
+      },
+      {
+        "name": "fast",
+        "value": "120ms",
+        "purpose": "Small feedback; reduced-motion sheet fade."
+      },
+      {
+        "name": "base",
+        "value": "200ms",
+        "purpose": "Default transition; each judge light."
+      },
+      {
+        "name": "slow",
+        "value": "280ms",
+        "purpose": "Larger travel."
+      },
+      {
+        "name": "nativeDriver",
+        "value": "Platform.OS !== 'web'",
+        "purpose": "Animated API native driver everywhere except web. Reduce Motion (useReducedMotion) disables scale and travel."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Chalk-filled forward action, one per view.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>Set done</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 20px;border:none;border-radius:6px;background:#F2F1EC;color:#141516;font-family:Archivo,sans-serif;font-weight:700;font-size:16px;line-height:20px;cursor:pointer;transition:transform 100ms cubic-bezier(0.23,1,0.32,1)}.ds-btn-primary:hover{background:#FFFFFF}.ds-btn-primary:active{transform:scale(0.97)}.ds-btn-primary:focus-visible{outline:2px solid #F2F1EC;outline-offset:3px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Raised rubber fill for alternative actions.",
+      "html": "<button class=\"ds-btn-secondary\">Log a finished activity</button>",
+      "css": ".ds-btn-secondary{min-height:52px;padding:0 20px;border:none;border-radius:6px;background:#26292C;color:#F2F1EC;font-family:Archivo,sans-serif;font-weight:700;font-size:16px;line-height:20px;cursor:pointer;transition:transform 100ms cubic-bezier(0.23,1,0.32,1)}.ds-btn-secondary:hover{background:#303438}.ds-btn-secondary:active{transform:scale(0.97)}.ds-btn-secondary:focus-visible{outline:2px solid #F2F1EC;outline-offset:3px}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive actions only: the no-lift red as a soft fill.",
+      "html": "<button class=\"ds-btn-danger\">Discard session</button>",
+      "css": ".ds-btn-danger{min-height:52px;padding:0 20px;border:none;border-radius:6px;background:rgba(210,35,42,0.14);color:#F0676B;font-family:Archivo,sans-serif;font-weight:700;font-size:16px;line-height:20px;cursor:pointer;transition:transform 100ms cubic-bezier(0.23,1,0.32,1)}.ds-btn-danger:hover{background:rgba(210,35,42,0.22)}.ds-btn-danger:active{transform:scale(0.97)}.ds-btn-danger:focus-visible{outline:2px solid #F0676B;outline-offset:3px}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Rubber well with the 3:1 Input Boundary; boundary turns chalk on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Bodyweight in kg\" />",
+      "css": ".ds-input{min-height:48px;padding:0 12px;border:1px solid #6B706C;border-radius:4px;background:#141516;color:#F2F1EC;font-family:Archivo,sans-serif;font-size:15px;line-height:22px}.ds-input::placeholder{color:#8E908B}.ds-input:hover{border-color:#8E908B}.ds-input:focus-visible{outline:none;border-color:#F2F1EC}"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Filter chip; active is chalk.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip ds-chip-on\">All</button><button class=\"ds-chip\">Strength</button><button class=\"ds-chip\">Cardio</button></div>",
+      "css": ".ds-chips{display:flex;gap:8px}.ds-chip{min-height:44px;padding:0 14px;border:none;border-radius:4px;background:#1D1F21;color:#C9C9C3;font-family:Archivo,sans-serif;font-weight:600;font-size:14px;line-height:18px;cursor:pointer;transition:transform 100ms cubic-bezier(0.23,1,0.32,1)}.ds-chip:hover{background:#26292C}.ds-chip:active{transform:scale(0.95)}.ds-chip:focus-visible{outline:2px solid #F2F1EC;outline-offset:2px}.ds-chip-on{background:#F2F1EC;color:#141516}.ds-chip-on:hover{background:#FFFFFF}"
+    },
+    {
+      "name": "Routine Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Filled rubber card, no border, no shadow; session shape as a category strip.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Upper Body Power</div><div class=\"ds-card-meta\">4 exercises &middot; ~30 min</div><div class=\"ds-strip\"><span style=\"flex:4;background:#D2232A\"></span><span style=\"flex:4;background:#1E5BC6\"></span><span style=\"flex:3;background:#1E5BC6\"></span><span style=\"flex:3;background:#D2232A\"></span></div></div>",
+      "css": ".ds-card{background:#1D1F21;border-radius:10px;padding:16px;max-width:360px}.ds-card-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:40px;line-height:42px;letter-spacing:-0.4px;color:#F2F1EC}.ds-card-meta{font-family:Archivo,sans-serif;font-size:15px;line-height:22px;color:#C9C9C3;margin-top:4px}.ds-strip{display:flex;gap:3px;height:10px;margin-top:16px}.ds-strip span{border-radius:2px}"
+    },
+    {
+      "name": "Tab Bar",
+      "kind": "nav",
+      "refersTo": "tab-bar",
+      "description": "Four tabs around a chalk quick-start disc; active tab gets a chalk top bar.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-tab-on\" href=\"#\">Today</a><a class=\"ds-tab\" href=\"#\">Routines</a><button class=\"ds-quick\" aria-label=\"Quick start\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#141516\" stroke-width=\"2.75\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button><a class=\"ds-tab\" href=\"#\">History</a><a class=\"ds-tab\" href=\"#\">Progress</a></nav>",
+      "css": ".ds-tabs{display:flex;align-items:stretch;height:72px;background:#1D1F21;border-top:1px solid #2E3236;max-width:430px}.ds-tab{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-height:56px;font-family:Archivo,sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#8E908B;text-decoration:none}.ds-tab:hover{color:#C9C9C3}.ds-tab:focus-visible{outline:2px solid #F2F1EC;outline-offset:-4px}.ds-tab-on{color:#F2F1EC;font-weight:600}.ds-tab-on::before{content:'';position:absolute;top:0;width:28px;height:3px;background:#F2F1EC;border-radius:0 0 2px 2px}.ds-quick{align-self:center;width:56px;height:56px;margin:0 10px;border-radius:28px;border:4px solid #26292C;background:#F2F1EC;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 100ms cubic-bezier(0.23,1,0.32,1)}.ds-quick:active{transform:scale(0.92)}.ds-quick:focus-visible{outline:2px solid #F2F1EC;outline-offset:3px}"
+    },
+    {
+      "name": "Judges' Lights",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Session verdict: chalk-white light per good third of sets, red for the rest.",
+      "html": "<div class=\"ds-board\" role=\"img\" aria-label=\"2 of 3 lights\"><span class=\"ds-light\"></span><span class=\"ds-light\"></span><span class=\"ds-light ds-light-red\"></span></div>",
+      "css": ".ds-board{display:inline-flex;gap:14px;background:#1D1F21;border-radius:10px;padding:14px 16px}.ds-light{width:34px;height:34px;border-radius:17px;background:#F2F1EC;transition:transform 200ms cubic-bezier(0.23,1,0.32,1)}.ds-light-red{background:#D2232A}.ds-board:hover .ds-light{transform:scale(1.05)}"
+    },
+    {
+      "name": "Record Band",
+      "kind": "custom",
+      "refersTo": "record-band",
+      "description": "A new personal record: the whole band is the yellow 15 kg plate.",
+      "html": "<div class=\"ds-record\"><div class=\"ds-record-name\">Bench Press</div><div><span class=\"ds-record-value\">87.5 kg</span><span class=\"ds-record-was\">&nbsp;&nbsp;&nbsp;Heaviest set &middot; was 85 kg</span></div></div>",
+      "css": ".ds-record{background:#F3C316;color:#141516;border-radius:10px;padding:16px;max-width:360px}.ds-record-name{font-family:Archivo,sans-serif;font-weight:600;font-size:17px;line-height:22px}.ds-record-value{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:40px;line-height:42px;letter-spacing:-0.4px;font-variant-numeric:tabular-nums}.ds-record-was{font-family:Archivo,sans-serif;font-weight:600;font-size:14px;line-height:18px}"
+    },
+    {
+      "name": "Loaded Barbell",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Side view of the bar at 85 kg: 25 + 5 + 2.5 a side, plates at true relative diameters.",
+      "html": "<div class=\"ds-bar\"><svg viewBox=\"0 0 360 92\" width=\"360\" height=\"92\"><rect x=\"126\" y=\"43.5\" width=\"108\" height=\"5\" rx=\"2\" fill=\"#8A8E92\"/><rect x=\"0\" y=\"39.5\" width=\"126\" height=\"13\" rx=\"2\" fill=\"#B9BDC1\"/><rect x=\"234\" y=\"39.5\" width=\"126\" height=\"13\" rx=\"2\" fill=\"#B9BDC1\"/><rect x=\"118\" y=\"30\" width=\"8\" height=\"32\" rx=\"1.5\" fill=\"#B9BDC1\"/><rect x=\"234\" y=\"30\" width=\"8\" height=\"32\" rx=\"1.5\" fill=\"#B9BDC1\"/><rect x=\"95\" y=\"2\" width=\"22\" height=\"88\" rx=\"2.5\" fill=\"#D2232A\"/><rect x=\"72\" y=\"24\" width=\"22\" height=\"44\" rx=\"2.5\" fill=\"#F2F1EC\"/><rect x=\"49\" y=\"28.4\" width=\"22\" height=\"35.2\" rx=\"2.5\" fill=\"#3A3D40\"/><rect x=\"243\" y=\"2\" width=\"22\" height=\"88\" rx=\"2.5\" fill=\"#D2232A\"/><rect x=\"266\" y=\"24\" width=\"22\" height=\"44\" rx=\"2.5\" fill=\"#F2F1EC\"/><rect x=\"289\" y=\"28.4\" width=\"22\" height=\"35.2\" rx=\"2.5\" fill=\"#3A3D40\"/><g font-family=\"Big Shoulders Display, sans-serif\" font-weight=\"900\" font-size=\"12\" text-anchor=\"middle\"><text x=\"106\" y=\"50.5\" fill=\"#F2F1EC\">25</text><text x=\"83\" y=\"50.5\" fill=\"#141516\">5</text><text x=\"60\" y=\"50.5\" fill=\"#F2F1EC\">2.5</text><text x=\"254\" y=\"50.5\" fill=\"#F2F1EC\">25</text><text x=\"277\" y=\"50.5\" fill=\"#141516\">5</text><text x=\"300\" y=\"50.5\" fill=\"#F2F1EC\">2.5</text></g></svg><div class=\"ds-bar-cap\">20 kg bar + 32.5 kg a side</div></div>",
+      "css": ".ds-bar{background:#1D1F21;border-radius:10px;padding:16px;display:inline-block}.ds-bar-cap{font-family:Archivo,sans-serif;font-weight:500;font-size:12px;line-height:16px;color:#A3A59F;text-align:center;margin-top:6px;font-variant-numeric:tabular-nums}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Calibrated",
+    "overview": "FlexTrack is a meet-day competition platform. Colour is a measurement, not decoration: the only hues in the app are the IWF calibrated-plate colours, and each one carries exactly one meaning. Everything else is rubber floor and chalk. A lifter glancing at the phone from a metre away on a bench should read state from hue and number alone, with the meaning also printed in words or digits so colour is never the only carrier.\n\nThe voice is a scoreboard. Big Shoulders Display sets every number and every title tall and condensed; Archivo carries all running text. Surfaces are filled rubber tones stacked by lightness, never outlined, and depth comes from fill rather than shadow. The signature objects are literal gym-floor instruments: a side-view loaded barbell with real plate diameters, three judges' lights, a yellow record band, a draining rest bar.\n\nThe world explicitly replaces the category default of a navy dashboard with one neon accent, glow, and icon-tile stat cards.",
+    "keyCharacteristics": [
+      "Rubber-black ground, filled rubber surfaces, chalk text and chalk primary actions.",
+      "Plate hues are the only hues, each with a single fixed meaning.",
+      "Scoreboard numerals (Big Shoulders Display, tabular) against plain Archivo text.",
+      "No borders on surfaces, no glow, no eyebrows; hairlines only inside lists.",
+      "Large one-handed targets (44px floor, 52 to 64px for in-session controls)."
+    ],
+    "rules": [
+      {
+        "name": "The Calibrated Plate Rule",
+        "body": "Plate hues are the only hues. A new colour may enter only as a plate or as a meaning already listed here.",
+        "section": "colors"
+      },
+      {
+        "name": "The Yellow Is a Record Rule",
+        "body": "Yellow (#F3C316) means a personal record and nothing else: the record band, record points on charts, the \"new\" value mark. Never warnings, highlights or streaks.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Light Rule",
+        "body": "Red (#D2232A) means push, a 25 kg plate, or a no-lift: a missed or skipped set and destructive actions. A good lift or a completed set is a chalk-white light.",
+        "section": "colors"
+      },
+      {
+        "name": "The Green Is Legs Rule",
+        "body": "Green (#1E9B4B) belongs to the legs category only. Improvement is printed in chalk with a sign (+2.5 kg), never coloured green.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-and-a-Half Rule",
+        "body": "The 2.5 kg plate is charcoal (#3A3D40), not IWF small-plate red, so it can never be read as a 25 kg plate at a glance.",
+        "section": "colors"
+      },
+      {
+        "name": "The Family-Per-Weight Rule",
+        "body": "Each weight is its own registered family (`BigShouldersDisplay_800ExtraBold`, `Archivo_600SemiBold`, ...), loaded by `useAppFonts` on native and via FontFace on web. Pick weight by family; never set `fontWeight`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scoreboard Rule",
+        "body": "Numbers and titles are Big Shoulders Display; text is Archivo. Every numeral that updates or is compared is tabular.",
+        "section": "typography"
+      },
+      {
+        "name": "The Twelve Floor Rule",
+        "body": "No text below 12px.",
+        "section": "typography"
+      },
+      {
+        "name": "The Gym-Floor Target Rule",
+        "body": "Every touch target is at least 44px; in-session controls are larger (52px buttons, 56x64px steppers, 64px value fields).",
+        "section": "layout"
+      },
+      {
+        "name": "The Fill Separates Rule",
+        "body": "Surfaces are separated by fill, never by borders or card shadows.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No-Outline Surface Rule",
+        "body": "No card borders. `borderStrong` (Input Boundary) is used only as the 3:1 boundary of inputs.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** take every hue from a plate, and give each hue only its listed meaning.",
+      "**Do** print improvement in chalk with a sign (+2.5 kg).",
+      "**Do** pair every colour signal with a printed word or number.",
+      "**Do** set numbers and titles in Big Shoulders Display, text in Archivo, by family name.",
+      "**Do** separate surfaces by fill (Floor, Surface, Raised, Pressed).",
+      "**Do** keep touch targets at 44px or more.",
+      "**Do** animate with the Animated API and `theme.motion` tokens, and honour Reduce Motion."
+    ],
+    "donts": [
+      "**Don't** use yellow for anything but records.",
+      "**Don't** use green for success, improvement or progress; it is legs.",
+      "**Don't** draw the 2.5 kg plate red.",
+      "**Don't** set `fontWeight`, or any text below 12px.",
+      "**Don't** add eyebrows or kickers above titles.",
+      "**Don't** put borders or shadows on cards; hairlines live only inside lists, and the Input Boundary only on inputs.",
+      "**Don't** add glow, gradients, or icon-tile stat cards."
+    ],
+    "provenance": "The direction was user-pinned, so no concept roll ran. seed: none (no roll; user-pinned direction)."
+  }
+}

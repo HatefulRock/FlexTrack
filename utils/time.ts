@@ -4,10 +4,9 @@ export const formatTime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+// Accepts SS, MM:SS or HH:MM:SS and returns seconds.
 export const parseTimeString = (str: string): number => {
-    if (str.includes(':')) {
-        const [mins, secs] = str.split(':').map(Number);
-        return (mins * 60) + (secs || 0);
-    }
-    return parseInt(str) || 0;
+    const parts = str.trim().split(':').map(Number);
+    if (!parts.length || parts.some(n => !Number.isFinite(n) || n < 0)) return 0;
+    return parts.reduce((total, part) => total * 60 + part, 0);
 };

@@ -10,6 +10,17 @@ const MAX_EXERCISES = 200;
 const MAX_SETS = 100;
 const MAX_LOGS = 10_000;
 
+// First run gets one complete, startable routine instead of an empty example.
+const STARTER_TEMPLATES: WorkoutTemplate[] = [{
+  id: 'starter-full-body', name: 'Full Body A', description: 'Three compound lifts and a plank. Edit the weights to match you.', scheduleDays: [],
+  exercises: [
+    { id: 'starter-squat', name: 'Back Squat', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 5, targetWeight: 40, restSeconds: 150 },
+    { id: 'starter-bench', name: 'Bench Press', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 5, targetWeight: 30, restSeconds: 120 },
+    { id: 'starter-row', name: 'Barbell Row', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 8, targetWeight: 30, restSeconds: 90 },
+    { id: 'starter-plank', name: 'Plank', type: 'timer', targetSets: 2, targetDurationSeconds: 45, restSeconds: 60 },
+  ],
+}];
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const finite = (value: unknown, fallback = 0, min = 0, max = Number.MAX_SAFE_INTEGER) =>
@@ -129,7 +140,7 @@ export const useWorkoutData = () => {
         const parsedTemplates = parseStored(storedTemplates);
         const nextTemplates = Array.isArray(parsedTemplates)
           ? parsedTemplates.slice(0, MAX_TEMPLATES).map(sanitizeTemplate).filter((item): item is WorkoutTemplate => item !== null)
-          : storedTemplates === null ? [{ id: 'default-1', name: 'Full Body Example', scheduleDays: [], exercises: [] }] : [];
+          : storedTemplates === null ? STARTER_TEMPLATES : [];
         const parsedLogs = parseStored(storedLogs);
         const nextLogs = Array.isArray(parsedLogs)
           ? parsedLogs.slice(-MAX_LOGS).map(sanitizeLog).filter((item): item is WorkoutLog => item !== null) : [];
@@ -138,7 +149,7 @@ export const useWorkoutData = () => {
       })
       .catch(() => {
         if (!mounted) return;
-        const defaults = [{ id: 'default-1', name: 'Full Body Example', scheduleDays: [], exercises: [] }];
+        const defaults = STARTER_TEMPLATES;
         templateRef.current = defaults;
         logRef.current = [];
         setTemplates(defaults);

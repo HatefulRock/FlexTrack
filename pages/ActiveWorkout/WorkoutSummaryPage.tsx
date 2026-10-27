@@ -1,27 +1,159 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Check, Clock3, Dumbbell, Layers3, TrendingUp } from 'lucide-react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { WorkoutLog } from '../../types';
 import { theme } from '../../constants/theme';
-import { Button, Card, SectionHeader } from '../../components/ui/Primitives';
+import { Button, SectionHeader, useReducedMotion } from '../../components/ui/Primitives';
+import { detectRecords, formatDuration, formatNumber, logVolume } from '../../utils/training';
+import { ExerciseRow, JudgeLights, RecordCard, lightsVerdict, whiteLights } from './SummaryParts';
 
-export const WorkoutSummaryPage=({log,onDone}:{log:WorkoutLog;onDone:()=>void})=>{
- const durationSeconds=Math.max(0,Math.round(((log.endTime||log.startTime)-log.startTime)/1000)),durationLabel=durationSeconds<60?`${durationSeconds}s`:`${Math.floor(durationSeconds/60)}m`;
- const completedExercises=log.exercises.filter(e=>e.completed||e.sets.every(s=>s.completed)).length,totalSets=log.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).length,0);
- const volume=log.exercises.reduce((n,e)=>n+e.sets.filter(s=>s.completed).reduce((x,s)=>x+(s.weight||0)*(s.reps||0),0),0);
- return <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-  <View style={styles.hero}><View style={styles.check}><Check size={34} color={theme.colors.canvas} strokeWidth={3}/></View><Text style={styles.eyebrow}>SESSION SAVED</Text><Text style={styles.title}>Strong work.</Text><Text style={styles.subtitle}>{log.templateName}</Text></View>
-  <View style={styles.content}><View style={styles.metrics}><Metric icon={Clock3} value={durationLabel} label="Duration"/><Metric icon={Dumbbell} value={`${completedExercises}/${log.exercises.length}`} label="Exercises"/><Metric icon={Layers3} value={String(totalSets)} label="Sets"/></View>
-   {volume>0&&<Card style={styles.volume}><View style={styles.volumeIcon}><TrendingUp size={20} color={theme.colors.energy}/></View><View><Text style={styles.volumeLabel}>TOTAL VOLUME</Text><Text style={styles.volumeValue}>{volume.toLocaleString()} kg</Text></View></Card>}
-   <View><SectionHeader title="Session breakdown"/><Card style={styles.breakdown}>{log.exercises.map((e,i)=>{const count=e.sets.filter(s=>s.completed).length,done=count===e.sets.length;return <View key={e.exerciseId||i} style={[styles.exercise,i>0&&styles.exerciseBorder]}><View style={[styles.status,done&&styles.statusDone]}>{done&&<Check size={14} color={theme.colors.canvas} strokeWidth={3}/>}</View><View style={styles.exerciseCopy}><Text style={[styles.exerciseName,!count&&styles.exerciseMuted]}>{e.exerciseName}</Text><Text style={styles.exerciseMeta}>{count} of {e.sets.length} sets completed</Text></View><Text style={[styles.result,done&&styles.resultDone]}>{done?'Done':count?'Partial':'Skipped'}</Text></View>})}</Card></View>
-   <Button label="View workout history" onPress={onDone}/>
-  </View>
- </ScrollView>
+const c = theme.colors;
+const nd = theme.motion.nativeDriver;
+
+interface Props { log: WorkoutLog; previousLogs?: WorkoutLog[]; onDone: () => void; onViewHistory?: () => void; }
+
+export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHistory }: Props) => {
+  const reduced = useReducedMotion();
+
+  const stats = useMemo(() => {
+    const totalSets = log.exercises.reduce((n, e) => n + e.sets.length, 0);
+    const doneSets = log.exercises.reduce((n, e) => n + e.sets.filter(s => s.completed).length, 0);
+    const volume = logVolume(log);
+    const records = detectRecords(log, previousLogs);
+    const start = log.startTime;
+    const previous = log.templateId ? previousLogs
+      .filter(l => l.id !== log.id && l.templateId === log.templateId && l.startTime < start)
+      .sort((a, b) => b.startTime - a.startTime)[0] : undefined;
+    const delta = previous ? Math.round(volume - logVolume(previous)) : null;
+    return { totalSets, doneSets, volume, records, delta, duration: (log.endTime || log.startTime) - log.startTime };
+  }, [log, previousLogs]);
+  const { totalSets, doneSets, volume, records, delta, duration } = stats;
+  const complete = totalSets > 0 && doneSets === totalSets;
+
+  const white = whiteLights(doneSets, totalSets);
+  const title = records.length ? 'New record.' : complete ? 'Session complete.' : 'Partial session saved.';
+  // A record session leads with the record band, so the completion lights (which may be red) stay off it.
+  const subtitle = [
+    records.length ? `${records.length} ${records.length === 1 ? 'record' : 'records'}` : lightsVerdict(white),
+    log.templateName,
+  ].filter(Boolean).join(' · ');
+
+  // Choreography: lights spring in, copy fades up, volume counts, records land last. Buttons are live from frame one.
+  const lights = useRef([0, 1, 2].map(() => new Animated.Value(0.85))).current;
+  const board = useRef(new Animated.Value(0)).current;
+  const rise = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  const recordIn = useRef(new Animated.Value(0)).current;
+  const fade = useRef(new Animated.Value(1)).current;
+  const count = useRef(new Animated.Value(0)).current;
+  const [shownVolume, setShownVolume] = useState(0);
+  const buzzed = useRef(false);
+
+  useEffect(() => {
+    if (buzzed.current) return;
+    buzzed.current = true;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const all = [...lights, board, ...rise, recordIn, count];
+    all.forEach(v => v.stopAnimation());
+    if (reduced) {
+      lights.forEach(v => v.setValue(1)); board.setValue(1); rise.forEach(v => v.setValue(1)); recordIn.setValue(1);
+      count.setValue(volume); setShownVolume(volume);
+      fade.setValue(0);
+      Animated.timing(fade, { toValue: 1, duration: 150, useNativeDriver: nd }).start();
+      return;
+    }
+    const id = count.addListener(({ value }) => setShownVolume(value));
+    const anim = Animated.parallel([
+      Animated.timing(board, { toValue: 1, duration: 160, easing: theme.motion.easeOut, useNativeDriver: nd }),
+      Animated.stagger(60, lights.map(v => Animated.spring(v, { toValue: 1, stiffness: 180, damping: 14, mass: 1, useNativeDriver: nd }))),
+      Animated.sequence([Animated.delay(120), Animated.stagger(50, rise.map(v => Animated.timing(v, { toValue: 1, duration: 260, easing: theme.motion.easeOut, useNativeDriver: nd })))]),
+      Animated.sequence([Animated.delay(150), Animated.timing(count, { toValue: volume, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false })]),
+    ]);
+    anim.start();
+    let recordTimer: ReturnType<typeof setTimeout> | undefined;
+    if (records.length) {
+      recordTimer = setTimeout(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => undefined);
+        Animated.timing(recordIn, { toValue: 1, duration: 240, easing: theme.motion.easeOut, useNativeDriver: nd }).start();
+      }, 400);
+    } else recordIn.setValue(1);
+    return () => { count.removeListener(id); anim.stop(); if (recordTimer) clearTimeout(recordTimer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduced]);
+
+  const up = (v: Animated.Value) => ({ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] });
+  const recordStyle = { opacity: recordIn, transform: [{ scale: recordIn.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }] };
+  // Only a complete session is a fair comparison with the last one.
+  const deltaLabel = delta === null || !complete ? null : delta > 0 ? `+${formatNumber(delta)} kg` : delta < 0 ? `−${formatNumber(-delta)} kg` : 'Same';
+
+  return <View style={styles.container}>
+    <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <Animated.View style={[styles.content, { opacity: fade }]}>
+        <View style={styles.hero}>
+          {!records.length && <JudgeLights scales={lights} opacity={board} white={white} />}
+          <Animated.View style={up(rise[0])}>
+            <Text accessibilityRole="header" style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle} numberOfLines={2}>{subtitle}</Text>
+          </Animated.View>
+        </View>
+
+        {records.length > 0 && <Animated.View style={[styles.records, recordStyle]}>
+          {records.map((r, i) => <RecordCard key={`${r.exerciseName}-${i}`} record={r} />)}
+        </Animated.View>}
+
+        <Animated.View style={[styles.scoreboard, up(rise[1])]}>
+          <Score value={formatDuration(duration)} label="Duration" />
+          <View style={styles.divider} />
+          <Score value={String(doneSets)} label={complete ? 'Sets' : `of ${totalSets} sets`} />
+          <View style={styles.divider} />
+          <View style={styles.score} accessible accessibilityLabel={`Volume ${formatNumber(volume)} kilograms${deltaLabel ? `, ${deltaLabel.replace('−', 'minus ')} versus last session` : ''}`}>
+            <Text style={styles.scoreValue} numberOfLines={1}>{formatNumber(shownVolume)}<Text style={styles.scoreUnit}> kg</Text></Text>
+            <Text style={styles.scoreLabel}>Volume</Text>
+            {deltaLabel && <Text style={[styles.delta, delta !== 0 ? styles.deltaUp : styles.deltaFlat]}>{deltaLabel}{delta !== 0 ? ' vs last' : ' as last'}</Text>}
+          </View>
+        </Animated.View>
+
+        <Animated.View style={up(rise[2])}>
+          <SectionHeader title="Exercises" />
+          <View style={styles.list}>{log.exercises.map((e, i) => <ExerciseRow key={`${e.exerciseId}-${i}`} exercise={e} first={i === 0} />)}</View>
+        </Animated.View>
+      </Animated.View>
+    </ScrollView>
+    <SafeAreaView edges={['bottom']} style={styles.footer}>
+      {onViewHistory && <View style={styles.flex}><Button label="View in history" variant="secondary" onPress={onViewHistory} /></View>}
+      <View style={styles.flex}><Button label="Done" onPress={onDone} /></View>
+    </SafeAreaView>
+  </View>;
 };
-const Metric=({icon:Icon,value,label}:any)=><Card style={styles.metric}><Icon size={18} color={theme.colors.primary}/><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></Card>;
-const styles=StyleSheet.create({
- container:{flex:1,backgroundColor:theme.colors.canvas},scroll:{paddingBottom:40},hero:{alignItems:'center',paddingTop:44,paddingBottom:28,paddingHorizontal:20},check:{width:64,height:64,borderRadius:32,backgroundColor:theme.colors.success,alignItems:'center',justifyContent:'center',marginBottom:18},eyebrow:{...theme.type.caption,color:theme.colors.success,letterSpacing:1.8},title:{...theme.type.display,color:theme.colors.text,marginTop:4},subtitle:{...theme.type.body,color:theme.colors.textMuted,marginTop:4},
- content:{paddingHorizontal:16,gap:20,maxWidth:620,width:'100%',alignSelf:'center'},metrics:{flexDirection:'row',gap:10},metric:{flex:1,alignItems:'center',padding:13,gap:5},metricValue:{fontSize:21,fontWeight:'800',color:theme.colors.text,fontVariant:['tabular-nums']},metricLabel:{...theme.type.caption,color:theme.colors.textMuted},
- volume:{flexDirection:'row',alignItems:'center',gap:13},volumeIcon:{width:42,height:42,borderRadius:13,backgroundColor:theme.colors.energySoft,alignItems:'center',justifyContent:'center'},volumeLabel:{fontSize:9,fontWeight:'800',letterSpacing:1.2,color:theme.colors.textMuted},volumeValue:{...theme.type.heading,color:theme.colors.energy,marginTop:2},breakdown:{padding:0,overflow:'hidden'},exercise:{minHeight:64,flexDirection:'row',alignItems:'center',paddingHorizontal:14,gap:10},exerciseBorder:{borderTopWidth:1,borderTopColor:theme.colors.border},status:{width:24,height:24,borderRadius:8,borderWidth:1,borderColor:theme.colors.borderStrong,alignItems:'center',justifyContent:'center'},statusDone:{backgroundColor:theme.colors.success,borderColor:theme.colors.success},exerciseCopy:{flex:1},exerciseName:{...theme.type.label,color:theme.colors.text},exerciseMuted:{color:theme.colors.textMuted},exerciseMeta:{...theme.type.caption,color:theme.colors.textSubtle,marginTop:2},result:{...theme.type.caption,color:theme.colors.warning},resultDone:{color:theme.colors.success}
-});
 
+const Score = ({ value, label }: { value: string; label: string }) => (
+  <View style={styles.score} accessible accessibilityLabel={`${label} ${value}`}>
+    <Text style={styles.scoreValue} numberOfLines={1}>{value}</Text>
+    <Text style={styles.scoreLabel}>{label}</Text>
+  </View>
+);
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.canvas },
+  flex: { flex: 1 },
+  scroll: { paddingTop: 28, paddingBottom: 24 },
+  content: { paddingHorizontal: 16, gap: 24, maxWidth: 620, width: '100%', alignSelf: 'center' },
+  hero: { gap: 20 },
+  title: { ...theme.type.display, fontSize: 48, lineHeight: 50, color: c.text },
+  subtitle: { ...theme.type.body, color: c.textMuted, marginTop: 6 },
+  scoreboard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: c.surface, borderRadius: theme.radius.lg, paddingVertical: 14, paddingHorizontal: 4 },
+  score: { flex: 1, paddingHorizontal: 12, gap: 2 },
+  divider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: c.border },
+  scoreValue: { fontFamily: theme.type.metric.fontFamily, fontSize: 34, lineHeight: 38, fontVariant: ['tabular-nums'], color: c.text },
+  scoreUnit: { fontFamily: theme.type.metric.fontFamily, fontSize: 18, color: c.textMuted },
+  scoreLabel: { ...theme.type.caption, color: c.textMuted },
+  delta: { ...theme.type.caption, fontFamily: theme.type.numeric.fontFamily, fontVariant: ['tabular-nums'], marginTop: 4 },
+  deltaUp: { color: c.text },
+  deltaFlat: { color: c.textMuted },
+  records: { gap: 8 },
+  list: { backgroundColor: c.surface, borderRadius: theme.radius.lg, overflow: 'hidden' },
+  footer: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 8, backgroundColor: c.canvas, maxWidth: 620, width: '100%', alignSelf: 'center' },
+});

@@ -1,37 +1,252 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, FlatList, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LineChart, PieChart } from 'react-native-chart-kit';
-import { Calendar, ChevronDown, Dumbbell, Trophy, X } from 'lucide-react-native';
-import { isSameDay } from 'date-fns';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Check, ChevronDown, TrendingUp, X } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { startOfWeek } from 'date-fns';
 import { WorkoutLog } from '../../types';
-import { exerciseNames, metricOptions, metricValue, resolveKind } from '../../utils/progress';
+import { exerciseNames, metricOptions, metricValue, ProgressKind, resolveKind } from '../../utils/progress';
+import { Category, CATEGORY_LABEL, categoryColor, exerciseCategory } from '../../utils/training';
+import { EmptyState, PressableScale, SectionHeader } from '../../components/ui/Primitives';
+import { Sheet } from '../../components/layout/Navigation';
 import { theme } from '../../constants/theme';
+import { DAY_MS, formatMetric, metricText, shortDate } from './chartUtils';
+import { ChartPoint, LineChartSvg } from './LineChartSvg';
+import { HeatRow, HeatStrip } from './HeatStrip';
 
-const muscleGroup=(name:string)=>{const n=name.toLowerCase();if(/bench|press|push|dip/.test(n))return'Push';if(/pull|row|curl|deadlift/.test(n))return'Pull';if(/squat|leg|lunge|calf/.test(n))return'Legs';if(/run|walk|cycle|cardio/.test(n))return'Cardio';return'Other'};
-const formatValue=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(1);
-
-export const TrainingTab=({logs}:{logs:WorkoutLog[]})=>{
- const names=useMemo(()=>exerciseNames(logs),[logs]);
- const [selected,setSelected]=useState('');const [selectorOpen,setSelectorOpen]=useState(false);const [metricIndex,setMetricIndex]=useState(0);
- useEffect(()=>{if(!selected&&names.length)setSelected(names[0]);if(selected&&!names.includes(selected))setSelected(names[0]||'')},[names,selected]);
- const selectedExercises=useMemo(()=>logs.flatMap(l=>l.exercises.filter(e=>e.exerciseName===selected)),[logs,selected]);
- const kind=selectedExercises.length?resolveKind(selectedExercises[selectedExercises.length-1]):'external';
- const options=metricOptions(kind);const option=options[Math.min(metricIndex,options.length-1)];
- useEffect(()=>setMetricIndex(0),[selected,kind]);
- const points=useMemo(()=>logs.slice().sort((a,b)=>a.startTime-b.startTime).map(log=>{const e=log.exercises.find(x=>x.exerciseName===selected);const value=e?metricValue(e,option.key):null;return value===null?null:{label:new Date(log.startTime).toLocaleDateString(undefined,{month:'short',day:'numeric'}),value}}).filter(Boolean).slice(-8) as {label:string;value:number}[],[logs,selected,option.key]);
- const records=useMemo(()=>names.map(name=>{const entries=logs.flatMap(l=>l.exercises.filter(e=>e.exerciseName===name));if(!entries.length)return null;const k=resolveKind(entries[entries.length-1]);const metric=metricOptions(k)[0];const values=entries.map(e=>metricValue(e,metric.key)).filter((v):v is number=>v!==null);if(!values.length)return null;return{name,value:metric.better==='low'?Math.min(...values):Math.max(...values),unit:metric.unit,label:metric.label}}).filter(Boolean).slice(0,8) as {name:string;value:number;unit:string;label:string}[],[logs,names]);
- const consistency=useMemo(()=>Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));return{day:d.toDateString().split(' ')[0][0],count:logs.filter(l=>isSameDay(new Date(l.startTime),d)).length}}),[logs]);
- const split=useMemo(()=>{const counts:Record<string,number>={Push:0,Pull:0,Legs:0,Cardio:0};logs.forEach(l=>l.exercises.forEach(e=>{const g=muscleGroup(e.exerciseName);if(g in counts)counts[g]++}));const colors:Record<string,string>={Push:'#60a5fa',Pull:'#f472b6',Legs:'#34d399',Cardio:'#fbbf24'};return Object.entries(counts).filter(([,v])=>v).map(([name,population])=>({name,population,color:colors[name],legendFontColor:'#cbd5e1',legendFontSize:12}))},[logs]);
- return <View style={styles.container}>
-  {!!records.length&&<View><View style={styles.sectionHeader}><Trophy size={16} color={theme.colors.energy}/><Text style={styles.sectionTitle}>Personal records</Text></View><ScrollView horizontal showsHorizontalScrollIndicator={false}>{records.map(r=><View key={r.name} style={styles.pr}><Text numberOfLines={1} style={styles.prName}>{r.name}</Text><Text style={styles.prValue}>{formatValue(r.value)}<Text style={styles.prUnit}>{r.unit}</Text></Text><Text style={styles.prMetric}>{r.label}</Text></View>)}</ScrollView></View>}
-  <View style={styles.card}><View style={styles.cardHeader}><Calendar size={18} color={theme.colors.primary}/><Text style={styles.cardTitle}>Consistency (14 days)</Text></View><View style={styles.bars}>{consistency.map((d,i)=><View key={i} style={styles.barColumn}><View style={styles.barTrack}><View style={[styles.bar,{height:d.count?`${Math.min(d.count*30,100)}%`:4,backgroundColor:d.count?theme.colors.primary:theme.colors.border}]}/></View><Text style={styles.barLabel}>{d.day}</Text></View>)}</View></View>
-  {!!split.length&&<View style={styles.card}><View style={styles.cardHeader}><Dumbbell size={18} color={theme.colors.success}/><Text style={styles.cardTitle}>Training split</Text></View><PieChart data={split} width={Math.min(540,Dimensions.get('window').width-64)} height={180} chartConfig={{color:()=>theme.colors.text}} accessor="population" backgroundColor="transparent" paddingLeft="15" center={[10,0]} absolute/></View>}
-  <View style={styles.card}><View style={styles.chartHeader}><View><Text style={styles.cardTitle}>Progression</Text><Text style={styles.subtitle}>{option.subtitle}</Text></View>{options.length>1&&<TouchableOpacity onPress={()=>setMetricIndex(i=>(i+1)%options.length)} style={styles.toggle}><Text style={styles.toggleText}>{option.label}</Text></TouchableOpacity>}</View>
-   <TouchableOpacity onPress={()=>setSelectorOpen(true)} style={styles.selector}><Text style={styles.selectorText}>{selected||'Select exercise'}</Text><ChevronDown size={16} color={theme.colors.textMuted}/></TouchableOpacity>
-   {!!points.length?<View style={styles.chart}><LineChart data={{labels:points.map(p=>p.label),datasets:[{data:points.map(p=>p.value)}]}} width={Math.min(520,Dimensions.get('window').width-80)} height={220} yAxisSuffix={option.unit} chartConfig={{backgroundColor:theme.colors.surface,backgroundGradientFrom:theme.colors.surface,backgroundGradientTo:theme.colors.surface,decimalPlaces:option.key==='pace'?1:0,color:(o=1)=>`rgba(56,189,248,${o})`,labelColor:(o=1)=>`rgba(148,163,184,${o})`,propsForDots:{r:'4',strokeWidth:'2',stroke:theme.colors.primary}}} bezier/></View>:<View style={styles.empty}><Text style={styles.emptyText}>{selected?'No completed data for this metric yet.':'Complete a workout to see progress.'}</Text></View>}
-  </View>
-  <Modal visible={selectorOpen} transparent animationType="slide" onRequestClose={()=>setSelectorOpen(false)}><View style={styles.overlay}><View style={styles.sheet}><View style={styles.sheetHeader}><Text style={styles.sheetTitle}>Select exercise</Text><TouchableOpacity accessibilityLabel="Close" onPress={()=>setSelectorOpen(false)}><X size={24} color={theme.colors.textMuted}/></TouchableOpacity></View><FlatList data={names} keyExtractor={x=>x} renderItem={({item})=><TouchableOpacity onPress={()=>{setSelected(item);setSelectorOpen(false)}} style={styles.item}><Text style={[styles.itemText,item===selected&&styles.itemSelected]}>{item}</Text></TouchableOpacity>}/></View></View></Modal>
- </View>
+const WEEKS = 12;
+const NEW_WINDOW = 14 * DAY_MS;
+const RECORD_METRIC: Record<ProgressKind, { key: string; caption: string; better: 'high' | 'low' }> = {
+  external: { key: 'weight', caption: 'Heaviest', better: 'high' },
+  bodyweight: { key: 'bestReps', caption: 'Most reps', better: 'high' },
+  assisted: { key: 'assistance', caption: 'Least assistance', better: 'low' },
+  distance: { key: 'distance', caption: 'Longest', better: 'high' },
+  timer: { key: 'duration', caption: 'Longest hold', better: 'high' },
 };
 
-const styles=StyleSheet.create({container:{gap:24},sectionHeader:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:8,paddingHorizontal:4},sectionTitle:{...theme.type.caption,color:theme.colors.textMuted,textTransform:'uppercase',letterSpacing:1},pr:{minWidth:140,padding:14,marginRight:10,borderRadius:12,backgroundColor:theme.colors.surface,borderWidth:1,borderColor:theme.colors.border},prName:{...theme.type.caption,color:theme.colors.textMuted,maxWidth:130},prValue:{fontSize:20,fontWeight:'800',color:theme.colors.text,marginTop:5},prUnit:{fontSize:11,color:theme.colors.textMuted},prMetric:{fontSize:9,color:theme.colors.primary,textTransform:'uppercase',marginTop:3},card:{backgroundColor:theme.colors.surface,padding:20,borderRadius:16,borderWidth:1,borderColor:theme.colors.border},cardHeader:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:16},cardTitle:{...theme.type.heading,color:theme.colors.text},bars:{flexDirection:'row',height:64,gap:4},barColumn:{flex:1,alignItems:'center',gap:4},barTrack:{width:'100%',height:'100%',justifyContent:'flex-end'},bar:{width:'100%',minHeight:4,borderTopLeftRadius:2,borderTopRightRadius:2},barLabel:{fontSize:10,color:theme.colors.textSubtle},chartHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12},subtitle:{...theme.type.caption,color:theme.colors.textMuted,marginTop:3},toggle:{backgroundColor:theme.colors.surfaceElevated,paddingHorizontal:12,paddingVertical:7,borderRadius:20,borderWidth:1,borderColor:theme.colors.borderStrong},toggleText:{...theme.type.caption,color:theme.colors.primary},selector:{backgroundColor:theme.colors.canvas,borderWidth:1,borderColor:theme.colors.borderStrong,borderRadius:10,padding:12,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},selectorText:{...theme.type.body,color:theme.colors.text},chart:{overflow:'hidden',borderRadius:16,marginTop:16},empty:{padding:36,alignItems:'center',borderWidth:1,borderColor:theme.colors.border,borderStyle:'dashed',borderRadius:16,marginTop:16},emptyText:{...theme.type.body,color:theme.colors.textMuted,textAlign:'center'},overlay:{flex:1,backgroundColor:theme.colors.overlay,justifyContent:'flex-end'},sheet:{backgroundColor:theme.colors.surface,borderTopLeftRadius:24,borderTopRightRadius:24,maxHeight:'55%',padding:20},sheetHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingBottom:14,borderBottomWidth:1,borderBottomColor:theme.colors.border},sheetTitle:{...theme.type.heading,color:theme.colors.text},item:{paddingVertical:16,borderBottomWidth:1,borderBottomColor:theme.colors.border},itemText:{...theme.type.body,color:theme.colors.textMuted},itemSelected:{color:theme.colors.primary,fontWeight:'700'}});
+interface RecordRow { name: string; category: Category; key: string; caption: string; value: number; date: number; isNew: boolean }
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const spanText = (ms: number) => { const days = Math.max(1, Math.round(ms / DAY_MS)); return days >= 14 ? plural(Math.round(days / 7), 'week') : plural(days, 'day'); };
+
+export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
+  const sorted = useMemo(() => logs.slice().sort((a, b) => a.startTime - b.startTime), [logs]);
+  const names = useMemo(() => exerciseNames(logs), [logs]);
+  const sessionsOf = useMemo(() => {
+    const map = new Map<string, { t: number; e: WorkoutLog['exercises'][number] }[]>();
+    sorted.forEach(l => l.exercises.forEach(e => { const list = map.get(e.exerciseName) || []; list.push({ t: l.startTime, e }); map.set(e.exerciseName, list); }));
+    return map;
+  }, [sorted]);
+  const categoryOf = (name: string) => { const s = sessionsOf.get(name); return exerciseCategory(name, s?.[s.length - 1]?.e.exerciseType); };
+
+  // Default to the lift with the most sessions, so the first chart has a line to draw.
+  const [selected, setSelected] = useState('');
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [metricIndex, setMetricIndex] = useState(0);
+  const [showAllRecords, setShowAllRecords] = useState(false);
+  useEffect(() => {
+    if (selected && names.includes(selected)) return;
+    const busiest = names.slice().sort((a, b) => (sessionsOf.get(b)?.length || 0) - (sessionsOf.get(a)?.length || 0))[0];
+    setSelected(busiest || '');
+  }, [names, selected, sessionsOf]);
+
+  const selectedSessions = sessionsOf.get(selected) || [];
+  const kind = selectedSessions.length ? resolveKind(selectedSessions[selectedSessions.length - 1].e) : 'external';
+  const options = metricOptions(kind);
+  const option = options[Math.min(metricIndex, options.length - 1)];
+  useEffect(() => setMetricIndex(0), [selected, kind]);
+
+  const points = useMemo(() => {
+    let best: number | null = null;
+    return selectedSessions.map(({ t, e }) => ({ t, value: metricValue(e, option.key) })).filter((p): p is { t: number; value: number } => p.value !== null)
+      .map((p, i): ChartPoint => {
+        const beats = best !== null && (option.better === 'high' ? p.value > best : p.value < best);
+        if (best === null || beats) best = p.value;
+        return { ...p, record: i > 0 && beats };
+      });
+  }, [selectedSessions, option.key, option.better]);
+
+  const records = useMemo(() => {
+    const now = Date.now();
+    return names.map((name): RecordRow | null => {
+      const sessions = sessionsOf.get(name) || [];
+      if (!sessions.length) return null;
+      const m = RECORD_METRIC[resolveKind(sessions[sessions.length - 1].e)];
+      const values = sessions.map(s => ({ t: s.t, v: metricValue(s.e, m.key) })).filter((x): x is { t: number; v: number } => x.v !== null);
+      if (!values.length) return null;
+      const best = m.better === 'low' ? Math.min(...values.map(x => x.v)) : Math.max(...values.map(x => x.v));
+      const first = values.find(x => x.v === best)!;
+      const isNew = now - first.t <= NEW_WINDOW && values.some(x => x.t < first.t);
+      return { name, category: categoryOf(name), key: m.key, caption: m.caption, value: best, date: first.t, isNew };
+    }).filter((r): r is RecordRow => !!r).sort((a, b) => b.date - a.date || a.name.localeCompare(b.name));
+  }, [names, sessionsOf]);
+
+  const heat = useMemo(() => {
+    const thisWeek = startOfWeek(new Date()).getTime();
+    const weeks = Array.from({ length: WEEKS }, (_, i) => startOfWeek(new Date(thisWeek - (WEEKS - 1 - i) * 7 * DAY_MS + DAY_MS)).getTime());
+    const index = new Map(weeks.map((w, i) => [w, i]));
+    const counts: Record<Category, number[]> = { push: [], pull: [], legs: [], cardio: [], other: [] };
+    (Object.keys(counts) as Category[]).forEach(k => { counts[k] = Array(WEEKS).fill(0); });
+    logs.forEach(l => {
+      const c = index.get(startOfWeek(new Date(l.startTime)).getTime());
+      if (c === undefined) return;
+      let any = false;
+      l.exercises.forEach(e => { const n = e.sets.filter(s => s.completed).length; if (n) { counts[exerciseCategory(e.exerciseName, e.exerciseType)][c] += n; any = true; } });
+      if (!any && (l.activityCategory === 'run' || l.activityCategory === 'walk' || l.activityCategory === 'cycle')) counts.cardio[c] += 1;
+    });
+    const keys: Category[] = ['push', 'pull', 'legs', 'cardio', ...(counts.other.some(Boolean) ? ['other' as Category] : [])];
+    const rows: HeatRow[] = keys.map(key => ({ key, values: counts[key] }));
+    // Insight: the last four columns, strength categories only (cardio counts entries, not comparable sets).
+    const month = (['push', 'pull', 'legs'] as Category[]).map(key => ({ key, n: counts[key].slice(-4).reduce((a, b) => a + b, 0) })).sort((a, b) => b.n - a.n);
+    const label = (k: Category) => CATEGORY_LABEL[k];
+    const [top, mid, low] = month;
+    const lc = (k: Category) => label(k).toLowerCase();
+    let insight: string;
+    if (!top.n) insight = 'No push, pull or legs sets in the last 4 weeks.';
+    else if (top.n === low.n) insight = `Push, pull and legs are level over the last 4 weeks (${plural(top.n, 'set')} each).`;
+    else if (top.n === mid.n) insight = `${label(top.key)} and ${lc(mid.key)} lead over the last 4 weeks (${plural(top.n, 'set')} each); ${lc(low.key)} trails (${low.n}).`;
+    else if (!mid.n) insight = `Only ${lc(top.key)} work in the last 4 weeks (${plural(top.n, 'set')}).`;
+    else insight = `${label(top.key)} is your most trained category over the last 4 weeks (${plural(top.n, 'set')}); ${mid.n === low.n ? `${lc(mid.key)} and ${lc(low.key)} trail` : `${lc(low.key)} trails`} (${low.n}).`;
+    return { weeks, rows, insight };
+  }, [logs]);
+
+  if (!logs.length) return <EmptyState icon={TrendingUp} title="Nothing to chart yet" message="Finish a session and your records, weekly training and progression show up here." />;
+
+  const visibleRecords = showAllRecords ? records : records.slice(0, 5);
+  const unit = formatMetric(option.key, points[points.length - 1]?.value ?? 0).unit;
+  const first = points[0], last = points[points.length - 1];
+  const diff = points.length > 1 ? last.value - first.value : 0;
+  const better = option.better === 'high' ? diff > 0 : diff < 0;
+  const deltaText = points.length > 1 ? (Math.abs(diff) < 1e-9 ? `No change in ${spanText(last.t - first.t)}` : `${diff > 0 ? '+' : '−'}${metricText(option.key, Math.abs(diff))} in ${spanText(last.t - first.t)}`) : '';
+  const describe = points.length > 1 ? `${selected}, ${option.subtitle.toLowerCase()}, ${points.length} sessions from ${metricText(option.key, first.value)} on ${shortDate(first.t, true)} to ${metricText(option.key, last.value)} on ${shortDate(last.t, true)}.` : '';
+  const hasRecordPoint = points.some(p => p.record);
+
+  return <View style={styles.container}>
+    {!!records.length && <View>
+      <SectionHeader title="Records" />
+      <View style={styles.card}>
+        {visibleRecords.map((r, i) => {
+          const m = formatMetric(r.key, r.value);
+          return <View key={r.name} style={[styles.recordRow, i > 0 && styles.hairline]} accessible accessibilityLabel={`${r.name}, ${r.caption.toLowerCase()} ${m.value} ${m.unit}, ${shortDate(r.date, true)}${r.isNew ? ', new record' : ''}`}>
+            <View style={[styles.dot, { backgroundColor: categoryColor(r.category) }]} />
+            <View style={styles.recordName}>
+              <Text style={styles.liftName} numberOfLines={1}>{r.name}</Text>
+              <Text style={styles.caption}>{r.caption}</Text>
+            </View>
+            <View style={styles.recordValueCol}>
+              <View style={[styles.valueMark, r.isNew && styles.valueMarkNew]}>
+                <Text style={[styles.recordValue, r.isNew && styles.onRecord]}>{m.value}<Text style={[styles.recordUnit, r.isNew && styles.onRecord]}>{m.unit ? ` ${m.unit}` : ''}</Text></Text>
+              </View>
+              <Text style={styles.caption}>{r.isNew ? <Text style={styles.newText}>New · </Text> : null}{shortDate(r.date, true)}</Text>
+            </View>
+          </View>;
+        })}
+        {records.length > 5 && <PressableScale accessibilityRole="button" accessibilityLabel={showAllRecords ? 'Show top 5 records' : `Show all ${records.length} records`} scaleTo={0.98}
+          onPress={() => setShowAllRecords(v => !v)} style={[styles.showAll, styles.hairline]}>
+          <Text style={styles.showAllText}>{showAllRecords ? 'Show top 5' : `Show all ${records.length}`}</Text>
+          <ChevronDown size={18} color={theme.colors.textSecondary} style={showAllRecords ? { transform: [{ rotate: '180deg' }] } : undefined} />
+        </PressableScale>}
+      </View>
+    </View>}
+
+    <View>
+      <SectionHeader title="Training" />
+      <View style={styles.card}>
+        <HeatStrip rows={heat.rows} weeks={heat.weeks} />
+        <Text style={styles.insight}>{heat.insight}</Text>
+      </View>
+    </View>
+
+    <View>
+      <SectionHeader title="Progression" />
+      <View style={styles.card}>
+        <PressableScale accessibilityRole="button" accessibilityLabel={`Exercise: ${selected || 'none'}. Change exercise`} scaleTo={0.98} onPress={() => setSelectorOpen(true)} style={styles.selector}>
+          {!!selected && <View style={[styles.dot, { backgroundColor: categoryColor(categoryOf(selected)) }]} />}
+          <Text style={styles.selectorText} numberOfLines={1}>{selected || 'Choose an exercise'}</Text>
+          <ChevronDown size={20} color={theme.colors.textMuted} />
+        </PressableScale>
+        {options.length > 1 && <View accessibilityRole="tablist" style={styles.segment}>
+          {options.map((o, i) => { const on = o.key === option.key; return <View key={o.key} style={styles.segmentCell}><PressableScale accessibilityRole="tab" accessibilityLabel={o.subtitle} accessibilityState={{ selected: on }} scaleTo={0.97}
+            onPress={() => { if (!on) { Haptics.selectionAsync(); setMetricIndex(i); } }} style={[styles.segmentItem, on && styles.segmentOn]}>
+            <Text style={[styles.segmentText, on && styles.segmentTextOn]}>{o.label}</Text>
+          </PressableScale></View>; })}
+        </View>}
+        <Text style={styles.subtitle}>{option.subtitle}{unit ? `, ${unit}` : ''}</Text>
+        {points.length > 1 ? <>
+          <LineChartSvg points={points} unit={unit} format={option.key === 'pace' || option.key === 'duration' ? v => formatMetric(option.key, v).value : undefined} describe={describe} height={210} />
+          <View style={styles.deltaRow}>
+            <Text style={[styles.delta, better && styles.deltaGood]}>{deltaText}</Text>
+            {hasRecordPoint && <View style={styles.key}><View style={styles.keyDot} /><Text style={styles.caption}>Record</Text></View>}
+          </View>
+        </> : <View style={styles.chartEmpty}>
+          {points.length === 1 && <Text style={styles.singleValue}>{metricText(option.key, points[0].value)}</Text>}
+          <Text style={styles.emptyText}>{points.length === 1 ? `One session on ${shortDate(points[0].t, true)}. Log ${selected} again to draw a line.` : 'No completed sets for this metric yet.'}</Text>
+        </View>}
+      </View>
+    </View>
+
+    <Sheet visible={selectorOpen} onClose={() => setSelectorOpen(false)}>
+      <View style={styles.sheetHeader}>
+        <Text accessibilityRole="header" style={styles.sheetTitle}>Choose exercise</Text>
+        <PressableScale accessibilityRole="button" accessibilityLabel="Close" onPress={() => setSelectorOpen(false)} scaleTo={0.92} style={styles.close}><X size={22} color={theme.colors.textMuted} /></PressableScale>
+      </View>
+      <ScrollView style={styles.sheetList} showsVerticalScrollIndicator={false}>
+        {names.map((name, i) => {
+          const on = name === selected, count = sessionsOf.get(name)?.length || 0;
+          return <PressableScale key={name} accessibilityRole="button" accessibilityLabel={`${name}, ${plural(count, 'session')}`} accessibilityState={{ selected: on }} scaleTo={0.98}
+            onPress={() => { Haptics.selectionAsync(); setSelected(name); setSelectorOpen(false); }} style={[styles.sheetItem, i > 0 && styles.hairline]}>
+            <View style={[styles.dot, { backgroundColor: categoryColor(categoryOf(name)) }]} />
+            <View style={styles.recordName}>
+              <Text style={[styles.liftName, !on && styles.itemOff]} numberOfLines={1}>{name}</Text>
+              <Text style={styles.caption}>{plural(count, 'session')}</Text>
+            </View>
+            {on && <Check size={20} color={theme.colors.text} strokeWidth={2.4} />}
+          </PressableScale>;
+        })}
+      </ScrollView>
+    </Sheet>
+  </View>;
+};
+
+const styles = StyleSheet.create({
+  container: { gap: 24 },
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg, paddingHorizontal: 16, paddingVertical: 12 },
+  hairline: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border },
+  recordRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  recordName: { flex: 1, gap: 2 },
+  liftName: { ...theme.type.label, fontSize: 15, lineHeight: 20, color: theme.colors.text },
+  caption: { ...theme.type.caption, color: theme.colors.textMuted },
+  recordValueCol: { alignItems: 'flex-end', gap: 2 },
+  valueMark: { borderRadius: theme.radius.sm, paddingHorizontal: 0 },
+  valueMarkNew: { backgroundColor: theme.colors.record, paddingHorizontal: 6 },
+  recordValue: { fontFamily: theme.type.metric.fontFamily, fontSize: 26, lineHeight: 30, fontVariant: ['tabular-nums'], color: theme.colors.text },
+  recordUnit: { fontFamily: theme.type.label.fontFamily, fontSize: 13, color: theme.colors.textMuted },
+  onRecord: { color: theme.colors.onRecord },
+  newText: { fontFamily: theme.type.label.fontFamily, color: theme.colors.text },
+  showAll: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  showAllText: { ...theme.type.label, color: theme.colors.textSecondary },
+  insight: { ...theme.type.body, color: theme.colors.textSecondary, marginTop: 12 },
+  selector: { minHeight: 48, borderRadius: theme.radius.sm, backgroundColor: theme.colors.surfaceElevated, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  selectorText: { ...theme.type.label, fontSize: 16, lineHeight: 20, color: theme.colors.text, flex: 1 },
+  segment: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: theme.radius.md, backgroundColor: theme.colors.canvas, marginTop: 8 },
+  segmentCell: { flex: 1 },
+  segmentItem: { minHeight: 44, borderRadius: theme.radius.sm, alignItems: 'center', justifyContent: 'center' },
+  segmentOn: { backgroundColor: theme.colors.primary },
+  segmentText: { ...theme.type.label, color: theme.colors.textMuted },
+  segmentTextOn: { color: theme.colors.onPrimary },
+  subtitle: { ...theme.type.caption, color: theme.colors.textMuted, marginTop: 14, marginBottom: 2 },
+  deltaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, marginBottom: 4 },
+  delta: { fontFamily: theme.type.label.fontFamily, fontSize: 15, lineHeight: 20, fontVariant: ['tabular-nums'], color: theme.colors.textMuted },
+  deltaGood: { color: theme.colors.text }, // improvement is chalk with its sign; worse or flat stays muted
+  key: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  keyDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.record },
+  chartEmpty: { minHeight: 150, alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12 },
+  singleValue: { ...theme.type.metric, fontVariant: ['tabular-nums'], color: theme.colors.text },
+  emptyText: { ...theme.type.body, color: theme.colors.textMuted, textAlign: 'center' },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  sheetTitle: { ...theme.type.title, color: theme.colors.text },
+  close: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.surfaceElevated, alignItems: 'center', justifyContent: 'center' },
+  sheetList: { maxHeight: 460 },
+  sheetItem: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  itemOff: { color: theme.colors.textSecondary },
+});

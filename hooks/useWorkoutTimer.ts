@@ -1,44 +1,55 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
+// Set timers count up; the rest timer counts down from a fixed end timestamp so ±15 s and backgrounding stay exact.
 export const useWorkoutTimer = () => {
-  const [timers, setTimers] = useState<{[key: string]: number}>({}); // Per set timers
-  const [timerRunning, setTimerRunning] = useState<{[key: string]: boolean}>({});
+  const [timers, setTimers] = useState<{ [key: string]: number }>({}); // Per set timers
+  const [timerRunning, setTimerRunning] = useState<{ [key: string]: boolean }>({});
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
+  const [restTotal, setRestTotal] = useState(0);
   const [restTimer, setRestTimer] = useState(0);
-  const [isResting, setIsResting] = useState(false);
+  const lastCue = useRef<number | null>(null);
+  const endsAtRef = useRef<number | null>(null);
+  endsAtRef.current = restEndsAt;
 
   const hasRunningTimer = useMemo(() => Object.values(timerRunning).some(Boolean), [timerRunning]);
   const lastTick = useRef(0);
 
   useEffect(() => {
-    if (!hasRunningTimer && !isResting) return;
-
+    if (!hasRunningTimer) return;
     lastTick.current = Date.now();
     const interval = setInterval(() => {
-      const currentTime = Date.now();
-      const elapsedSeconds = Math.floor((currentTime - lastTick.current) / 1000);
+      const elapsedSeconds = Math.floor((Date.now() - lastTick.current) / 1000);
       if (elapsedSeconds < 1) return;
       lastTick.current += elapsedSeconds * 1000;
-
-      if (hasRunningTimer) {
-        setTimers(previous => {
-          const next = { ...previous };
-          for (const key of Object.keys(timerRunning)) {
-            if (timerRunning[key]) next[key] = (next[key] || 0) + elapsedSeconds;
-          }
-          return next;
-        });
-      }
-
-      if (isResting) {
-        setRestTimer(previous => Math.max(0, previous - elapsedSeconds));
-      }
+      setTimers(previous => {
+        const next = { ...previous };
+        for (const key of Object.keys(timerRunning)) if (timerRunning[key]) next[key] = (next[key] || 0) + elapsedSeconds;
+        return next;
+      });
     }, 250);
     return () => clearInterval(interval);
-  }, [hasRunningTimer, isResting, timerRunning]);
+  }, [hasRunningTimer, timerRunning]);
 
   useEffect(() => {
-    if (isResting && restTimer === 0) setIsResting(false);
-  }, [isResting, restTimer]);
+    if (restEndsAt === null) return;
+    const tick = () => {
+      const left = Math.ceil((restEndsAt - Date.now()) / 1000);
+      if (left <= 0) {
+        setRestTimer(0);
+        setRestEndsAt(null);
+        if (lastCue.current !== 0) { lastCue.current = 0; void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }
+        return;
+      }
+      setRestTimer(left);
+      if (left <= 3 && lastCue.current !== left) { lastCue.current = left; void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
+    };
+    tick();
+    const interval = setInterval(tick, 200);
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') tick(); });
+    return () => { clearInterval(interval); sub.remove(); };
+  }, [restEndsAt]);
 
   const toggleTimer = (id: string) => {
     setTimerRunning(prev => ({ ...prev, [id]: !prev[id] }));
@@ -46,24 +57,40 @@ export const useWorkoutTimer = () => {
 
   const startRest = (seconds: number) => {
     const duration = Math.max(0, Math.floor(seconds));
+    lastCue.current = null;
+    setRestTotal(duration);
     setRestTimer(duration);
-    setIsResting(duration > 0);
+    endsAtRef.current = duration > 0 ? Date.now() + duration * 1000 : null;
+    setRestEndsAt(endsAtRef.current);
   };
 
   const cancelRest = () => {
-    setIsResting(false);
+    lastCue.current = null;
+    endsAtRef.current = null;
+    setRestEndsAt(null);
     setRestTimer(0);
   };
 
   const adjustRest = (seconds: number) => {
-    setRestTimer(prev => Math.max(0, prev + seconds));
+    const prev = endsAtRef.current;
+    if (prev === null) return;
+    const next = prev + seconds * 1000;
+    const remaining = Math.ceil((next - Date.now()) / 1000);
+    if (remaining <= 0) { cancelRest(); return; }
+    if (remaining > 3) lastCue.current = null;
+    endsAtRef.current = next;
+    setRestTimer(remaining);
+    setRestTotal(total => Math.max(total, remaining));
+    setRestEndsAt(next);
   };
 
   return {
     timers,
     timerRunning,
     restTimer,
-    isResting,
+    restEndsAt,
+    restTotal,
+    isResting: restEndsAt !== null,
     toggleTimer,
     startRest,
     cancelRest,
