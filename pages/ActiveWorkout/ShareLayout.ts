@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { WorkoutLog } from '../../types';
 import { fonts, theme } from '../../constants/theme';
 import { RecordHit, categoryColor, exerciseCategory, formatDuration, formatNumber } from '../../utils/training';
@@ -20,10 +21,6 @@ export interface ShareData {
   exercises: { name: string; color: string; best: string; skipped: boolean }[];
 }
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const pad = (n: number) => String(n).padStart(2, '0');
-
 const VERDICT = ['No white lights', '1 of 3 lights', '2 of 3 lights', 'Good lift'];
 const VERDICT_DETAIL = ['Under a third of the sets done', 'A third of the sets done', 'Two-thirds of the sets done', 'Every set done'];
 
@@ -35,8 +32,8 @@ export const buildShareData = (log: WorkoutLog, s: { doneSets: number; totalSets
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'session';
   return {
     name, white, verdict: VERDICT[white], verdictDetail: VERDICT_DETAIL[white],
-    date: `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`,
-    fileName: `flextrack-${slug}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.png`,
+    date: format(d, 'EEE d MMM yyyy'),
+    fileName: `flextrack-${slug}-${format(d, 'yyyy-MM-dd')}.png`,
     duration: formatDuration(s.duration),
     sets: String(s.doneSets), setsLabel: complete ? 'Sets' : `of ${s.totalSets} sets`,
     volume: formatNumber(s.volume),

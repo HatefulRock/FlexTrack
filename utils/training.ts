@@ -35,7 +35,8 @@ export const formatDuration = (ms: number) => {
 };
 
 // Up to two decimals so plate maths stays loadable: 33.75 kg a side, never a rounded 33.8.
-export const formatKg = (kg: number) => `${Number(kg.toFixed(2))} kg`;
+export const formatDecimal = (n: number) => String(Number(n.toFixed(2)));
+export const formatKg = (kg: number) => `${formatDecimal(kg)} kg`;
 export const formatNumber = (n: number) => Math.round(n).toLocaleString('en-US');
 
 export const logVolume = (log: WorkoutLog) => log.exercises.reduce((sum, e) =>

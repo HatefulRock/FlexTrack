@@ -55,6 +55,15 @@ const buildLogs = (template: WorkoutTemplate, recent: WorkoutLog[], suggestions:
   };
 });
 
+// The first open set of a later exercise than `from`: what follows once this exercise is done.
+const firstOpenAfter = (template: WorkoutTemplate, logs: ExerciseLog[], from: number): { exercise: Exercise; set: SetLog } | null => {
+  for (let j = from + 1; j < logs.length; j++) {
+    const k = logs[j].sets.findIndex(s => !s.completed);
+    if (k >= 0) return { exercise: template.exercises[j], set: logs[j].sets[k] };
+  }
+  return null;
+};
+
 const clock = (seconds: number) => {
   const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
   const ss = s.toString().padStart(2, '0');
@@ -170,11 +179,8 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const nextSetLabel = (completedIndex: number): string | undefined => {
     const k = currentLog.sets.findIndex((s, j) => j !== completedIndex && !s.completed);
     if (k >= 0) return `${currentExercise.name} · ${describeSet(currentExercise, currentLog.sets[k])}`;
-    for (let j = activeExerciseIndex + 1; j < logs.length; j++) {
-      const open = logs[j].sets.findIndex(s => !s.completed);
-      if (open >= 0) return `${template.exercises[j].name} · ${describeSet(template.exercises[j], logs[j].sets[open])}`;
-    }
-    return undefined;
+    const later = firstOpenAfter(template, logs, activeExerciseIndex);
+    return later ? `${later.exercise.name} · ${describeSet(later.exercise, later.set)}` : undefined;
   };
   const updateSet = (i: number, field: keyof SetLog, value: SetLog[keyof SetLog]) => setLogs(current => current.map((e, eIndex) => eIndex === activeExerciseIndex ? { ...e, sets: e.sets.map((s, sIndex) => sIndex === i ? { ...s, [field]: value } : s) } : e));
   // "Use last weight": the open sets of this exercise go back to last time's values; completed sets stay as lifted.
@@ -212,12 +218,9 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
     });
     if (!currentExercise || !currentLog) return null;
     if (currentIndex >= 0) return make(currentExercise, currentLog.sets[currentIndex], `Set ${currentIndex + 1} of ${currentLog.sets.length}`);
-    for (let j = activeExerciseIndex + 1; j < logs.length; j++) {
-      const k = logs[j].sets.findIndex(s => !s.completed);
-      if (k >= 0) return make(template.exercises[j], logs[j].sets[k], template.exercises[j].name);
-    }
-    return null;
-  }, [currentExercise, currentLog, currentIndex, activeExerciseIndex, logs, template.exercises]);
+    const later = firstOpenAfter(template, logs, activeExerciseIndex);
+    return later ? make(later.exercise, later.set, later.exercise.name) : null;
+  }, [currentExercise, currentLog, currentIndex, activeExerciseIndex, logs, template]);
 
   const totals = useMemo(() => logs.reduce((acc, e) => ({ done: acc.done + e.sets.filter(s => s.completed).length, all: acc.all + e.sets.length }), { done: 0, all: 0 }), [logs]);
 

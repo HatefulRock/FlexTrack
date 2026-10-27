@@ -10,6 +10,7 @@ import { Barbell } from './Barbell';
 import { PaceMark, paceDelta, paceLabel } from './PaceParts';
 import { ProgressionChip } from './ProgressionChip';
 import { ProgressionSuggestion } from '../../utils/progression';
+import { formatDecimal } from '../../utils/training';
 
 interface Props {
   exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number;
@@ -20,7 +21,7 @@ interface Props {
   onToggleComplete: (index: number) => void; onToggleTimer: (index: number) => void; onFocusSet: (index: number) => void; onCompleteAll: () => void;
 }
 
-export const fmtNum = (n: number) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
+export const fmtNum = formatDecimal;
 const loadMode = (e: Exercise) => e.loadMode || 'external';
 
 // "85 kg × 6", "8 reps", "0:45", "5 km · 24:10": the set as the lifter says it.
