@@ -8,6 +8,7 @@ export interface ChartPoint { t: number; value: number; record?: boolean }
 
 const CHAR_W = 7.4; // Archivo semibold at 13px, per character (estimate for reserving label room)
 const TOP = 26, BOTTOM = 26;
+const TOUCH_BLEED = 12; // the scrub area starts this far left of the plot so the first entry is easy to grab
 
 // A measured, hand-drawn line chart: straight segments between real entries, nice y ticks, the latest value at the line's end.
 // Press and drag across the plot to read any entry.
@@ -22,6 +23,8 @@ export const LineChartSvg = ({ points, average, height = 200, format, unit, desc
 }) => {
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState<number | null>(null);
+  const [series, setSeries] = useState(points);
+  if (series !== points) { setSeries(points); setActive(null); }
   const onLayout = (e: LayoutChangeEvent) => { const w = Math.floor(e.nativeEvent.layout.width); if (w !== width) setWidth(w); };
 
   const geo = useMemo(() => {
@@ -53,7 +56,7 @@ export const LineChartSvg = ({ points, average, height = 200, format, unit, desc
 
   const pick = (e: GestureResponderEvent) => {
     if (!geo) return;
-    const lx = e.nativeEvent.locationX;
+    const lx = e.nativeEvent.locationX + geo.left - TOUCH_BLEED; // locationX is relative to the scrub overlay
     let best = 0;
     geo.xy.forEach((p, i) => { if (Math.abs(p.x - lx) < Math.abs(geo.xy[best].x - lx)) best = i; });
     setActive(best);
@@ -80,7 +83,7 @@ export const LineChartSvg = ({ points, average, height = 200, format, unit, desc
       {sel !== null && <Text numberOfLines={1} style={[styles.readout, { left: Math.max(0, Math.min(width - 180, geo.xy[sel].x - 90)) }]}>
         {`${geo.fmt(points[sel].value)}${unit ? ` ${unit}` : ''} · ${shortDate(points[sel].t, true)}${points[sel].record ? ' · record' : ''}`}
       </Text>}
-      <View style={[StyleSheet.absoluteFill, { left: geo.left - 12 }]}
+      <View style={[StyleSheet.absoluteFill, { left: geo.left - TOUCH_BLEED }]}
         onStartShouldSetResponder={() => true} onResponderTerminationRequest={() => true}
         onResponderGrant={pick} onResponderMove={pick} />
     </>}

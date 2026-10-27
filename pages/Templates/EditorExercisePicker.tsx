@@ -31,6 +31,9 @@ export const COMMON_EXERCISES: ExercisePreset[] = [
   dist('Run', 5, 'km'), dist('Walk', 3, 'km'), dist('Cycle', 10, 'km'), dist('Row (erg)', 2000, 'm'),
 ];
 
+// A name typed by the lifter starts as a weighted reps lift, the same default as before.
+const COMMON_CUSTOM: ExercisePreset = { name: '', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 10, restSeconds: 60 };
+
 const kindLabel = (p: ExercisePreset) => p.type === 'timer' ? 'Time' : p.type === 'distance' ? 'Distance'
   : p.loadMode === 'bodyweight' ? 'Bodyweight' : p.loadMode === 'assisted' ? 'Assisted' : 'Weighted';
 
@@ -41,8 +44,9 @@ export const EditorExercisePicker = ({ visible, onClose, routineExercises, onPic
   const { height } = useWindowDimensions();
   useEffect(() => { if (visible) setQuery(''); }, [visible]);
 
+  const custom = query.trim().replace(/\s+/g, ' ');
   const { inRoutine, common, exactMatch } = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = custom.toLowerCase();
     const seen = new Set<string>();
     const own: ExercisePreset[] = [];
     routineExercises.forEach(({ id: _id, notes: _notes, ...rest }) => {
@@ -55,9 +59,8 @@ export const EditorExercisePicker = ({ visible, onClose, routineExercises, onPic
     const builtIn = COMMON_EXERCISES.filter(p => !seen.has(p.name.toLowerCase()));
     const all = [...own, ...builtIn];
     return { inRoutine: own.filter(match), common: builtIn.filter(match), exactMatch: q ? all.find(p => p.name.toLowerCase() === q) : undefined };
-  }, [query, routineExercises]);
+  }, [custom, routineExercises]);
 
-  const custom = query.trim().replace(/\s+/g, ' ');
   const row = (p: ExercisePreset) => <PressableScale key={p.name} accessibilityRole="button" accessibilityLabel={`Add ${p.name}, ${kindLabel(p)}`}
     onPress={() => onPick(p)} scaleTo={0.98} style={styles.row}>
     <View style={[styles.mark, { backgroundColor: categoryColor(exerciseCategory(p.name, p.type)) }]} />
@@ -98,9 +101,6 @@ export const EditorExercisePicker = ({ visible, onClose, routineExercises, onPic
     </ScrollView>
   </Sheet>;
 };
-
-// A name typed by the lifter starts as a weighted reps lift, the same default as before.
-const COMMON_CUSTOM: ExercisePreset = { name: '', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 10, restSeconds: 60 };
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },

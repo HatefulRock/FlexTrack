@@ -3,9 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Exercise } from '../../types';
 import { theme } from '../../constants/theme';
 import { formatTime } from '../../utils/time';
-import { categoryColor, exerciseCategory } from '../../utils/training';
+import { categoryColor, exerciseCategory, formatDecimal } from '../../utils/training';
 
-const n = (v?: number) => (v === undefined ? 0 : Number.isInteger(v) ? v : Math.round(v * 100) / 100);
+const n = (v?: number) => formatDecimal(v ?? 0);
 
 // "4 × 6 at 80 kg", "3 × 8", "3 × 1:00", "5 km": the routine's target in the lifter's shorthand.
 export const targetLabel = (exercise: Exercise) => {

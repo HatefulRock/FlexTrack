@@ -11,6 +11,16 @@ import { LineChartSvg } from './LineChartSvg';
 const RANGES = [{ key: '30', label: '30d', days: 30 }, { key: '90', label: '90d', days: 90 }, { key: 'all', label: 'All', days: 0 }] as const;
 type RangeKey = typeof RANGES[number]['key'];
 const AVG_N = 7;
+// The storage sanitiser clamps to these, so anything outside is rejected here instead of silently saved as something else.
+const MAX_WEIGHT_KG = 2000, MAX_HEIGHT_CM = 300;
+
+// A positive decimal ("72.5" or "72,5") no greater than `max`, or null.
+const parsePositive = (text: string, max: number) => {
+  const t = text.trim().replace(',', '.');
+  const v = t ? Number(t) : NaN;
+  return Number.isFinite(v) && v > 0 && v <= max ? v : null;
+};
+const dayCount = (n: number) => `${n} ${n === 1 ? 'day' : 'days'}`;
 
 // WHO adult BMI bands, with a coarse position inside the band so the reading is words, not a colour.
 const bmiCategory = (bmi: number) => {
@@ -42,8 +52,8 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
   }, [validLogs, range]);
 
   const saveWeight = async () => {
-    const value = Number(weight.replace(',', '.'));
-    if (!Number.isFinite(value) || value <= 0) { setMessage({ text: 'Enter a weight in kg greater than zero.', error: true }); return; }
+    const value = parsePositive(weight, MAX_WEIGHT_KG);
+    if (value === null) { setMessage({ text: `Enter a weight in kg, above 0 and up to ${MAX_WEIGHT_KG}.`, error: true }); return; }
     setSaving(true); setMessage(null);
     const entry: BodyMetricLog = { date: Date.now(), weight: value };
     try {
@@ -53,13 +63,20 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
     } catch { setMessage({ text: 'Could not save your weight. Try again.', error: true }); }
     finally { setSaving(false); }
   };
-  const saveHeight = async () => { const value = Number(height.replace(',', '.')); if (Number.isFinite(value) && value > 0) await setUserProfile({ ...userProfile, height: value }); };
+  // Blur and submit both land here: an invalid entry reverts to the saved height, an unchanged one writes nothing.
+  const saveHeight = async () => {
+    const value = parsePositive(height, MAX_HEIGHT_CM);
+    if (value === null) { setHeight(userProfile.height ? String(userProfile.height) : ''); return; }
+    if (value === userProfile.height) return;
+    try { await setUserProfile({ ...userProfile, height: value }); }
+    catch { setMessage({ text: 'Could not save your height. Try again.', error: true }); }
+  };
 
   const { points, average } = chart;
   const first = points[0], last = points[points.length - 1];
   const diff = points.length > 1 ? last.value - first.value : 0;
   const days = points.length > 1 ? Math.max(1, Math.round((last.t - first.t) / DAY_MS)) : 0;
-  const deltaText = points.length > 1 ? (Math.abs(diff) < 0.05 ? `No change in ${days} days` : `${diff > 0 ? '+' : '−'}${trimNumber(Math.abs(diff), 1)} kg in ${days} ${days === 1 ? 'day' : 'days'}`) : '';
+  const deltaText = points.length > 1 ? (Math.abs(diff) < 0.05 ? `No change in ${dayCount(days)}` : `${diff > 0 ? '+' : '−'}${trimNumber(Math.abs(diff), 1)} kg in ${dayCount(days)}`) : '';
   const describe = points.length > 1 ? `Bodyweight, ${points.length} entries from ${trimNumber(first.value, 1)} kg on ${shortDate(first.t, true)} to ${trimNumber(last.value, 1)} kg on ${shortDate(last.t, true)}.` : '';
 
   return <View style={styles.container}>

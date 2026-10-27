@@ -6,7 +6,7 @@ import { inkOn, mix, rgb, shortDate } from './chartUtils';
 
 export interface HeatRow { key: Category; values: number[] }
 
-const LABEL_W = 56, GAP = 2, CELL_H = 30;
+const LABEL_W = 56, GAP = 2, CELL_H = 30, WEEK_LABEL_W = 64;
 const STEPS = [0, 0.32, 0.55, 0.78, 1]; // four opacity steps of the category hue; 0 is the empty surface
 const BASE = theme.colors.surfaceElevated;
 
@@ -23,10 +23,12 @@ export const HeatStrip = ({ rows, weeks }: { rows: HeatRow[]; weeks: number[] })
   const level = (v: number) => v <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((v / max) * 4)));
   const cellX = (c: number) => LABEL_W + c * (cellW + GAP);
   const weekText = (c: number) => c === n - 1 ? 'this week' : `week of ${shortDate(weeks[c])}`;
-  const readout = sel ? `${CATEGORY_LABEL[rows[sel.r].key]}, ${weekText(sel.c)}: ${rows[sel.r].values[sel.c]} ${rows[sel.r].values[sel.c] === 1 ? 'set' : 'sets'}` : `Completed sets per week, last ${n} weeks. Tap a cell to read it.`;
+  const cellText = (r: number, c: number) => { const v = rows[r].values[c]; return `${CATEGORY_LABEL[rows[r].key]}, ${weekText(c)}, ${v} ${v === 1 ? 'set' : 'sets'}`; };
+  const selection = sel && rows[sel.r] && sel.c < n ? sel : null; // rows can change under a stale selection
+  const readout = selection ? cellText(selection.r, selection.c) : `Completed sets per week, last ${n} weeks. Tap a cell to read it.`;
 
   return <View onLayout={onLayout}>
-    <Text style={[styles.readout, sel && styles.readoutActive]} numberOfLines={1}>{readout}</Text>
+    <Text style={[styles.readout, !!selection && styles.readoutActive]} numberOfLines={1}>{readout}</Text>
     {!!width && <>
       {rows.map((row, r) => {
         const hue = categoryColor(row.key);
@@ -34,8 +36,8 @@ export const HeatStrip = ({ rows, weeks }: { rows: HeatRow[]; weeks: number[] })
           <Text style={styles.rowLabel} numberOfLines={1}>{CATEGORY_LABEL[row.key]}</Text>
           {row.values.map((v, c) => {
             const lv = level(v), fill = lv ? mix(BASE, hue, STEPS[lv]) : null;
-            const selected = sel?.r === r && sel?.c === c;
-            return <Pressable key={c} accessibilityRole="button" accessibilityLabel={`${CATEGORY_LABEL[row.key]}, ${weekText(c)}, ${v} ${v === 1 ? 'set' : 'sets'}`}
+            const selected = selection?.r === r && selection?.c === c;
+            return <Pressable key={c} accessibilityRole="button" accessibilityLabel={cellText(r, c)}
               accessibilityState={{ selected }} onPress={() => setSel(selected ? null : { r, c })} hitSlop={{ top: 4, bottom: 4 }}
               style={[styles.cell, { width: cellW, marginLeft: c ? GAP : 0, backgroundColor: fill ? rgb(fill) : BASE }, selected && styles.cellSelected]}>
               {showNumbers && v > 0 && <Text style={[styles.cellText, { color: inkOn(fill!) }]}>{v}</Text>}
@@ -49,7 +51,7 @@ export const HeatStrip = ({ rows, weeks }: { rows: HeatRow[]; weeks: number[] })
       </View>
       <View style={styles.weekRow}>
         {weeks.map((t, c) => (n - 1 - c) % 4 === 0 && <Text key={c} numberOfLines={1}
-          style={[styles.week, { left: Math.min(width - 64, cellX(c) + cellW / 2 - 32) }, c === n - 1 && { textAlign: 'right', left: width - 64 }]}>{shortDate(t)}</Text>)}
+          style={[styles.week, { left: Math.max(0, Math.min(width - WEEK_LABEL_W, cellX(c) + (cellW - WEEK_LABEL_W) / 2)) }, c === n - 1 && { textAlign: 'right', left: width - WEEK_LABEL_W }]}>{shortDate(t)}</Text>)}
       </View>
     </>}
   </View>;
@@ -67,5 +69,5 @@ const styles = StyleSheet.create({
   totalLabel: { width: LABEL_W, ...theme.type.caption, color: theme.colors.textMuted },
   total: { ...theme.type.caption, fontVariant: ['tabular-nums'], color: theme.colors.textMuted, textAlign: 'center' },
   weekRow: { height: 18, marginTop: 4 },
-  week: { position: 'absolute', top: 0, width: 64, textAlign: 'center', ...theme.type.caption, color: theme.colors.textSubtle },
+  week: { position: 'absolute', top: 0, width: WEEK_LABEL_W, textAlign: 'center', ...theme.type.caption, color: theme.colors.textSubtle },
 });

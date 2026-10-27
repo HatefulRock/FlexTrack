@@ -93,7 +93,14 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
   const up = (v: Animated.Value) => ({ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] });
   const recordStyle = { opacity: recordIn, transform: [{ scale: recordIn.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) }] };
   // Only a complete session is a fair comparison with the last one.
-  const deltaLabel = delta === null || !complete ? null : delta > 0 ? `+${formatNumber(delta)} kg` : delta < 0 ? `−${formatNumber(-delta)} kg` : 'Same';
+  const fairDelta = delta === null || !complete ? null : delta;
+  const deltaText = fairDelta === null ? null
+    : fairDelta > 0 ? `+${formatNumber(fairDelta)} kg vs last`
+    : fairDelta < 0 ? `−${formatNumber(-fairDelta)} kg vs last`
+    : 'Same as last';
+  const deltaSpoken = fairDelta === null ? ''
+    : fairDelta === 0 ? ', same as last session'
+    : `, ${formatNumber(Math.abs(fairDelta))} kilograms ${fairDelta > 0 ? 'more' : 'less'} than last session`;
 
   return <View style={styles.container}>
     <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -115,10 +122,10 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
           <View style={styles.divider} />
           <Score value={String(doneSets)} label={complete ? 'Sets' : `of ${totalSets} sets`} />
           <View style={styles.divider} />
-          <View style={styles.score} accessible accessibilityLabel={`Volume ${formatNumber(volume)} kilograms${deltaLabel ? `, ${deltaLabel.replace('−', 'minus ')} versus last session` : ''}`}>
+          <View style={styles.score} accessible accessibilityLabel={`Volume ${formatNumber(volume)} kilograms${deltaSpoken}`}>
             <Text style={styles.scoreValue} numberOfLines={1}>{formatNumber(shownVolume)}<Text style={styles.scoreUnit}> kg</Text></Text>
             <Text style={styles.scoreLabel}>Volume</Text>
-            {deltaLabel && <Text style={[styles.delta, delta !== 0 ? styles.deltaUp : styles.deltaFlat]}>{deltaLabel}{delta !== 0 ? ' vs last' : ' as last'}</Text>}
+            {deltaText && <Text style={[styles.delta, fairDelta > 0 ? styles.deltaUp : styles.deltaFlat]}>{deltaText}</Text>}
           </View>
         </Animated.View>
 

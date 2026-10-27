@@ -15,6 +15,23 @@ import { EditorExercisePicker, ExercisePreset } from './EditorExercisePicker';
 const { colors, type, radius } = theme;
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MAX_EXERCISES = 200;
+// Where the exercise list's first card sits below the section's top edge (the "Exercises" heading row).
+const LIST_HEADER_HEIGHT = 44;
+
+const bounded = (value: number | undefined, fallback: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, Number.isFinite(value) ? Number(value) : fallback));
+
+// Same bounds as the storage sanitiser, so what is saved is what comes back.
+const normalizeExercise = (exercise: Exercise): Exercise => ({
+    ...exercise,
+    name: exercise.name.trim(),
+    targetSets: Math.round(bounded(exercise.targetSets, 1, 1, 100)),
+    targetReps: Math.round(bounded(exercise.targetReps, 0, 0, 100_000)),
+    targetWeight: bounded(exercise.targetWeight, 0, 0, 100_000),
+    targetDurationSeconds: Math.round(bounded(exercise.targetDurationSeconds, 0, 0, 604_800)),
+    targetDistance: bounded(exercise.targetDistance, 0, 0, 1_000_000),
+    restSeconds: Math.round(bounded(exercise.restSeconds, 0, 0, 86_400)),
+});
 
 interface TemplateEditorProps {
     template: WorkoutTemplate | null;
@@ -42,7 +59,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
 
     const toggleDay = (day: number) => {
         Haptics.selectionAsync();
-        setScheduleDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort());
+        setScheduleDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort((a, b) => a - b));
     };
 
     const updateExercise = (id: string, patch: Partial<Exercise>) => {
@@ -99,25 +116,13 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
             scrollToCard(unnamed[0].id);
             return;
         }
-        const bounded = (value: number | undefined, fallback: number, min: number, max: number) =>
-            Math.min(max, Math.max(min, Number.isFinite(value) ? Number(value) : fallback));
-        const normalizedExercises = exercises.map(exercise => ({
-            ...exercise,
-            name: exercise.name.trim(),
-            targetSets: Math.round(bounded(exercise.targetSets, 1, 1, 100)),
-            targetReps: Math.round(bounded(exercise.targetReps, 0, 0, 100_000)),
-            targetWeight: bounded(exercise.targetWeight, 0, 0, 100_000),
-            targetDurationSeconds: Math.round(bounded(exercise.targetDurationSeconds, 0, 0, 604_800)),
-            targetDistance: bounded(exercise.targetDistance, 0, 0, 1_000_000),
-            restSeconds: Math.round(bounded(exercise.restSeconds, 0, 0, 86_400)),
-        }));
         onSave({
+            ...template,
             id: template?.id || generateId(),
             name: trimmedName,
             description: description.trim(),
-            tags: template?.tags,
-            exercises: normalizedExercises,
-            scheduleDays
+            exercises: exercises.map(normalizeExercise),
+            scheduleDays,
         });
     };
 
@@ -189,7 +194,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
                                 onChange={patch => updateExercise(ex.id, patch)}
                                 onMove={dir => moveExercise(ex.id, dir)}
                                 onRemove={() => removeExercise(ex.id)}
-                                onLayout={e => { cardY.current[ex.id] = e.nativeEvent.layout.y + 44; }}
+                                onLayout={e => { cardY.current[ex.id] = e.nativeEvent.layout.y + LIST_HEADER_HEIGHT; }}
                             />)}
                             {!exercises.length && <Text style={styles.emptyText}>No exercises yet. Add the first lift or run below.</Text>}
                             <Button label="Add exercise" icon={Plus} variant="secondary" onPress={openPicker} style={styles.addBtn} />

@@ -54,7 +54,7 @@ export const EditorExerciseRow = ({ exercise: ex, index, count, expanded, error,
         <Text style={styles.indexText}>{index + 1}</Text>
       </View>
       <TextInput
-        accessibilityLabel="Exercise name"
+        accessibilityLabel={`Name of exercise ${index + 1}`}
         value={ex.name}
         onChangeText={name => onChange({ name })}
         onFocus={() => setNameFocused(true)}

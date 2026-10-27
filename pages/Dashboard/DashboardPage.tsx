@@ -6,7 +6,7 @@ import { PressableScale, SectionHeader } from '../../components/ui/Primitives';
 import { WeeklySchedule } from './WeeklySchedule';
 import { TodayFocusCard } from './TodayFocusCard';
 import { ResumeCard } from './ResumeCard';
-import { CategoryStrip, lastDone, relativeDay } from './CategoryStrip';
+import { CategoryStrip, exerciseCount, lastDone, relativeDay } from './CategoryStrip';
 import { WorkoutLog, WorkoutTemplate, ViewState } from '../../types';
 import { ActiveSession } from '../../utils/activeSession';
 import { currentStreak, sessionsThisWeek } from '../../utils/training';
@@ -48,7 +48,7 @@ export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSe
         <SectionHeader title="Your routines" action="See all" onAction={() => setView('templates')} />
         <View style={styles.list}>{templates.slice(0, 3).map((t, i) => {
           const last = lastDone(t, logs);
-          const meta = `${t.exercises.length} ${t.exercises.length === 1 ? 'exercise' : 'exercises'} · ${last ? `last done ${relativeDay(last)}` : 'not done yet'}`;
+          const meta = `${exerciseCount(t.exercises.length)} · ${last ? `last done ${relativeDay(last)}` : 'not done yet'}`;
           return <PressableScale key={t.id} accessibilityRole="button" accessibilityLabel={`Start ${t.name}, ${meta}`} onPress={() => startWorkout(t)} scaleTo={0.98}
             style={[styles.routine, i > 0 && styles.routineDivider]}>
             <View style={styles.routineTop}>

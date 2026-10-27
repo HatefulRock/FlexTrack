@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, AlertButton, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../../constants/theme';
-import { Button } from './Primitives';
+import { Button, ButtonVariant } from './Primitives';
 
 type Request = { title: string; message?: string; buttons: AlertButton[] };
 let push: ((r: Request) => void) | null = null;
@@ -11,6 +11,12 @@ export const showAlert = (title: string, message?: string, buttons?: AlertButton
   if (Platform.OS !== 'web') return Alert.alert(title, message, buttons);
   const request = { title, message, buttons: buttons?.length ? buttons : [{ text: 'OK' }] };
   if (push) push(request);
+};
+
+// Mirrors the native alert: destructive reads as danger, and only the last non-cancel action is primary.
+const buttonVariant = (button: AlertButton, isLast: boolean): ButtonVariant => {
+  if (button.style === 'destructive') return 'danger';
+  return button.style !== 'cancel' && isLast ? 'primary' : 'secondary';
 };
 
 export const DialogHost = () => {
@@ -27,7 +33,7 @@ export const DialogHost = () => {
         {!!current.message && <Text style={styles.message}>{current.message}</Text>}
         <View style={styles.actions}>
           {current.buttons.map((b, i) => <Button key={`${b.text}-${i}`} label={b.text ?? 'OK'} onPress={() => close(b)}
-            variant={b.style === 'destructive' ? 'danger' : b.style === 'cancel' ? 'secondary' : i === current.buttons.length - 1 ? 'primary' : 'secondary'} />)}
+            variant={buttonVariant(b, i === current.buttons.length - 1)} />)}
         </View>
       </View>}
     </View>

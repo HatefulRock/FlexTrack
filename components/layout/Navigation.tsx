@@ -66,14 +66,16 @@ export const Sheet = ({ visible, onClose, children }: { visible: boolean; onClos
   const reduced = useReducedMotion();
   useEffect(() => {
     if (visible) setMounted(true);
-    Animated.timing(progress, { toValue: visible ? 1 : 0, duration: reduced ? 120 : visible ? 320 : 220, easing: theme.motion.drawer, useNativeDriver: theme.motion.nativeDriver })
-      .start(({ finished }) => { if (finished && !visible) setMounted(false); });
+    const duration = reduced ? 120 : visible ? 320 : 220;
+    const anim = Animated.timing(progress, { toValue: visible ? 1 : 0, duration, easing: theme.motion.drawer, useNativeDriver: theme.motion.nativeDriver });
+    anim.start(({ finished }) => { if (finished && !visible) setMounted(false); });
+    return () => anim.stop();
   }, [visible, progress, reduced]);
   if (!mounted) return null;
   const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [reduced ? 0 : 480, 0] });
   return <Modal visible transparent animationType="none" onRequestClose={onClose}>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalRoot}>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: progress }]}><Pressable accessibilityLabel="Close" style={styles.scrim} onPress={onClose} /></Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: progress }]}><Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.scrim} onPress={onClose} /></Animated.View>
       <Animated.View style={[styles.sheet, { transform: [{ translateY }], opacity: reduced ? progress : 1 }]}>
         <View style={styles.handle} />
         {children}

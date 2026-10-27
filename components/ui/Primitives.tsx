@@ -1,18 +1,28 @@
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useRef, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Animated, Pressable, PressableProps, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
 import { theme } from '../../constants/theme';
 
-export const useReducedMotion = () => {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled?.().then(v => { if (alive) setReduced(!!v); }).catch(() => undefined);
-    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', v => setReduced(!!v));
-    return () => { alive = false; sub?.remove?.(); };
-  }, []);
-  return reduced;
+// One app-wide subscription: every PressableScale reads this, so a per-instance listener and query would add up fast.
+let reduceMotion = false;
+let watching = false;
+const reduceMotionListeners = new Set<() => void>();
+const setReduceMotion = (value: boolean) => {
+  if (value === reduceMotion) return;
+  reduceMotion = value;
+  reduceMotionListeners.forEach(listener => listener());
 };
+const subscribeReduceMotion = (listener: () => void) => {
+  reduceMotionListeners.add(listener);
+  if (!watching) {
+    watching = true;
+    AccessibilityInfo.isReduceMotionEnabled?.().then(v => setReduceMotion(!!v)).catch(() => undefined);
+    AccessibilityInfo.addEventListener?.('reduceMotionChanged', v => setReduceMotion(!!v));
+  }
+  return () => { reduceMotionListeners.delete(listener); };
+};
+const getReduceMotion = () => reduceMotion;
+export const useReducedMotion = () => useSyncExternalStore(subscribeReduceMotion, getReduceMotion, getReduceMotion);
 
 // Press feedback for every touchable: a small scale, never an opacity strobe.
 // The Pressable itself is animated so layout styles (flex, margins) and the hit area stay on one element.

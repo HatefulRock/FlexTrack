@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Exercise, ExerciseLog, SetLog, WorkoutLog, WorkoutTemplate } from '../../types';
 import { generateId } from '../../utils/helpers';
+import { BAR_KG } from '../../utils/training';
 import { ActiveSession, saveActiveSession } from '../../utils/activeSession';
 import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
 import { RestDock, RestNext, RestOverlay } from './RestControl';
@@ -21,6 +22,12 @@ interface Props {
   template: WorkoutTemplate; resume?: ActiveSession | null; previousLogs: WorkoutLog[];
   onUpdateTemplate: (template: WorkoutTemplate) => void; onFinish: (log: WorkoutLog | null) => void;
 }
+
+const MAX_SETS = 100;
+const DEFAULT_REST_SECONDS = 60;
+const REST_STEP_SECONDS = 15;
+// Judge lights replay only while the completion is this fresh, so returning to an exercise later does not relight them.
+const LIGHTS_WINDOW_MS = 2500;
 
 const byRecent = (logs: WorkoutLog[]) => [...logs].sort((a, b) => (b.endTime || b.startTime) - (a.endTime || a.startTime));
 
@@ -48,12 +55,19 @@ const prefill = (e: Exercise, i: number, last?: SetLog[], suggestion?: Progressi
 const buildLogs = (template: WorkoutTemplate, recent: WorkoutLog[], suggestions: (ProgressionSuggestion | null)[]): ExerciseLog[] => template.exercises.map((e, j) => {
   const mode = e.type === 'reps' ? (e.loadMode || 'external') : undefined;
   const last = lastSetsFor(e, recent);
+  const setCount = Math.min(MAX_SETS, Math.max(1, Math.floor(e.targetSets ?? 1)));
   return {
     exerciseId: e.id, exerciseName: e.name, exerciseType: e.type, loadMode: mode, distanceUnit: e.targetDistanceUnit, completed: false,
-    sets: Array.from({ length: Math.min(100, Math.max(1, Math.floor(e.targetSets ?? 1))) }, (_, i) =>
-      ({ setNumber: i + 1, completed: false, ...prefill(e, i, last, suggestions[j]), distance: e.targetDistance, durationSeconds: e.targetDurationSeconds, notes: '' })),
+    sets: Array.from({ length: setCount }, (_, i) => ({
+      setNumber: i + 1, completed: false, ...prefill(e, i, last, suggestions[j]),
+      distance: e.targetDistance, durationSeconds: e.targetDurationSeconds, notes: '',
+    })),
   };
 });
+
+// A timer set keeps the time actually run, when its timer was started.
+const withTimedDuration = (exercise: ExerciseLog, set: SetLog, elapsed = 0): SetLog =>
+  exercise.exerciseType === 'timer' && elapsed > 0 ? { ...set, durationSeconds: elapsed } : set;
 
 // The first open set of a later exercise than `from`: what follows once this exercise is done.
 const firstOpenAfter = (template: WorkoutTemplate, logs: ExerciseLog[], from: number): { exercise: Exercise; set: SetLog } | null => {
@@ -69,6 +83,19 @@ const clock = (seconds: number) => {
   const ss = s.toString().padStart(2, '0');
   return h ? `${h}:${m.toString().padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 };
+
+const SEGMENTED_PROGRESS_MAX = 40;
+
+// One segment per set; past SEGMENTED_PROGRESS_MAX sets the segments would be slivers, so it becomes a single fill.
+const SessionProgress = ({ logs, activeExerciseIndex, done, all }: { logs: ExerciseLog[]; activeExerciseIndex: number; done: number; all: number }) => (
+  <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: all, now: done }}>
+    {all <= SEGMENTED_PROGRESS_MAX
+      ? logs.flatMap((e, ei) => e.sets.map((s, si) => (
+        <View key={`${ei}-${si}`} style={[styles.segment, s.completed && styles.segmentDone, ei === activeExerciseIndex && !s.completed && styles.segmentCurrent]} />
+      )))
+      : <View style={[styles.segment, styles.segmentDone, { flex: 0, width: `${(done / Math.max(1, all)) * 100}%` }]} />}
+  </View>
+);
 
 // Isolated so the whole page does not re-render every second.
 const ElapsedClock = ({ startTime }: { startTime: number }) => {
@@ -100,7 +127,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const scrollRef = useRef<ScrollView>(null);
   const enter = useRef(new Animated.Value(1)).current;
   const direction = useRef(1);
-  const firstRender = useRef(true);
+  const shownExercise = useRef(activeExerciseIndex);
 
   // Never strand the footer behind an expanded rest that has ended or been skipped.
   useEffect(() => { if (!isResting) setRestExpanded(false); }, [isResting]);
@@ -113,12 +140,13 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
 
   // New exercise: back to the top, content slides in from the side it came from.
   useEffect(() => {
-    if (firstRender.current) { firstRender.current = false; return; }
+    if (shownExercise.current === activeExerciseIndex) return;
+    shownExercise.current = activeExerciseIndex;
     scrollRef.current?.scrollTo({ y: 0, animated: false });
     enter.setValue(0);
     const anim = Animated.timing(enter, { toValue: 1, duration: reduced ? 160 : 220, easing: theme.motion.easeOut, useNativeDriver: theme.motion.nativeDriver });
     anim.start();
-    return () => anim.stop();
+    return () => { anim.stop(); enter.setValue(1); };
   }, [activeExerciseIndex, enter, reduced]);
 
   const historySets = useMemo(() => (currentExercise ? lastSetsFor(currentExercise, recent) : undefined), [currentExercise, recent]);
@@ -129,13 +157,15 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
       id: generateId(), templateId: template.id, templateName: template.name, source: 'routine', startTime, endTime: Date.now(),
       exercises: logs.map((e, eIndex) => ({
         ...e,
-        sets: e.sets.map((set, setIndex) => { const elapsed = timers[`${eIndex}-${setIndex}`] || 0; return e.exerciseType === 'timer' && elapsed > 0 ? { ...set, durationSeconds: elapsed } : set; }),
+        sets: e.sets.map((set, setIndex) => withTimedDuration(e, set, timers[`${eIndex}-${setIndex}`])),
         completed: e.sets.length > 0 && e.sets.every(s => s.completed),
       })),
     });
   };
   const confirmExit = () => showAlert('End this session?', 'Save the sets you have logged, or discard this session.', [
-    { text: 'Keep training', style: 'cancel' }, { text: 'Discard', style: 'destructive', onPress: () => onFinish(null) }, { text: 'Save & end', onPress: finishWorkout },
+    { text: 'Keep training', style: 'cancel' },
+    { text: 'Discard', style: 'destructive', onPress: () => onFinish(null) },
+    { text: 'Save & end', onPress: finishWorkout },
   ]);
   const confirmExitRef = useRef(confirmExit);
   confirmExitRef.current = confirmExit;
@@ -157,24 +187,14 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
     return currentLog.sets.findIndex(s => !s.completed);
   }, [currentLog, focusSet]);
 
-  const toggleSetComplete = (i: number) => {
-    const key = `${activeExerciseIndex}-${i}`, wasRunning = timerRunning[key] === true;
-    const set = currentLog.sets[i], completing = !set.completed;
-    setLogs(current => current.map((exercise, eIndex) => {
-      if (eIndex !== activeExerciseIndex) return exercise;
-      const sets = exercise.sets.map((s, sIndex) => sIndex === i ? { ...s, completed: !s.completed, ...(exercise.exerciseType === 'timer' && !s.completed && timers[key] > 0 ? { durationSeconds: timers[key] } : {}) } : s);
-      return { ...exercise, sets, completed: sets.every(s => s.completed) };
-    }));
-    if (wasRunning) toggleTimer(key);
-    if (!completing) { void Haptics.selectionAsync(); setFocusSet(i); return; }
-    const exerciseDone = currentLog.sets.every((s, j) => j === i || s.completed);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (exerciseDone) setTimeout(() => { void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }, 260);
-    setLights(l => ({ n: l.n + 1, exercise: activeExerciseIndex, set: i, at: Date.now() }));
-    if (focusSet === i) setFocusSet(null);
-    const seconds = currentExercise.restSeconds ?? 60;
-    if (seconds > 0 && !(exerciseDone && isLast)) startRest(seconds, nextSetLabel(i));
-  };
+  // Replaces the sets of the exercise on screen; the exercise's own `completed` follows its sets.
+  const updateCurrentSets = (update: (sets: SetLog[], exercise: ExerciseLog) => SetLog[]) => setLogs(current => current.map((exercise, eIndex) => {
+    if (eIndex !== activeExerciseIndex) return exercise;
+    const sets = update(exercise.sets, exercise);
+    return { ...exercise, sets, completed: sets.every(s => s.completed) };
+  }));
+  const stopTimer = (key: string) => { if (timerRunning[key]) toggleTimer(key); };
+
   // The lock-screen notification names what comes after this rest, e.g. "Bench Press · 85 kg × 6".
   const nextSetLabel = (completedIndex: number): string | undefined => {
     const k = currentLog.sets.findIndex((s, j) => j !== completedIndex && !s.completed);
@@ -182,19 +202,50 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
     const later = firstOpenAfter(template, logs, activeExerciseIndex);
     return later ? `${later.exercise.name} · ${describeSet(later.exercise, later.set)}` : undefined;
   };
-  const updateSet = (i: number, field: keyof SetLog, value: SetLog[keyof SetLog]) => setLogs(current => current.map((e, eIndex) => eIndex === activeExerciseIndex ? { ...e, sets: e.sets.map((s, sIndex) => sIndex === i ? { ...s, [field]: value } : s) } : e));
+
+  const toggleSetComplete = (i: number) => {
+    const key = `${activeExerciseIndex}-${i}`;
+    const completing = !currentLog.sets[i].completed;
+    updateCurrentSets((sets, exercise) => sets.map((s, sIndex) => {
+      if (sIndex !== i) return s;
+      const toggled = { ...s, completed: completing };
+      return completing ? withTimedDuration(exercise, toggled, timers[key]) : toggled;
+    }));
+    stopTimer(key);
+    if (!completing) { void Haptics.selectionAsync(); setFocusSet(i); return; }
+    const exerciseDone = currentLog.sets.every((s, j) => j === i || s.completed);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (exerciseDone) setTimeout(() => { void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }, 260);
+    setLights(l => ({ n: l.n + 1, exercise: activeExerciseIndex, set: i, at: Date.now() }));
+    if (focusSet === i) setFocusSet(null);
+    const seconds = currentExercise.restSeconds ?? DEFAULT_REST_SECONDS;
+    if (seconds > 0 && !(exerciseDone && isLast)) startRest(seconds, nextSetLabel(i));
+  };
+  const updateSet = (i: number, field: keyof SetLog, value: SetLog[keyof SetLog]) =>
+    updateCurrentSets(sets => sets.map((s, sIndex) => (sIndex === i ? { ...s, [field]: value } : s)));
+  const toggleSetTimer = (i: number) => {
+    const key = `${activeExerciseIndex}-${i}`;
+    if (timerRunning[key] && timers[key] > 0) updateSet(i, 'durationSeconds', timers[key]);
+    toggleTimer(key);
+  };
   // "Use last weight": the open sets of this exercise go back to last time's values; completed sets stay as lifted.
   const revertToLast = () => {
-    const last = historySets;
-    setLogs(current => current.map((e, eIndex) => eIndex !== activeExerciseIndex ? e : { ...e, sets: e.sets.map((s, i) => s.completed ? s : { ...s, ...prefill(currentExercise, i, last) }) }));
+    updateCurrentSets(sets => sets.map((s, i) => (s.completed ? s : { ...s, ...prefill(currentExercise, i, historySets) })));
     void Haptics.selectionAsync();
   };
   const updateDefaultWeight = (weight: number) => {
     if (!Number.isFinite(weight) || weight < 0) return;
     onUpdateTemplate({ ...template, exercises: template.exercises.map(exercise => exercise.id === currentExercise.id ? { ...exercise, targetWeight: weight } : exercise) });
   };
+  // "Mark all sets done": open sets complete at their entered values (the routine target fills a gap), running timers stop.
   const quickFinish = () => {
-    setLogs(current => current.map((e, eIndex) => eIndex === activeExerciseIndex ? { ...e, completed: true, sets: e.sets.map((s, i) => ({ ...s, completed: true, reps: s.reps ?? currentExercise.targetReps, weight: currentExercise.loadMode === 'bodyweight' ? undefined : (s.weight ?? currentExercise.targetWeight), ...(e.exerciseType === 'timer' && (timers[`${eIndex}-${i}`] || 0) > 0 ? { durationSeconds: timers[`${eIndex}-${i}`] } : {}) })) } : e));
+    const bodyweight = currentExercise.loadMode === 'bodyweight';
+    updateCurrentSets((sets, exercise) => sets.map((s, i) => withTimedDuration(exercise, {
+      ...s, completed: true,
+      reps: s.reps ?? currentExercise.targetReps,
+      weight: bodyweight ? undefined : (s.weight ?? currentExercise.targetWeight),
+    }, timers[`${activeExerciseIndex}-${i}`])));
+    currentLog.sets.forEach((_, i) => stopTimer(`${activeExerciseIndex}-${i}`));
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setLights(l => ({ n: l.n + 1, exercise: activeExerciseIndex, set: -1, at: Date.now() }));
     setFocusSet(null);
@@ -214,7 +265,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const restNext = useMemo<RestNext | null>(() => {
     const make = (ex: Exercise, set: SetLog, title: string): RestNext => ({
       title, load: describeSet(ex, set),
-      barWeight: ex.type === 'reps' && (ex.loadMode || 'external') === 'external' && (set.weight || 0) > 20 ? set.weight : undefined,
+      barWeight: ex.type === 'reps' && (ex.loadMode || 'external') === 'external' && (set.weight || 0) > BAR_KG ? set.weight : undefined,
     });
     if (!currentExercise || !currentLog) return null;
     if (currentIndex >= 0) return make(currentExercise, currentLog.sets[currentIndex], `Set ${currentIndex + 1} of ${currentLog.sets.length}`);
@@ -224,12 +275,21 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
 
   const totals = useMemo(() => logs.reduce((acc, e) => ({ done: acc.done + e.sets.filter(s => s.completed).length, all: acc.all + e.sets.length }), { done: 0, all: 0 }), [logs]);
 
-  if (!currentExercise || !currentLog) return <View style={styles.container}><EmptyState icon={Zap} title="Nothing to train yet" message="This routine has no exercises. Add at least one exercise before starting." action="Leave session" onAction={() => onFinish(null)} /></View>;
+  if (!currentExercise || !currentLog) {
+    return <View style={styles.container}>
+      <EmptyState icon={Zap} title="Nothing to train yet" message="This routine has no exercises. Add at least one exercise before starting."
+        action="Leave session" onAction={() => onFinish(null)} />
+    </View>;
+  }
 
   const nextExercise = template.exercises[activeExerciseIndex + 1];
   const doneLabel = nextExercise ? `Next: ${nextExercise.name} · ${targetLabel(nextExercise)}` : 'Last exercise of the routine.';
   const translateX = reduced ? 0 : enter.interpolate({ inputRange: [0, 1], outputRange: [16 * direction.current, 0] });
-  const restProps = { restTimer, restEndsAt, restTotal, next: restNext, onAdd: () => adjustRest(15), onSubtract: () => adjustRest(-15), onSkip: cancelRest };
+  const restProps = {
+    restTimer, restEndsAt, restTotal, next: restNext,
+    onAdd: () => adjustRest(REST_STEP_SECONDS), onSubtract: () => adjustRest(-REST_STEP_SECONDS), onSkip: cancelRest,
+  };
+  const lightsFresh = lights.exercise === activeExerciseIndex && Date.now() - lights.at < LIGHTS_WINDOW_MS;
 
   return <View style={styles.container}>
     <View style={styles.header}>
@@ -244,11 +304,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
           <Text style={styles.endText}>End</Text>
         </PressableScale>
       </View>
-      <View style={styles.progress} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: totals.all, now: totals.done }}>
-        {totals.all <= 40
-          ? logs.flatMap((e, ei) => e.sets.map((s, si) => <View key={`${ei}-${si}`} style={[styles.segment, s.completed && styles.segmentDone, ei === activeExerciseIndex && !s.completed && styles.segmentCurrent]} />))
-          : <View style={[styles.segment, styles.segmentDone, { flex: 0, width: `${(totals.done / Math.max(1, totals.all)) * 100}%` }]} />}
-      </View>
+      <SessionProgress logs={logs} activeExerciseIndex={activeExerciseIndex} done={totals.done} all={totals.all} />
     </View>
 
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
@@ -258,9 +314,10 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
             setNumber={currentIndex >= 0 ? currentIndex + 1 : undefined} setCount={currentLog.sets.length} />
           <SetList exercise={currentExercise} sets={currentLog.sets} historySets={historySets} exerciseIndex={activeExerciseIndex}
             suggestion={suggestions[activeExerciseIndex]} onUseLastValues={revertToLast}
-            timers={timers} timerRunning={timerRunning} currentIndex={currentIndex} lightsTrigger={lights.exercise === activeExerciseIndex && Date.now() - lights.at < 2500 ? lights.n : 0} lightsSet={lights.set} nextLabel={doneLabel}
-            onUpdateSet={updateSet} onSetDefaultWeight={updateDefaultWeight} onToggleComplete={toggleSetComplete} onFocusSet={setFocusSet} onCompleteAll={quickFinish}
-            onToggleTimer={i => { const key = `${activeExerciseIndex}-${i}`; if (timerRunning[key] && timers[key] > 0) updateSet(i, 'durationSeconds', timers[key]); toggleTimer(key); }} />
+            timers={timers} timerRunning={timerRunning} currentIndex={currentIndex}
+            lightsTrigger={lightsFresh ? lights.n : 0} lightsSet={lights.set} nextLabel={doneLabel}
+            onUpdateSet={updateSet} onSetDefaultWeight={updateDefaultWeight} onToggleComplete={toggleSetComplete}
+            onFocusSet={setFocusSet} onCompleteAll={quickFinish} onToggleTimer={toggleSetTimer} />
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>

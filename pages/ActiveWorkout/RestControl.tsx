@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, AppState, Easing, StyleProp, StyleSheet, Text, TextStyle, View } from 'react-native';
+import { Animated, AppState, Easing, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatTime } from '../../utils/time';
@@ -27,7 +27,7 @@ const RestDigits = ({ seconds, style }: { seconds: number; style: StyleProp<Text
 };
 
 // Drain bar: a left-anchored fill that slides out linearly until the rest ends. translateX keeps it on the native driver everywhere.
-const Drain = ({ endsAt, total, style }: { endsAt: number | null; total: number; style?: StyleProp<any> }) => {
+const Drain = ({ endsAt, total, style }: { endsAt: number | null; total: number; style?: StyleProp<ViewStyle> }) => {
   const [width, setWidth] = useState(0);
   const [wake, setWake] = useState(0);
   const value = useRef(new Animated.Value(1)).current;
@@ -47,6 +47,12 @@ const Drain = ({ endsAt, total, style }: { endsAt: number | null; total: number;
     <Animated.View style={[styles.drainFill, { transform: [{ translateX: value.interpolate({ inputRange: [0, 1], outputRange: [-width, 0] }) }] }]} />
   </View>;
 };
+
+const DockButton = ({ label, accessibilityLabel, onPress, wide = false }: { label: string; accessibilityLabel: string; onPress: () => void; wide?: boolean }) => (
+  <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={[styles.dockBtn, wide && styles.dockSkip]}>
+    <Text style={styles.dockBtnText}>{label}</Text>
+  </PressableScale>
+);
 
 // Docked above the footer: never covers Next/Finish.
 export const RestDock = ({ visible, onExpand, ...props }: RestProps & { visible: boolean; onExpand: () => void }) => {
@@ -69,19 +75,21 @@ export const RestDock = ({ visible, onExpand, ...props }: RestProps & { visible:
   return <Animated.View pointerEvents={visible ? 'auto' : 'none'} style={[styles.dock, { opacity: anim, transform: [{ translateY }] }]}>
     <Drain endsAt={p.restEndsAt} total={p.restTotal} style={styles.dockDrain} />
     <View style={styles.dockRow}>
-      <View style={styles.flex}><PressableScale scaleTo={0.98} accessibilityRole="button" accessibilityLabel="Expand rest timer" accessibilityHint="Shows the countdown full screen" onPress={onExpand} style={styles.dockMain}>
-        <RestDigits seconds={p.restTimer} style={styles.dockTime} />
-        <View style={styles.dockNext}>
-          {p.next ? <>
-            <Text numberOfLines={1} style={styles.dockNextTitle}>Next: {p.next.title}</Text>
-            <Text numberOfLines={1} style={styles.dockNextLoad}>{p.next.load}</Text>
-          </> : <Text numberOfLines={1} style={styles.dockNextTitle}>Resting</Text>}
-        </View>
-        <ChevronUp size={18} color={theme.colors.textMuted} />
-      </PressableScale></View>
-      <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel="Remove 15 seconds of rest" onPress={props.onSubtract} style={styles.dockBtn}><Text style={styles.dockBtnText}>−15</Text></PressableScale>
-      <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel="Add 15 seconds of rest" onPress={props.onAdd} style={styles.dockBtn}><Text style={styles.dockBtnText}>+15</Text></PressableScale>
-      <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel="Skip rest" onPress={props.onSkip} style={[styles.dockBtn, styles.dockSkip]}><Text style={styles.dockBtnText}>Skip</Text></PressableScale>
+      <View style={styles.flex}>
+        <PressableScale scaleTo={0.98} accessibilityRole="button" accessibilityLabel="Expand rest timer" accessibilityHint="Shows the countdown full screen" onPress={onExpand} style={styles.dockMain}>
+          <RestDigits seconds={p.restTimer} style={styles.dockTime} />
+          <View style={styles.dockNext}>
+            {p.next ? <>
+              <Text numberOfLines={1} style={styles.dockNextTitle}>Next: {p.next.title}</Text>
+              <Text numberOfLines={1} style={styles.dockNextLoad}>{p.next.load}</Text>
+            </> : <Text numberOfLines={1} style={styles.dockNextTitle}>Resting</Text>}
+          </View>
+          <ChevronUp size={18} color={theme.colors.textMuted} />
+        </PressableScale>
+      </View>
+      <DockButton label="−15" accessibilityLabel="Remove 15 seconds of rest" onPress={props.onSubtract} />
+      <DockButton label="+15" accessibilityLabel="Add 15 seconds of rest" onPress={props.onAdd} />
+      <DockButton label="Skip" accessibilityLabel="Skip rest" onPress={props.onSkip} wide />
     </View>
   </Animated.View>;
 };
@@ -89,7 +97,11 @@ export const RestDock = ({ visible, onExpand, ...props }: RestProps & { visible:
 // Full-screen rest: the countdown, what comes next and how to load it, controls in the thumb zone.
 export const RestOverlay = ({ onMinimise, ...props }: RestProps & { onMinimise: () => void }) => {
   const fade = useRef(new Animated.Value(0)).current;
-  useEffect(() => { Animated.timing(fade, { toValue: 1, duration: 200, easing: theme.motion.easeOut, useNativeDriver: theme.motion.nativeDriver }).start(); }, [fade]);
+  useEffect(() => {
+    const anim = Animated.timing(fade, { toValue: 1, duration: 200, easing: theme.motion.easeOut, useNativeDriver: theme.motion.nativeDriver });
+    anim.start();
+    return () => anim.stop();
+  }, [fade]);
   return <Animated.View accessibilityViewIsModal style={[styles.overlay, { opacity: fade }]}>
     <View style={styles.overlayTop}>
       <Text accessibilityRole="header" style={styles.overlayLabel}>Rest</Text>
@@ -143,6 +155,7 @@ const styles = StyleSheet.create({
   overlayBar: { alignSelf: 'stretch', marginTop: 20 },
   overlayControls: { gap: 10, paddingBottom: 16 },
   adjustRow: { flexDirection: 'row', gap: 10 },
-  adjust: { minHeight: 56 }, flex: { flex: 1 },
+  adjust: { minHeight: 56 },
+  flex: { flex: 1 },
   skip: { minHeight: 56 },
 });

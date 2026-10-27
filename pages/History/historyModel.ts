@@ -1,6 +1,7 @@
 import { ActivityCategory, WorkoutLog } from '../../types';
 import { Category, exerciseCategory } from '../../utils/training';
 import { theme } from '../../constants/theme';
+import { contrastRatio, hexToRgb } from '../Stats/chartUtils';
 
 export const ACTIVITY_LABEL: Record<ActivityCategory, string> = { strength: 'Strength', run: 'Run', walk: 'Walk', cycle: 'Cycle', timed: 'Timed', other: 'Other' };
 
@@ -31,23 +32,15 @@ export const mergeShares = (lists: CategoryShare[][]): CategoryShare[] => {
   return CATEGORY_ORDER.filter(c => w.has(c)).map(c => ({ category: c, sets: w.get(c)! }));
 };
 
-// The dominant category (most sets; push/pull/legs/cardio order breaks ties).
-export const sessionCategory = (log: WorkoutLog): Category =>
-  sessionCategories(log).reduce((b, s) => (s.sets > b.sets ? s : b)).category;
-
 export const sessionMs = (log: WorkoutLog) => Math.max(0, (log.endTime || log.startTime) - log.startTime);
 
-// WCAG relative luminance and contrast, used to pick rubber or chalk text on a category fill.
-const lum = (hex: string) => {
-  const v = hex.replace('#', '');
-  const ch = [0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
-};
-export const contrast = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+const MIN_TEXT_CONTRAST = 4.5; // WCAG AA for normal text
+const contrast = (a: string, b: string) => contrastRatio(hexToRgb(a), hexToRgb(b));
 
-// Best text colour across every stripe of a cell; `backed` means neither reaches 4.5:1 and the label needs a rubber tile.
+// Best text colour across every stripe of a cell; `backed` means neither reaches AA contrast and the label needs a rubber tile.
 export const labelOn = (fills: string[]) => {
   const options = [theme.colors.text, theme.colors.canvas].map(c => ({ c, min: Math.min(...fills.map(f => contrast(c, f))) }));
   const best = options.sort((m, n) => n.min - m.min)[0];
-  return { color: best.min >= 4.5 ? best.c : theme.colors.text, backed: best.min < 4.5 };
+  const readable = best.min >= MIN_TEXT_CONTRAST;
+  return { color: readable ? best.c : theme.colors.text, backed: !readable };
 };

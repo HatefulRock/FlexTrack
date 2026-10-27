@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native';
 import { Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { theme } from '../../constants/theme';
 import { PressableScale } from '../../components/ui/Primitives';
 import { Exercise } from '../../types';
+import { formatDecimal } from '../../utils/training';
+import { formatTime } from '../../utils/time';
 
 const { colors, type, radius } = theme;
 
 // Seconds as m:ss ("1:30"); the editor shows every duration this way.
-export const formatClock = (seconds = 0) => {
-  const s = Math.max(0, Math.round(seconds));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-};
+const formatClock = (seconds = 0) => formatTime(Math.max(0, Math.round(seconds)));
 
 // Accepts "1:30", "90" or "1.5" style input. Plain numbers are seconds.
-export const parseClock = (text: string) => {
+const parseClock = (text: string) => {
   const t = text.trim();
   if (!t) return NaN;
   if (t.includes(':')) {
@@ -26,8 +25,15 @@ export const parseClock = (text: string) => {
   return Math.round(parseFloat(t.replace(',', '.')));
 };
 
-export const formatAmount = (n = 0) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
+const formatAmount = (n = 0) => formatDecimal(n);
 const parseAmount = (text: string) => parseFloat(text.replace(',', '.'));
+
+// The next multiple of `step` strictly above (dir 1) or below (dir -1) `value`, so an off-grid 33.75 steps to 35 or 32.5.
+const STEP_EPSILON = 1e-9;
+const stepFrom = (value: number, step: number, dir: 1 | -1) => {
+  const k = value / step;
+  return (dir > 0 ? Math.floor(k + STEP_EPSILON) + 1 : Math.ceil(k - STEP_EPSILON) - 1) * step;
+};
 
 // One line that reads like the whiteboard: "4 × 6 · 80 kg · rest 1:30".
 export const exerciseSummary = (e: Exercise) => {
@@ -68,7 +74,7 @@ export const EditorStepper = ({ label, a11y, value = 0, onChange, step, min = 0,
   const show = (v: number) => (clock ? formatClock(v) : formatAmount(v));
   const parse = (t: string) => (clock ? parseClock(t) : parseAmount(t));
   const nudge = (dir: 1 | -1) => {
-    const next = clamp((Math.round(value / step) + dir) * step);
+    const next = clamp(stepFrom(value, step, dir));
     if (next === value) return;
     Haptics.selectionAsync();
     setDraft(null);
@@ -103,7 +109,7 @@ export const EditorStepper = ({ label, a11y, value = 0, onChange, step, min = 0,
 type Option<T extends string> = { value: T; label: string; a11y?: string };
 
 export const EditorSegmented = <T extends string>({ options, value, onChange, style }: {
-  options: Option<T>[]; value: T; onChange: (v: T) => void; style?: object;
+  options: Option<T>[]; value: T; onChange: (v: T) => void; style?: StyleProp<ViewStyle>;
 }) => (
   <View accessibilityRole="radiogroup" style={[styles.segment, style]}>
     {options.map(o => {

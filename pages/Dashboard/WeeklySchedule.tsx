@@ -10,55 +10,81 @@ import { sessionCategories } from '../History/historyModel';
 const BAR_MAX = 64, BAR_MIN = 6, STUB = 14;
 const LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-type Day = { date: Date; dow: number; volume: number; cardio: number; trained: boolean; scheduled?: WorkoutTemplate; isToday: boolean; future: boolean };
+type Day = {
+  date: Date; dow: number; isToday: boolean; future: boolean; scheduled?: WorkoutTemplate;
+  lifted: boolean; volume: number; cardioSessions: number; cardioMinutes: number;
+};
 
 const isCardio = (l: WorkoutLog) => sessionCategories(l).every(s => s.category === 'cardio');
 const minutesOf = (l: WorkoutLog) => (l.endTime ? Math.max(0, l.endTime - l.startTime) / 60000 : 0);
+const barHeight = (value: number, max: number) => Math.max(BAR_MIN, Math.round(BAR_MAX * Math.min(1, value / max)));
+const tonnes = (kg: number) => (kg < 50 ? '<0.1t' : `${(kg / 1000).toFixed(1)}t`);
+
+const buildWeek = (templates: WorkoutTemplate[], logs: WorkoutLog[], now = new Date()): Day[] => {
+  const from = startOfWeek(now);
+  return Array.from({ length: 7 }, (_, dow) => {
+    const date = addDays(from, dow), isToday = isSameDay(date, now);
+    const dayLogs = logs.filter(l => isSameDay(new Date(l.startTime), date));
+    const cardioLogs = dayLogs.filter(isCardio);
+    return {
+      date, dow, isToday, future: !isToday && date > now, scheduled: templates.find(t => t.scheduleDays?.includes(dow)),
+      lifted: cardioLogs.length < dayLogs.length,
+      volume: dayLogs.reduce((sum, l) => sum + logVolume(l), 0),
+      cardioSessions: cardioLogs.length,
+      cardioMinutes: cardioLogs.reduce((sum, l) => sum + minutesOf(l), 0),
+    };
+  });
+};
+
+const dayLabel = (d: Day, pending: boolean) => {
+  const head = `${format(d.date, 'EEEE d')}${d.isToday ? ', today' : ''}`;
+  if (d.lifted || d.cardioSessions) {
+    const parts = [
+      d.lifted ? (d.volume ? `${formatNumber(d.volume)} kg lifted` : 'lifted') : '',
+      d.cardioSessions ? (d.cardioMinutes > 0 ? `${Math.round(d.cardioMinutes)} minutes cardio` : 'cardio') : '',
+    ].filter(Boolean);
+    return `${head}: trained, ${parts.join(', ')}`;
+  }
+  return `${head}: ${pending && d.scheduled ? `${d.scheduled.name} scheduled` : 'rest'}`;
+};
+
+const DayBars = ({ day: d, pending, maxVolume, maxMinutes }: { day: Day; pending: boolean; maxVolume: number; maxMinutes: number }) => {
+  const cardioOnly = !d.lifted && d.cardioSessions > 0;
+  const cardioH = d.cardioSessions ? barHeight(d.cardioMinutes, maxMinutes) : 0;
+  const value = d.volume ? tonnes(d.volume) : cardioOnly && d.cardioMinutes > 0 ? `${Math.round(d.cardioMinutes)}m` : '';
+  return <View style={styles.barArea}>
+    {!!value && <Text style={styles.value} numberOfLines={1}>{value}</Text>}
+    {cardioOnly ? <View style={[styles.bar, styles.cardioBar, { height: cardioH }]} />
+      : d.lifted ? <View style={styles.pair}>
+        <View style={[styles.liftBar, { height: barHeight(d.volume, maxVolume) }]} />
+        {cardioH > 0 && <View style={[styles.sideBar, { height: cardioH }]} />}
+      </View>
+      : pending ? <View style={styles.stub} /> : null}
+  </View>;
+};
 
 // Sunday-to-Saturday, matching sessionsThisWeek. Two measures, never mixed: lifting days get a chalk bar whose height is volume,
 // cardio gets a chrome bar whose height is minutes (beside the lifting bar on a day with both).
 export const WeeklySchedule = ({ templates, logs = [], onStartWorkout }: { templates: WorkoutTemplate[]; logs?: WorkoutLog[]; onStartWorkout: (t: WorkoutTemplate) => void }) => {
-  const days = useMemo<Day[]>(() => {
-    const now = new Date(), from = startOfWeek(now);
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = addDays(from, i), dayLogs = logs.filter(l => isSameDay(new Date(l.startTime), date));
-      const volume = dayLogs.reduce((s, l) => s + logVolume(l), 0);
-      const cardio = dayLogs.filter(isCardio).reduce((s, l) => s + minutesOf(l), 0);
-      const isToday = isSameDay(date, now);
-      return { date, dow: i, volume, cardio, trained: dayLogs.length > 0, scheduled: templates.find(t => t.scheduleDays?.includes(i)), isToday, future: !isToday && date > now };
-    });
-  }, [templates, logs]);
+  const days = useMemo(() => buildWeek(templates, logs), [templates, logs]);
   const maxVolume = Math.max(1, ...days.map(d => d.volume));
-  const maxMinutes = Math.max(60, ...days.map(d => d.cardio));
+  const maxMinutes = Math.max(60, ...days.map(d => d.cardioMinutes));
 
   return <View>
     <SectionHeader title="This week" />
     <View style={styles.chart}>
       <View style={styles.baseline} />
       {days.map(d => {
-        const pending = !d.trained && !!d.scheduled && (d.future || d.isToday);
-        const cardioOnly = d.trained && !d.volume && d.cardio > 0, lifted = d.trained && !cardioOnly;
-        const liftH = lifted ? Math.max(BAR_MIN, Math.round(BAR_MAX * d.volume / maxVolume)) : 0;
-        const cardioH = d.cardio > 0 ? Math.max(BAR_MIN, Math.round(BAR_MAX * Math.min(1, d.cardio / maxMinutes))) : 0;
-        const value = d.volume ? `${(d.volume / 1000).toFixed(1)}t` : cardioOnly ? `${Math.round(d.cardio)}m` : '';
-        const parts = [d.volume ? `${formatNumber(d.volume)} kg lifted` : lifted ? 'lifted' : '', d.cardio > 0 ? `${Math.round(d.cardio)} minutes cardio` : ''].filter(Boolean);
-        const label = `${format(d.date, 'EEEE d')}${d.isToday ? ', today' : ''}: ${d.trained ? `trained, ${parts.join(', ')}` : pending ? `${d.scheduled!.name} scheduled` : 'rest'}`;
+        const scheduled = !d.lifted && !d.cardioSessions && (d.future || d.isToday) ? d.scheduled : undefined;
+        const label = dayLabel(d, !!scheduled);
         const column = <>
-          <View style={styles.barArea}>
-            {!!value && <Text style={styles.value} numberOfLines={1}>{value}</Text>}
-            {cardioOnly ? <View style={[styles.bar, styles.cardioBar, { height: cardioH }]} />
-              : lifted ? <View style={styles.pair}>
-                <View style={[styles.liftBar, { height: liftH }]} />
-                {cardioH > 0 && <View style={[styles.sideBar, { height: cardioH }]} />}
-              </View>
-              : pending ? <View style={styles.stub} /> : null}
-          </View>
+          <DayBars day={d} pending={!!scheduled} maxVolume={maxVolume} maxMinutes={maxMinutes} />
           <Text style={[styles.letter, d.isToday && styles.todayText]}>{LETTERS[d.dow]}</Text>
           <Text style={[styles.date, d.isToday && styles.todayText]}>{d.date.getDate()}</Text>
           <View style={[styles.underline, d.isToday && styles.underlineOn]} />
         </>;
-        return pending
-          ? <Pressable key={d.dow} accessibilityRole="button" accessibilityLabel={`${label}. Start ${d.scheduled!.name}`} onPress={() => onStartWorkout(d.scheduled!)} style={({ pressed }) => [styles.col, pressed && styles.pressed]}>{column}</Pressable>
+        return scheduled
+          ? <Pressable key={d.dow} accessibilityRole="button" accessibilityLabel={`${label}. Start ${scheduled.name}`} onPress={() => onStartWorkout(scheduled)} style={({ pressed }) => [styles.col, pressed && styles.pressed]}>{column}</Pressable>
           : <View key={d.dow} accessible accessibilityLabel={label} style={styles.col}>{column}</View>;
       })}
     </View>

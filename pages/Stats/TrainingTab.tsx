@@ -1,15 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Check, ChevronDown, TrendingUp, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { startOfWeek } from 'date-fns';
+import { startOfWeek, subWeeks } from 'date-fns';
 import { WorkoutLog } from '../../types';
 import { exerciseNames, metricOptions, metricValue, ProgressKind, resolveKind } from '../../utils/progress';
 import { Category, CATEGORY_LABEL, categoryColor, exerciseCategory } from '../../utils/training';
 import { EmptyState, PressableScale, SectionHeader } from '../../components/ui/Primitives';
 import { Sheet } from '../../components/layout/Navigation';
 import { theme } from '../../constants/theme';
-import { DAY_MS, formatMetric, metricText, shortDate } from './chartUtils';
+import { chartScale, DAY_MS, formatMetric, metricText, shortDate } from './chartUtils';
 import { ChartPoint, LineChartSvg } from './LineChartSvg';
 import { HeatRow, HeatStrip } from './HeatStrip';
 
@@ -28,6 +28,23 @@ interface RecordRow { name: string; category: Category; key: string; caption: st
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const spanText = (ms: number) => { const days = Math.max(1, Math.round(ms / DAY_MS)); return days >= 14 ? plural(Math.round(days / 7), 'week') : plural(days, 'day'); };
 
+const INSIGHT_WEEKS = 4;
+
+// One sentence on push/pull/legs balance over the last four weeks (cardio counts entries, not comparable sets).
+const balanceInsight = (counts: Record<Category, number[]>) => {
+  const span = `the last ${INSIGHT_WEEKS} weeks`;
+  const [top, mid, low] = (['push', 'pull', 'legs'] as Category[])
+    .map(key => ({ key, n: counts[key].slice(-INSIGHT_WEEKS).reduce((a, b) => a + b, 0) }))
+    .sort((a, b) => b.n - a.n);
+  const name = (k: Category) => CATEGORY_LABEL[k], lower = (k: Category) => name(k).toLowerCase();
+  if (!top.n) return `No push, pull or legs sets in ${span}.`;
+  if (top.n === low.n) return `Push, pull and legs are level over ${span} (${plural(top.n, 'set')} each).`;
+  if (top.n === mid.n) return `${name(top.key)} and ${lower(mid.key)} lead over ${span} (${plural(top.n, 'set')} each); ${lower(low.key)} trails (${low.n}).`;
+  if (!mid.n) return `Only ${lower(top.key)} work in ${span} (${plural(top.n, 'set')}).`;
+  const trailing = mid.n === low.n ? `${lower(mid.key)} and ${lower(low.key)} trail` : `${lower(low.key)} trails`;
+  return `${name(top.key)} is your most trained category over ${span} (${plural(top.n, 'set')}); ${trailing} (${low.n}).`;
+};
+
 export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
   const sorted = useMemo(() => logs.slice().sort((a, b) => a.startTime - b.startTime), [logs]);
   const names = useMemo(() => exerciseNames(logs), [logs]);
@@ -36,7 +53,7 @@ export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
     sorted.forEach(l => l.exercises.forEach(e => { const list = map.get(e.exerciseName) || []; list.push({ t: l.startTime, e }); map.set(e.exerciseName, list); }));
     return map;
   }, [sorted]);
-  const categoryOf = (name: string) => { const s = sessionsOf.get(name); return exerciseCategory(name, s?.[s.length - 1]?.e.exerciseType); };
+  const categoryOf = useCallback((name: string) => { const s = sessionsOf.get(name); return exerciseCategory(name, s?.[s.length - 1]?.e.exerciseType); }, [sessionsOf]);
 
   // Default to the lift with the most sessions, so the first chart has a line to draw.
   const [selected, setSelected] = useState('');
@@ -49,7 +66,7 @@ export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
     setSelected(busiest || '');
   }, [names, selected, sessionsOf]);
 
-  const selectedSessions = sessionsOf.get(selected) || [];
+  const selectedSessions = useMemo(() => sessionsOf.get(selected) || [], [sessionsOf, selected]);
   const kind = selectedSessions.length ? resolveKind(selectedSessions[selectedSessions.length - 1].e) : 'external';
   const options = metricOptions(kind);
   const option = options[Math.min(metricIndex, options.length - 1)];
@@ -58,10 +75,10 @@ export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
   const points = useMemo(() => {
     let best: number | null = null;
     return selectedSessions.map(({ t, e }) => ({ t, value: metricValue(e, option.key) })).filter((p): p is { t: number; value: number } => p.value !== null)
-      .map((p, i): ChartPoint => {
+      .map((p): ChartPoint => {
         const beats = best !== null && (option.better === 'high' ? p.value > best : p.value < best);
         if (best === null || beats) best = p.value;
-        return { ...p, record: i > 0 && beats };
+        return { ...p, record: beats };
       });
   }, [selectedSessions, option.key, option.better]);
 
@@ -78,11 +95,11 @@ export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
       const isNew = now - first.t <= NEW_WINDOW && values.some(x => x.t < first.t);
       return { name, category: categoryOf(name), key: m.key, caption: m.caption, value: best, date: first.t, isNew };
     }).filter((r): r is RecordRow => !!r).sort((a, b) => b.date - a.date || a.name.localeCompare(b.name));
-  }, [names, sessionsOf]);
+  }, [names, sessionsOf, categoryOf]);
 
   const heat = useMemo(() => {
-    const thisWeek = startOfWeek(new Date()).getTime();
-    const weeks = Array.from({ length: WEEKS }, (_, i) => startOfWeek(new Date(thisWeek - (WEEKS - 1 - i) * 7 * DAY_MS + DAY_MS)).getTime());
+    const now = new Date();
+    const weeks = Array.from({ length: WEEKS }, (_, i) => startOfWeek(subWeeks(now, WEEKS - 1 - i)).getTime());
     const index = new Map(weeks.map((w, i) => [w, i]));
     const counts: Record<Category, number[]> = { push: [], pull: [], legs: [], cardio: [], other: [] };
     (Object.keys(counts) as Category[]).forEach(k => { counts[k] = Array(WEEKS).fill(0); });
@@ -95,24 +112,15 @@ export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
     });
     const keys: Category[] = ['push', 'pull', 'legs', 'cardio', ...(counts.other.some(Boolean) ? ['other' as Category] : [])];
     const rows: HeatRow[] = keys.map(key => ({ key, values: counts[key] }));
-    // Insight: the last four columns, strength categories only (cardio counts entries, not comparable sets).
-    const month = (['push', 'pull', 'legs'] as Category[]).map(key => ({ key, n: counts[key].slice(-4).reduce((a, b) => a + b, 0) })).sort((a, b) => b.n - a.n);
-    const label = (k: Category) => CATEGORY_LABEL[k];
-    const [top, mid, low] = month;
-    const lc = (k: Category) => label(k).toLowerCase();
-    let insight: string;
-    if (!top.n) insight = 'No push, pull or legs sets in the last 4 weeks.';
-    else if (top.n === low.n) insight = `Push, pull and legs are level over the last 4 weeks (${plural(top.n, 'set')} each).`;
-    else if (top.n === mid.n) insight = `${label(top.key)} and ${lc(mid.key)} lead over the last 4 weeks (${plural(top.n, 'set')} each); ${lc(low.key)} trails (${low.n}).`;
-    else if (!mid.n) insight = `Only ${lc(top.key)} work in the last 4 weeks (${plural(top.n, 'set')}).`;
-    else insight = `${label(top.key)} is your most trained category over the last 4 weeks (${plural(top.n, 'set')}); ${mid.n === low.n ? `${lc(mid.key)} and ${lc(low.key)} trail` : `${lc(low.key)} trails`} (${low.n}).`;
-    return { weeks, rows, insight };
+    return { weeks, rows, insight: balanceInsight(counts) };
   }, [logs]);
+
+  const scale = useMemo(() => chartScale(option.key, points.map(p => p.value)), [option.key, points]);
+  const unit = scale.unit;
 
   if (!logs.length) return <EmptyState icon={TrendingUp} title="Nothing to chart yet" message="Finish a session and your records, weekly training and progression show up here." />;
 
   const visibleRecords = showAllRecords ? records : records.slice(0, 5);
-  const unit = formatMetric(option.key, points[points.length - 1]?.value ?? 0).unit;
   const first = points[0], last = points[points.length - 1];
   const diff = points.length > 1 ? last.value - first.value : 0;
   const better = option.better === 'high' ? diff > 0 : diff < 0;
@@ -172,7 +180,7 @@ export const TrainingTab = ({ logs }: { logs: WorkoutLog[] }) => {
         </View>}
         <Text style={styles.subtitle}>{option.subtitle}{unit ? `, ${unit}` : ''}</Text>
         {points.length > 1 ? <>
-          <LineChartSvg points={points} unit={unit} format={option.key === 'pace' || option.key === 'duration' ? v => formatMetric(option.key, v).value : undefined} describe={describe} height={210} />
+          <LineChartSvg points={points} unit={unit} format={scale.format} describe={describe} height={210} />
           <View style={styles.deltaRow}>
             <Text style={[styles.delta, better && styles.deltaGood]}>{deltaText}</Text>
             {hasRecordPoint && <View style={styles.key}><View style={styles.keyDot} /><Text style={styles.caption}>Record</Text></View>}

@@ -10,7 +10,7 @@ import { Barbell } from './Barbell';
 import { PaceMark, paceDelta, paceLabel } from './PaceParts';
 import { ProgressionChip } from './ProgressionChip';
 import { ProgressionSuggestion } from '../../utils/progression';
-import { formatDecimal } from '../../utils/training';
+import { BAR_KG, formatDecimal as fmtNum } from '../../utils/training';
 
 interface Props {
   exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number;
@@ -21,8 +21,8 @@ interface Props {
   onToggleComplete: (index: number) => void; onToggleTimer: (index: number) => void; onFocusSet: (index: number) => void; onCompleteAll: () => void;
 }
 
-export const fmtNum = formatDecimal;
 const loadMode = (e: Exercise) => e.loadMode || 'external';
+const WEIGHT_STEP_KG = 2.5;
 
 // "85 kg × 6", "8 reps", "0:45", "5 km · 24:10": the set as the lifter says it.
 export const describeSet = (exercise: Exercise, set: Pick<SetLog, 'reps' | 'weight' | 'distance' | 'durationSeconds'>, elapsed = 0) => {
@@ -93,6 +93,13 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
   const offersProgression = (set: SetLog) => !!suggestion && !set.completed && set.reps === suggestion.reps && (mode === 'bodyweight' || set.weight === suggestion.weight);
   const distanceStep = exercise.targetDistanceUnit === 'm' ? 100 : exercise.targetDistanceUnit === 'miles' ? 0.25 : 0.5;
 
+  // A loaded bar is drawn plate by plate; exactly the bar is named; a lighter external load (a dumbbell, a cable) has no bar to show.
+  const renderBar = (weight = 0) => {
+    if (weight > BAR_KG) return <Barbell weight={weight} />;
+    if (weight === BAR_KG) return <View style={styles.emptyBar}><Text style={styles.emptyBarText}>Empty bar</Text></View>;
+    return null;
+  };
+
   const renderCard = (i: number) => {
     const set = sets[i], key = `${exerciseIndex}-${i}`, running = !!timerRunning[key], elapsed = timers[key] || 0;
     const changedWeight = defaultCandidate?.exerciseId === exercise.id && defaultCandidate.setIndex === i && exercise.type === 'reps' && mode !== 'bodyweight'
@@ -108,10 +115,10 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
       </View>
 
       {exercise.type === 'reps' && <>
-        {mode === 'external' && ((set.weight || 0) > 20 ? <Barbell weight={set.weight || 0} /> : <View style={styles.emptyBar}><Text style={styles.emptyBarText}>Empty bar</Text></View>)}
+        {mode === 'external' && renderBar(set.weight)}
         <View style={styles.steppers}>
-          {mode !== 'bodyweight' && <NumberStepper label={mode === 'assisted' ? 'Assistance' : 'Weight'} unit={mode === 'assisted' ? 'kg assist' : 'kg'} value={set.weight} step={2.5}
-            onEdit={weightEdit} onChange={v => onUpdateSet(i, 'weight', v)} />}
+          {mode !== 'bodyweight' && <NumberStepper label={mode === 'assisted' ? 'Assistance' : 'Weight'} unit={mode === 'assisted' ? 'kg assist' : 'kg'}
+            value={set.weight} step={WEIGHT_STEP_KG} onEdit={weightEdit} onChange={v => onUpdateSet(i, 'weight', v)} />}
           <NumberStepper label="Reps" unit="reps" value={set.reps} step={1} onChange={v => onUpdateSet(i, 'reps', Math.round(v))} />
         </View>
       </>}
@@ -126,7 +133,7 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
         <NumberStepper label="Distance" unit={exercise.targetDistanceUnit || 'km'} value={set.distance} step={distanceStep} onChange={v => onUpdateSet(i, 'distance', v)} />
         <View style={styles.timeField}>
           <Text style={styles.timeLabel}>Time</Text>
-          <TextInput accessibilityLabel="Time, minutes and seconds" defaultValue={set.durationSeconds ? formatTime(set.durationSeconds) : ''} placeholder="0:00" placeholderTextColor={theme.colors.textSubtle}
+          <TextInput key={key} accessibilityLabel="Time, minutes and seconds" defaultValue={set.durationSeconds ? formatTime(set.durationSeconds) : ''} placeholder="0:00" placeholderTextColor={theme.colors.textSubtle}
             onChangeText={v => onUpdateSet(i, 'durationSeconds', parseTimeString(v))} selectTextOnFocus style={styles.timeInput} />
         </View>
       </View>}
