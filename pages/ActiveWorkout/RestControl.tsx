@@ -6,12 +6,14 @@ import { formatTime } from '../../utils/time';
 import { fonts, theme } from '../../constants/theme';
 import { Button, PressableScale, useReducedMotion } from '../../components/ui/Primitives';
 import { Barbell } from './Barbell';
+import { useRestSeconds } from '../../hooks/useWorkoutTimer';
 
 export interface RestNext { title: string; load: string; barWeight?: number }
-interface RestProps { restTimer: number; restEndsAt: number | null; restTotal: number; next: RestNext | null; onAdd: () => void; onSubtract: () => void; onSkip: () => void }
+interface RestProps { restEndsAt: number | null; restTotal: number; next: RestNext | null; onAdd: () => void; onSubtract: () => void; onSkip: () => void }
 
 // Rest digits: in the last three seconds each tick pulses once so the end is felt from across the room.
-const RestDigits = ({ seconds, style }: { seconds: number; style: StyleProp<TextStyle> }) => {
+const RestDigits = ({ endsAt, style }: { endsAt: number | null; style: StyleProp<TextStyle> }) => {
+  const seconds = useRestSeconds(endsAt);
   const scale = useRef(new Animated.Value(1)).current;
   const reduced = useReducedMotion();
   useEffect(() => {
@@ -77,7 +79,7 @@ export const RestDock = ({ visible, onExpand, ...props }: RestProps & { visible:
     <View style={styles.dockRow}>
       <View style={styles.flex}>
         <PressableScale scaleTo={0.98} accessibilityRole="button" accessibilityLabel="Expand rest timer" accessibilityHint="Shows the countdown full screen" onPress={onExpand} style={styles.dockMain}>
-          <RestDigits seconds={p.restTimer} style={styles.dockTime} />
+          <RestDigits endsAt={p.restEndsAt} style={styles.dockTime} />
           <View style={styles.dockNext}>
             {p.next ? <>
               <Text numberOfLines={1} style={styles.dockNextTitle}>Next: {p.next.title}</Text>
@@ -110,7 +112,7 @@ export const RestOverlay = ({ onMinimise, ...props }: RestProps & { onMinimise: 
       </PressableScale>
     </View>
     <View style={styles.overlayCenter}>
-      <RestDigits seconds={props.restTimer} style={styles.bigTime} />
+      <RestDigits endsAt={props.restEndsAt} style={styles.bigTime} />
       <Drain endsAt={props.restEndsAt} total={props.restTotal} style={styles.bigDrain} />
       {props.next && <View style={styles.overlayNext}>
         <Text style={styles.overlayNextTitle}>Next: {props.next.title}</Text>
