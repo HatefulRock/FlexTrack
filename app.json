@@ -26,7 +26,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.health.WRITE_EXERCISE",
+        "android.permission.health.WRITE_DISTANCE"
+      ]
     },
     "web": {
       "output": "static",
@@ -46,7 +50,26 @@
         }
       ],
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "FlexTrack does not read your health data.",
+          "NSHealthUpdateUsageDescription": "FlexTrack saves your finished workouts to Apple Health when you turn on Health sync.",
+          "background": false
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
+          }
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true
