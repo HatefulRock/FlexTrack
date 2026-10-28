@@ -5,6 +5,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ViewState, WorkoutTemplate, WorkoutLog } from './types';
 import { useWorkoutData } from './hooks/useWorkoutDataSafe';
+import { useHealthSync } from './hooks/useHealthSync';
+import { useWidgetSync } from './hooks/useWidgetSync';
 import { useAppFonts } from './hooks/useAppFonts';
 import { DialogHost, showAlert } from './components/ui/Dialog';
 import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/activeSession';
@@ -53,6 +55,8 @@ const App = () => {
     deleteTemplate,
     addLog
   } = useWorkoutData();
+  const health = useHealthSync();
+  useWidgetSync(templates, logs, !loading);
 
   const ready = !loading && fontsReady && sessionChecked;
   const hasUnreadable = Object.keys(unreadable).length > 0;
@@ -90,7 +94,7 @@ const App = () => {
     void clearActiveSession();
     setResumeSession(null);
     if (log) {
-        void addLog(log).catch(() => showAlert('Save failed', 'This workout could not be written to local storage.'));
+        void addLog(log).then(() => health.onLogSaved(log), () => showAlert('Save failed', 'This workout could not be written to local storage.'));
         setLastLog(log);
         setView('workout-summary');
     } else {
@@ -185,10 +189,10 @@ const App = () => {
           )}
 
           {view === 'quick-log' && (
-              <QuickLogPage onSave={(log) => { void addLog(log).catch(() => showAlert('Save failed', 'This activity could not be written to local storage.')); setView('history'); }} onCancel={() => setView('dashboard')} />
+              <QuickLogPage onSave={(log) => { void addLog(log).then(() => health.onLogSaved(log), () => showAlert('Save failed', 'This activity could not be written to local storage.')); setView('history'); }} onCancel={() => setView('dashboard')} />
           )}
           {view === 'history' && (
-              <HistoryPage logs={logs} onExport={handleExport} />
+              <HistoryPage logs={logs} onExport={handleExport} health={health.available ? { name: health.platformName!, enabled: health.enabled, onPress: () => health.openSettings(logs) } : undefined} />
           )}
 
           {view === 'stats' && (

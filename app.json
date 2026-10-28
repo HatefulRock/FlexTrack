@@ -14,6 +14,11 @@
       "bundleIdentifier": "com.HatefulRock.flextrack",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.HatefulRock.flextrack"
+        ]
       }
     },
     "android": {
@@ -26,7 +31,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.health.WRITE_DISTANCE",
+        "android.permission.health.WRITE_EXERCISE"
+      ]
     },
     "web": {
       "output": "static",
@@ -47,7 +56,61 @@
       ],
       "expo-font",
       "expo-notifications",
-      "./plugins/withAsyncStorageSize.cjs"
+      "./plugins/withAsyncStorageSize.cjs",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "FlexTrack does not read your health data.",
+          "NSHealthUpdateUsageDescription": "FlexTrack saves your finished workouts to Apple Health when you turn on Health sync.",
+          "background": false
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
+          }
+        }
+      ],
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/big-shoulders-display/BigShouldersDisplay_800ExtraBold.ttf",
+            "./node_modules/@expo-google-fonts/archivo/400Regular/Archivo_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/archivo/600SemiBold/Archivo_600SemiBold.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Streak",
+              "label": "Streak",
+              "description": "Your training streak in days.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
+            },
+            {
+              "name": "NextWorkout",
+              "label": "Next workout",
+              "description": "Today's routine, or the next one on your schedule.",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

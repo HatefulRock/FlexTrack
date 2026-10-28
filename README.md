@@ -223,7 +223,7 @@ UserProfile {
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v20+
-- For mobile: [Expo Go](https://expo.dev/client) on your physical device, **or** an iOS Simulator / Android Emulator
+- For mobile: a development build (see below), on a physical device or an iOS Simulator / Android Emulator. Expo Go can't load the Apple Health and Health Connect modules.
 
 ### Installation
 
@@ -249,11 +249,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 **Mobile (Expo):**
 
 ```bash
-npx expo start
+# Once, and again after native dependencies change
+eas build --profile development --platform ios      # or android
+npx expo start --dev-client
 ```
 
 Then:
-- **Physical device:** Scan the QR code with the Expo Go app
+- **Physical device:** Install the development build, then scan the QR code
 - **iOS Simulator:** Press `i`
 - **Android Emulator:** Press `a`
 
@@ -289,7 +291,11 @@ eas build --platform ios --profile production
 eas submit --platform ios
 ```
 
-Configuration is in `eas.json`. The privacy policy for the store listings is at <https://hatefulrock.github.io/apps/flextrack/privacy/> and the support page at <https://hatefulrock.github.io/apps/flextrack/>.
+Configuration is in `eas.json`.
+
+**Health sync:** History has a heart button that turns on writing finished workouts to Apple Health (iOS) or Health Connect (Android). It is off by default, writes workouts only and never reads health data. Each workout carries its FlexTrack id as a sync identifier, so resending never duplicates. Watches and apps that read these stores (Garmin Connect, Fitbit, Samsung Health, Strava) see the workouts from there. Health Connect needs Android 8 (API 26) or later. Before release, the Play Console health permissions declaration and the privacy policy need to cover this.
+
+**Home-screen widgets:** a Streak widget and a Next workout widget, on iOS and Android. The app writes a small snapshot of training days and scheduled routines whenever history or routines change. On iOS it goes to the `group.com.HatefulRock.flextrack` App Group, and on Android it goes to local storage. The widgets compute the streak and the next routine from that snapshot, so they stay correct after midnight without the app opening. The iOS widget is SwiftUI in `targets/widget/`, built by `@bacons/apple-targets`, and signs with the team in the `APPLE_TEAM_ID` environment variable, read by `app.config.ts`. Put it in `.env.local` (gitignored) for local builds and in the project's EAS environment variables for cloud builds, so it stays out of the repo. The Android widgets are drawn from `widgets/AndroidWidgets.tsx` by `react-native-android-widget`. The privacy policy for the store listings is at <https://hatefulrock.github.io/apps/flextrack/privacy/> and the support page at <https://hatefulrock.github.io/apps/flextrack/>.
 
 The icon, Android adaptive layers and splash mark are drawn from the SVGs in `assets/images/source/`.
 

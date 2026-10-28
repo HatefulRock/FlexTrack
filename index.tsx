@@ -1,7 +1,9 @@
 import { AppRegistry, Platform } from 'react-native';
 import App from './App';
+import { registerWidgets } from './widgets/registerWidgets';
 
 AppRegistry.registerComponent('main', () => App);
+registerWidgets();
 
 if (Platform.OS === 'web') {
   const root = document.getElementById('root');
