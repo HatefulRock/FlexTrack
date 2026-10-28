@@ -70,5 +70,5 @@ export interface UserProfile {
   weightLogs: BodyMetricLog[];
 }
 
-export type ViewState = 'dashboard' | 'quick-log' | 'templates' | 'active-workout' | 'workout-summary' | 'history' | 'ai-creator' | 'stats';
+export type ViewState = 'dashboard' | 'quick-log' | 'templates' | 'active-workout' | 'workout-summary' | 'history' | 'stats';
 

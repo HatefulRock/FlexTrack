@@ -36,5 +36,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Build
+      - name: Test
+        run: npm test
+
+      - name: Build web
         run: npm run build
+
+      - name: Bundle iOS and Android
+        run: npx expo export --platform ios --platform android --output-dir dist-native

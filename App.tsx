@@ -8,6 +8,7 @@ import { useWorkoutData } from './hooks/useWorkoutDataSafe';
 import { useAppFonts } from './hooks/useAppFonts';
 import { DialogHost, showAlert } from './components/ui/Dialog';
 import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/activeSession';
+import { buildExport, shareExport } from './utils/exportData';
 
 // Layout
 import { Navigation } from './components/layout/Navigation';
@@ -16,7 +17,6 @@ import { Navigation } from './components/layout/Navigation';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { TemplatesPage } from './pages/Templates/TemplatesPage';
 import { TemplateEditor } from './pages/Templates/TemplateEditor';
-import { AICreatorPage } from './pages/AICreator/AICreatorPage';
 import { ActiveWorkoutPage } from './pages/ActiveWorkout/ActiveWorkoutPage';
 import { WorkoutSummaryPage } from './pages/ActiveWorkout/WorkoutSummaryPage';
 import { HistoryPage } from './pages/History/HistoryPage';
@@ -111,9 +111,9 @@ const App = () => {
     );
   };
 
-  const handleCreateAI = (t: WorkoutTemplate) => {
-    void saveTemplate(t).catch(() => showAlert('Save failed', 'This routine could not be written to local storage.'));
-    setView('templates');
+  const handleExport = () => {
+    void shareExport(buildExport(templates, logs, userProfile))
+      .catch(() => showAlert('Export failed', 'Your data could not be exported. Try again.'));
   };
 
   const isFullScreen = view === 'active-workout' || view === 'workout-summary' || view === 'quick-log';
@@ -155,13 +155,6 @@ const App = () => {
               />
           )}
 
-          {view === 'ai-creator' && (
-              <AICreatorPage 
-                  onSave={handleCreateAI} 
-                  onCancel={() => setView('dashboard')} 
-              />
-          )}
-
           {view === 'active-workout' && activeTemplate && (
               <ActiveWorkoutPage 
                   template={activeTemplate}
@@ -185,7 +178,7 @@ const App = () => {
               <QuickLogPage onSave={(log) => { void addLog(log).catch(() => showAlert('Save failed', 'This activity could not be written to local storage.')); setView('history'); }} onCancel={() => setView('dashboard')} />
           )}
           {view === 'history' && (
-              <HistoryPage logs={logs} />
+              <HistoryPage logs={logs} onExport={handleExport} />
           )}
 
           {view === 'stats' && (
@@ -199,7 +192,7 @@ const App = () => {
           )}
         </View>
 
-        {view !== 'active-workout' && view !== 'workout-summary' && view !== 'template-editor' && view !== 'ai-creator' && view !== 'quick-log' && (
+        {view !== 'active-workout' && view !== 'workout-summary' && view !== 'template-editor' && view !== 'quick-log' && (
           <Navigation currentView={view} setView={setView} templates={templates} onStart={handleStartWorkout} onCreate={() => { setEditingTemplate(null); setView('template-editor'); }} onQuickLog={() => setView('quick-log')} />
         )}
 

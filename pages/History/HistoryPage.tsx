@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CalendarDays, History as HistoryIcon } from 'lucide-react-native';
+import { CalendarDays, Download, History as HistoryIcon } from 'lucide-react-native';
 import { format, isSameDay } from 'date-fns';
 import { Header } from '../../components/layout/Header';
 import { Chip, EmptyState, PressableScale, SectionHeader } from '../../components/ui/Primitives';
@@ -11,7 +11,7 @@ import { LogItem } from './LogItem';
 import { TrainingCalendar } from './TrainingCalendar';
 import { sessionMs } from './historyModel';
 
-export const HistoryPage = ({ logs }: { logs: WorkoutLog[] }) => {
+export const HistoryPage = ({ logs, onExport }: { logs: WorkoutLog[]; onExport: () => void }) => {
   const [filter, setFilter] = useState('All'), [selected, setSelected] = useState<Date | null>(null);
   const options = useMemo(() => ['All', ...Array.from(new Set(logs.map(l => l.templateName)))], [logs]);
   // Sessions logged without a duration don't pull the average towards zero.
@@ -31,7 +31,12 @@ export const HistoryPage = ({ logs }: { logs: WorkoutLog[] }) => {
   const clear = () => { setFilter('All'); setSelected(null); };
 
   return <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-    <Header title="History" />
+    <Header title="History" rightAction={
+      <PressableScale accessibilityRole="button" accessibilityLabel="Export all data" onPress={onExport} scaleTo={0.92} style={styles.export}>
+        <Download size={20} color={theme.colors.text} />
+        <Text style={styles.exportText}>Export</Text>
+      </PressableScale>
+    } />
     <View style={styles.content}>
       {logs.length > 0 && <Text style={styles.score} accessibilityLabel={`${logs.length} sessions, ${formatDuration(stats.avg)} average, ${stats.streak} day streak`}>
         <Text style={styles.scoreNum}>{logs.length}</Text><Text style={styles.scoreLabel}> {logs.length === 1 ? 'session' : 'sessions'}</Text>
@@ -61,6 +66,8 @@ export const HistoryPage = ({ logs }: { logs: WorkoutLog[] }) => {
 };
 
 const styles = StyleSheet.create({
+  export: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface },
+  exportText: { ...theme.type.label, color: theme.colors.text },
   container: { flex: 1, backgroundColor: theme.colors.canvas },
   scroll: { paddingBottom: 110 },
   content: { paddingHorizontal: 16, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center' },
