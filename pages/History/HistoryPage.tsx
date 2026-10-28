@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
 import { CalendarDays, Download, HeartPulse, History as HistoryIcon } from 'lucide-react-native';
 import { format, isSameDay } from 'date-fns';
 import { Header } from '../../components/layout/Header';
@@ -23,16 +23,17 @@ export const HistoryPage = ({ logs, onExport, health }: { logs: WorkoutLog[]; on
   }, [logs]);
   const shown = useMemo(() => logs.filter(l => (filter === 'All' || l.templateName === filter) && (!selected || isSameDay(new Date(l.startTime), selected)))
     .sort((a, b) => b.startTime - a.startTime), [logs, filter, selected]);
-  const grouped = useMemo(() => {
+  const sections = useMemo(() => {
     const year = new Date().getFullYear();
-    return shown.reduce<Record<string, WorkoutLog[]>>((all, l) => {
+    const byMonth = shown.reduce<Record<string, WorkoutLog[]>>((all, l) => {
       const d = new Date(l.startTime), key = format(d, d.getFullYear() === year ? 'MMMM' : 'MMMM yyyy');
       (all[key] ??= []).push(l); return all;
     }, {});
+    return Object.entries(byMonth).map(([title, data]) => ({ title, data }));
   }, [shown]);
   const clear = () => { setFilter('All'); setSelected(null); };
 
-  return <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+  const top = <>
     <Header title="History" rightAction={<>
       {health && <PressableScale accessibilityRole="button" accessibilityLabel={`${health.name} sync, ${health.enabled ? 'on' : 'off'}`} onPress={health.onPress} scaleTo={0.92} style={[styles.health, health.enabled && styles.healthOn]}>
         <HeartPulse size={20} color={health.enabled ? theme.colors.onPrimary : theme.colors.text} />
@@ -42,7 +43,7 @@ export const HistoryPage = ({ logs, onExport, health }: { logs: WorkoutLog[]; on
         <Text style={styles.exportText}>Export</Text>
       </PressableScale>
     </>} />
-    <View style={styles.content}>
+    <View style={[styles.content, styles.top]}>
       {logs.length > 0 && <Text style={styles.score} accessibilityLabel={`${logs.length} sessions, ${formatDuration(stats.avg)} average, ${stats.streak} day streak`}>
         <Text style={styles.scoreNum}>{logs.length}</Text><Text style={styles.scoreLabel}> {logs.length === 1 ? 'session' : 'sessions'}</Text>
         <Text style={styles.scoreDot}>{'  ·  '}</Text>
@@ -60,14 +61,25 @@ export const HistoryPage = ({ logs, onExport, health }: { logs: WorkoutLog[]; on
           <Text style={styles.clearText}>Clear</Text>
         </PressableScale>
       </View>}
-      {!logs.length ? <EmptyState icon={HistoryIcon} title="No sessions yet" message="Finish a routine or quick-log a run and it lands here, filling the calendar by training split: every set, weight and minute you put in." /> :
-        !shown.length ? <EmptyState icon={CalendarDays} title={selected && filter === 'All' ? 'Rest day' : 'No sessions match'} message={selected && filter === 'All' ? `Nothing logged on ${format(selected, 'EEEE, MMMM d')}. Tap a filled day to see its session.` : `No ${filter} session${selected ? ` on ${format(selected, 'MMMM d')}` : ''}.`} action="Clear filters" onAction={clear} /> :
-          Object.entries(grouped).map(([month, items]) => <View key={month}>
-            <SectionHeader title={month} />
-            <View style={styles.list}>{items.map((l, i) => <LogItem key={l.id} log={l} first={i === 0} />)}</View>
-          </View>)}
     </View>
-  </ScrollView>;
+  </>;
+
+  // Virtualized: only the sessions on screen are mounted, however long the history grows.
+  return <SectionList style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}
+    sections={sections} keyExtractor={l => l.id} stickySectionHeadersEnabled={false} initialNumToRender={12} windowSize={7}
+    ListHeaderComponent={top}
+    ListEmptyComponent={<View style={styles.content}>
+      {!logs.length ? <EmptyState icon={HistoryIcon} title="No sessions yet" message="Finish a routine or quick-log a run and it lands here, filling the calendar by training split: every set, weight and minute you put in." /> :
+        <EmptyState icon={CalendarDays} title={selected && filter === 'All' ? 'Rest day' : 'No sessions match'} message={selected && filter === 'All' ? `Nothing logged on ${format(selected, 'EEEE, MMMM d')}. Tap a filled day to see its session.` : `No ${filter} session${selected ? ` on ${format(selected, 'MMMM d')}` : ''}.`} action="Clear filters" onAction={clear} />}
+    </View>}
+    renderSectionHeader={({ section }) => <View style={styles.content}><SectionHeader title={section.title} /></View>}
+    renderSectionFooter={() => <View style={styles.sectionGap} />}
+    renderItem={({ item, index, section }) => <View style={styles.content}>
+      <View style={[styles.row, index === 0 && styles.rowFirst, index === section.data.length - 1 && styles.rowLast]}>
+        <LogItem log={item} first={index === 0} />
+      </View>
+    </View>}
+  />;
 };
 
 const styles = StyleSheet.create({
@@ -77,7 +89,9 @@ const styles = StyleSheet.create({
   exportText: { ...theme.type.label, color: theme.colors.text },
   container: { flex: 1, backgroundColor: theme.colors.canvas },
   scroll: { paddingBottom: 110 },
-  content: { paddingHorizontal: 16, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center' },
+  content: { paddingHorizontal: 16, maxWidth: 620, width: '100%', alignSelf: 'center' },
+  top: { gap: 16, marginBottom: 16 },
+  sectionGap: { height: 16 },
   score: { lineHeight: 36, color: theme.colors.text },
   scoreNum: { ...theme.type.metric, fontVariant: ['tabular-nums'], fontSize: 32, color: theme.colors.text },
   scoreLabel: { ...theme.type.label, color: theme.colors.textMuted },
@@ -88,5 +102,7 @@ const styles = StyleSheet.create({
   selectionText: { ...theme.type.label, color: theme.colors.text, flex: 1 },
   clear: { minHeight: 48, minWidth: 64, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
   clearText: { ...theme.type.label, color: theme.colors.text, textDecorationLine: 'underline' },
-  list: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg, overflow: 'hidden' },
+  row: { backgroundColor: theme.colors.surface, overflow: 'hidden' },
+  rowFirst: { borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg },
+  rowLast: { borderBottomLeftRadius: theme.radius.lg, borderBottomRightRadius: theme.radius.lg },
 });

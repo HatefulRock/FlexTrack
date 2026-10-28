@@ -120,7 +120,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const [focusSet, setFocusSet] = useState<number | null>(null);
   // Judge lights play for the set just completed (set -1: the whole exercise), on that exercise only, and only once.
   const [lights, setLights] = useState({ n: 0, exercise: -1, set: -1, at: 0 });
-  const { timers, timerRunning, restTimer, restEndsAt, restTotal, isResting, toggleTimer, startRest, cancelRest, adjustRest } = useWorkoutTimer();
+  const { timers, timerRunning, restEndsAt, restTotal, isResting, toggleTimer, startRest, cancelRest, adjustRest } = useWorkoutTimer();
   const currentExercise = template.exercises[activeExerciseIndex], currentLog = logs[activeExerciseIndex];
   const isLast = activeExerciseIndex === template.exercises.length - 1;
 
@@ -286,7 +286,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const doneLabel = nextExercise ? `Next: ${nextExercise.name} · ${targetLabel(nextExercise)}` : 'Last exercise of the routine.';
   const translateX = reduced ? 0 : enter.interpolate({ inputRange: [0, 1], outputRange: [16 * direction.current, 0] });
   const restProps = {
-    restTimer, restEndsAt, restTotal, next: restNext,
+    restEndsAt, restTotal, next: restNext,
     onAdd: () => adjustRest(REST_STEP_SECONDS), onSubtract: () => adjustRest(-REST_STEP_SECONDS), onSkip: cancelRest,
   };
   const lightsFresh = lights.exercise === activeExerciseIndex && Date.now() - lights.at < LIGHTS_WINDOW_MS;
