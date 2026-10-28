@@ -12,6 +12,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.HatefulRock.flextrack",
+      "appleTeamId": "CWVNNX24M4",
       "config": {
         "usesNonExemptEncryption": false
       },
