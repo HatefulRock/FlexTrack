@@ -96,6 +96,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 - See total workouts, average duration, and current streak
 - Filter by routine or a selected day
 - Review sessions grouped by month with duration, volume, and exercise details
+- Export every routine, session and body-weight entry as one JSON file from the History header
 
 ### Progress
 
@@ -149,6 +150,7 @@ flex-track/
 │   └── useWorkoutTimer.ts      # Exercise timers and rest countdown
 ├── utils/
 │   ├── progress.ts             # Modality-aware progress calculations
+│   ├── exportData.ts           # JSON export through the share sheet
 │   ├── time.ts                 # Duration parsing and formatting
 │   ├── formatters.ts           # Schedule labels
 │   └── helpers.ts              # ID generation
@@ -266,6 +268,8 @@ npm run build      # outputs to dist/
 npm run preview    # preview the production build locally
 ```
 
+**Tests:** `npm test` runs the Vitest unit tests in `tests/`. CI also runs typecheck, lint, the web build and a native iOS/Android bundle.
+
 **Mobile (via EAS):**
 
 ```bash
@@ -279,10 +283,15 @@ eas login
 eas build --platform android --profile preview
 
 # Build for iOS (requires Apple Developer account)
-eas build --platform ios
+eas build --platform ios --profile production
+
+# Upload the latest build to App Store Connect
+eas submit --platform ios
 ```
 
-Configuration is in `eas.json`.
+Configuration is in `eas.json`. The privacy policy for the store listings is at <https://hatefulrock.github.io/apps/flextrack/privacy/> and the support page at <https://hatefulrock.github.io/apps/flextrack/>.
+
+The icon, Android adaptive layers and splash mark are drawn from the SVGs in `assets/images/source/`.
 
 ---
 
@@ -296,8 +305,7 @@ Configuration is in `eas.json`.
 
 ### Current boundaries
 
-- Data is local to the current browser or device; there is no account, cloud sync, or remote database.
-- The included AI Creator screen is an unlinked coming-soon prototype. No AI provider or API key is configured, and the current product does not generate routines with AI.
+- Data is local to the current browser or device; there is no account, cloud sync, or remote database. Export is the only way to copy it off the device, and there is no import yet.
 - Exercise grouping for the training split is inferred from exercise names.
 
 ---

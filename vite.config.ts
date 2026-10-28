@@ -27,6 +27,7 @@ export default defineConfig(() => {
         { find: /^expo-linear-gradient$/, replacement: path.resolve(__dirname, 'shims/linearGradient.tsx') },
         { find: /^expo-haptics$/, replacement: path.resolve(__dirname, 'shims/haptics.ts') },
         { find: /^expo-notifications$/, replacement: path.resolve(__dirname, 'shims/notifications.ts') },
+        { find: /^expo-file-system$/, replacement: path.resolve(__dirname, 'shims/fileSystem.ts') },
         { find: /^expo-sharing$/, replacement: path.resolve(__dirname, 'shims/sharing.ts') },
         { find: /^react-native-view-shot$/, replacement: path.resolve(__dirname, 'shims/viewShot.tsx') },
         { find: /^expo-keep-awake$/, replacement: path.resolve(__dirname, 'shims/keepAwake.ts') },
