@@ -1,0 +1,10 @@
+{
+  "type": "widget",
+  "name": "FlexTrackWidget",
+  "displayName": "FlexTrack",
+  "deploymentTarget": "17.0",
+  "colors": { "$accent": "#F2F1EC", "$widgetBackground": "#141516" },
+  "entitlements": {
+    "com.apple.security.application-groups": ["group.com.HatefulRock.flextrack"]
+  }
+}

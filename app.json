@@ -14,6 +14,11 @@
       "bundleIdentifier": "com.HatefulRock.flextrack",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.HatefulRock.flextrack"
+        ]
       }
     },
     "android": {
@@ -68,6 +73,41 @@
             "compileSdkVersion": 36,
             "targetSdkVersion": 36
           }
+        }
+      ],
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/big-shoulders-display/BigShouldersDisplay_800ExtraBold.ttf",
+            "./node_modules/@expo-google-fonts/archivo/400Regular/Archivo_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/archivo/600SemiBold/Archivo_600SemiBold.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Streak",
+              "label": "Streak",
+              "description": "Your training streak in days.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
+            },
+            {
+              "name": "NextWorkout",
+              "label": "Next workout",
+              "description": "Today's routine, or the next one on your schedule.",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
+            }
+          ]
         }
       ]
     ],

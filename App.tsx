@@ -6,6 +6,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ViewState, WorkoutTemplate, WorkoutLog } from './types';
 import { useWorkoutData } from './hooks/useWorkoutDataSafe';
 import { useHealthSync } from './hooks/useHealthSync';
+import { useWidgetSync } from './hooks/useWidgetSync';
 import { useAppFonts } from './hooks/useAppFonts';
 import { DialogHost, showAlert } from './components/ui/Dialog';
 import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/activeSession';
@@ -52,6 +53,7 @@ const App = () => {
     addLog
   } = useWorkoutData();
   const health = useHealthSync();
+  useWidgetSync(templates, logs, !loading);
 
   if (loading || !fontsReady || !sessionChecked) {
     return (
