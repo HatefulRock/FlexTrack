@@ -1,23 +1,26 @@
 {
   "expo": {
-    "name": "flex-track",
+    "name": "FlexTrack",
     "slug": "flex-track",
     "description": "A local-first workout tracker with reusable routines, guided sessions, quick activity logging, and progress analytics.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/flextrack.png",
     "scheme": "flextrack",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.HatefulRock.flextrack"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.HatefulRock.flextrack",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.HatefulRock.flextrack",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#141516",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -36,9 +39,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#141516",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#141516"
           }
         }
       ],
