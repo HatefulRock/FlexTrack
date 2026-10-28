@@ -6,13 +6,29 @@ import { cancelRestEnd, ensureRestNotificationPermission, scheduleRestEnd } from
 // Beyond this the end-of-rest tick ran late because the app was suspended, not because of interval jitter.
 const LATE_CUE_MS = 2000;
 
+const secondsLeft = (endsAt: number | null) => (endsAt === null ? 0 : Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+
+// The visible rest countdown. Only the component showing the digits re-renders each second, not the whole workout page.
+export const useRestSeconds = (endsAt: number | null) => {
+  const [seconds, setSeconds] = useState(() => secondsLeft(endsAt));
+  useEffect(() => {
+    const tick = () => setSeconds(secondsLeft(endsAt));
+    tick();
+    if (endsAt === null) return;
+    const interval = setInterval(tick, 200);
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') tick(); });
+    return () => { clearInterval(interval); sub.remove(); };
+  }, [endsAt]);
+  return seconds;
+};
+
 // Set timers count up; the rest timer counts down from a fixed end timestamp so ±15 s and backgrounding stay exact.
+// The page only re-renders when rest starts, changes or ends; the per-second digits live in useRestSeconds.
 export const useWorkoutTimer = () => {
   const [timers, setTimers] = useState<{ [key: string]: number }>({}); // Per set timers
   const [timerRunning, setTimerRunning] = useState<{ [key: string]: boolean }>({});
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
   const [restTotal, setRestTotal] = useState(0);
-  const [restTimer, setRestTimer] = useState(0);
   const lastCue = useRef<number | null>(null);
   // Mirrors restEndsAt for synchronous reads: two ±15 s taps can land before a re-render.
   const endsAtRef = useRef<number | null>(null);
@@ -64,7 +80,6 @@ export const useWorkoutTimer = () => {
       const left = Math.ceil((restEndsAt - Date.now()) / 1000);
       if (left <= 0) {
         endsAtRef.current = null;
-        setRestTimer(0);
         setRestEndsAt(null);
         clearRestNotification();
         // Coming back from the background long after rest ended: the notification already said so, don't buzz now.
@@ -73,7 +88,6 @@ export const useWorkoutTimer = () => {
         lastCue.current = 0;
         return;
       }
-      setRestTimer(left);
       if (left <= 3 && lastCue.current !== left) { lastCue.current = left; void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
     };
     tick();
@@ -92,7 +106,6 @@ export const useWorkoutTimer = () => {
     lastCue.current = null;
     nextLabelRef.current = nextLabel;
     setRestTotal(duration);
-    setRestTimer(duration);
     endsAtRef.current = duration > 0 ? Date.now() + duration * 1000 : null;
     setRestEndsAt(endsAtRef.current);
     if (endsAtRef.current !== null) scheduleRestNotification(endsAtRef.current);
@@ -104,7 +117,6 @@ export const useWorkoutTimer = () => {
     clearRestNotification();
     endsAtRef.current = null;
     setRestEndsAt(null);
-    setRestTimer(0);
   };
 
   const adjustRest = (seconds: number) => {
@@ -115,7 +127,6 @@ export const useWorkoutTimer = () => {
     if (remaining <= 0) { cancelRest(); return; }
     if (remaining > 3) lastCue.current = null;
     endsAtRef.current = next;
-    setRestTimer(remaining);
     setRestTotal(total => Math.max(total, remaining));
     setRestEndsAt(next);
     scheduleRestNotification(next);
@@ -124,7 +135,6 @@ export const useWorkoutTimer = () => {
   return {
     timers,
     timerRunning,
-    restTimer,
     restEndsAt,
     restTotal,
     isResting: restEndsAt !== null,

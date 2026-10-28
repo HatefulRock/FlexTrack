@@ -46,7 +46,8 @@
         }
       ],
       "expo-font",
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/withAsyncStorageSize.cjs"
     ],
     "experiments": {
       "reactCompiler": true

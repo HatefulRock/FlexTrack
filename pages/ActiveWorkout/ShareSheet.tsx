@@ -10,6 +10,7 @@ import { Sheet } from '../../components/layout/Navigation';
 import { ShareCard } from './ShareCard';
 import { CARD_H, CARD_W, ShareData } from './ShareLayout';
 import { downloadShareCard } from './ShareCanvas';
+import { adoptSharedFile } from '../../utils/sharedFiles';
 
 const web = Platform.OS === 'web';
 
@@ -31,8 +32,8 @@ export const ShareSheet = ({ visible, onClose, data }: { visible: boolean; onClo
         await downloadShareCard(data);
         onClose();
       } else {
-        const uri = await captureRef(capture, { format: 'png', quality: 1, result: 'tmpfile', width: CARD_W, height: CARD_H });
         if (!(await Sharing.isAvailableAsync())) { showAlert('Sharing is not available', 'This device has no share sheet to send the image to.'); return; }
+        const uri = adoptSharedFile(await captureRef(capture, { format: 'png', quality: 1, result: 'tmpfile', width: CARD_W, height: CARD_H }));
         await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share session', UTI: 'public.png' });
         onClose();
       }

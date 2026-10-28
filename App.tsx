@@ -9,6 +9,7 @@ import { useAppFonts } from './hooks/useAppFonts';
 import { DialogHost, showAlert } from './components/ui/Dialog';
 import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/activeSession';
 import { buildExport, shareExport } from './utils/exportData';
+import { clearSharedFiles } from './utils/sharedFiles';
 
 // Layout
 import { Navigation } from './components/layout/Navigation';
@@ -37,6 +38,7 @@ const App = () => {
   const fontsReady = useAppFonts();
 
   useEffect(() => {
+    clearSharedFiles();
     void loadActiveSession().then(session => { setSavedSession(session); setSessionChecked(true); });
   }, []);
 
@@ -44,6 +46,7 @@ const App = () => {
     templates,
     logs,
     userProfile,
+    unreadable,
     loading,
     setUserProfile,
     saveTemplate,
@@ -51,7 +54,14 @@ const App = () => {
     addLog
   } = useWorkoutData();
 
-  if (loading || !fontsReady || !sessionChecked) {
+  const ready = !loading && fontsReady && sessionChecked;
+  const hasUnreadable = Object.keys(unreadable).length > 0;
+  // Runs once DialogHost has mounted with the first full render.
+  useEffect(() => {
+    if (ready && hasUnreadable) showAlert('Some saved data could not be read', 'FlexTrack has left it untouched so nothing is lost. Exporting your data from History includes a copy of it.');
+  }, [ready, hasUnreadable]);
+
+  if (!ready) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -112,7 +122,7 @@ const App = () => {
   };
 
   const handleExport = () => {
-    void shareExport(buildExport(templates, logs, userProfile))
+    void shareExport(buildExport(templates, logs, userProfile, new Date(), unreadable))
       .catch(() => showAlert('Export failed', 'Your data could not be exported. Try again.'));
   };
 
