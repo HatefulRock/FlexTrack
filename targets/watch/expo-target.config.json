@@ -1,0 +1,10 @@
+{
+  "type": "watch",
+  "name": "FlexTrackWatch",
+  "displayName": "FlexTrack",
+  "bundleIdentifier": ".watchkitapp",
+  "deploymentTarget": "10.0",
+  "icon": "../../assets/images/flextrack.png",
+  "colors": { "$accent": "#F2F1EC" },
+  "frameworks": ["WatchConnectivity"]
+}

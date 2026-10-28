@@ -1,0 +1,31 @@
+// Wear OS companion app. Copied to android/wear by plugins/withWearApp.cjs during prebuild.
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+
+android {
+  namespace "com.hatefulrock.flextrack.wear"
+  compileSdk rootProject.ext.compileSdkVersion
+
+  defaultConfig {
+    // The Data Layer only connects apps that share the phone app's id and signing key.
+    applicationId "com.HatefulRock.flextrack"
+    minSdk 30
+    targetSdk rootProject.ext.targetSdkVersion
+    // Play needs a version code distinct from the phone app's, so the watch build sits above it.
+    versionCode((project.findProperty("flextrackWearVersionCode") ?: "100001") as Integer)
+    versionName "1.0.0"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+}
+
+dependencies {
+  implementation "com.google.android.gms:play-services-wearable:19.0.0"
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+  compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
+}

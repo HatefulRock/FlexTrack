@@ -13,6 +13,13 @@
     },
     "production": {
       "autoIncrement": true
+    },
+    "wear": {
+      "extends": "production",
+      "android": {
+        "gradleCommand": ":wear:bundleRelease",
+        "applicationArchivePath": "android/wear/build/outputs/bundle/release/*.aab"
+      }
     }
   },
   "submit": {
