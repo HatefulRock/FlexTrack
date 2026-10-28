@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(() => {
   return {
-    server: { port: 3000, host: '0.0.0.0' },
+    // localhost only; run `npm run dev -- --host` to test from a phone on the same network.
+    server: { port: 3000 },
     // react-native-web's Animated reads `global`, which browsers don't define.
     define: { global: 'globalThis' },
     optimizeDeps: { esbuildOptions: { loader: { '.js': 'jsx' } } },

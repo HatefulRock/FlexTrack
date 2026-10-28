@@ -28,7 +28,8 @@ const ensureChannel = () => {
     enableVibrate: true,
     vibrationPattern: [0, 250, 150, 250],
     sound: 'default',
-    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    // The body names the next exercise and load: keep it off the lock screen until the phone is unlocked.
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
   }).then(() => undefined, () => { channelReady = null; });
   return channelReady;
 };
