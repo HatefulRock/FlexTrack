@@ -79,27 +79,23 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Run flows
-        uses: reactivecircus/android-emulator-runner@e93c997dcab69054e999e3924af3d21c4a736e13 # v2.9.0
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
           arch: x86_64
           target: google_apis
           profile: pixel_8
           disable-animations: true
-          script: |
-            adb install -r android/app/build/outputs/apk/release/app-release.apk
-            if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ github.event_name }}" = "push" ]; then
-              maestro test --include-tags=smoke --format junit --output e2e-report.xml .maestro
-            else
-              maestro test --format junit --output e2e-report.xml .maestro
-              bash .maestro/adb/unreadable-data.sh
-            fi
+          script: bash .maestro/ci-android.sh ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'smoke' }}
 
       - name: Report failed flows
         if: always()
         run: |
           python3 - <<'PY'
           import os, xml.etree.ElementTree as ET
+          if os.path.exists('maestro.log'):
+              tail = open('maestro.log', errors='replace').read().strip().splitlines()[-25:]
+              print('::error title=Maestro output::' + '%0A'.join(l.replace('%', '%25')[:300] for l in tail))
           if not os.path.exists('e2e-report.xml'):
               print('::error title=E2E::no report was written, so Maestro never got as far as running a flow')
           else:
@@ -164,13 +160,16 @@ jobs:
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
       - name: Run flows
-        run: maestro --device "$UDID" test --exclude-tags=android-only --format junit --output e2e-report.xml .maestro
+        run: maestro --device "$UDID" test --exclude-tags=android-only --format junit --output e2e-report.xml .maestro > maestro.log 2>&1 || { tail -60 maestro.log; exit 1; }
 
       - name: Report failed flows
         if: always()
         run: |
           python3 - <<'PY'
           import os, xml.etree.ElementTree as ET
+          if os.path.exists('maestro.log'):
+              tail = open('maestro.log', errors='replace').read().strip().splitlines()[-25:]
+              print('::error title=Maestro output::' + '%0A'.join(l.replace('%', '%25')[:300] for l in tail))
           if not os.path.exists('e2e-report.xml'):
               print('::error title=E2E::no report was written, so Maestro never got as far as running a flow')
           else:
