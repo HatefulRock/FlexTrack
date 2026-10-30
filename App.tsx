@@ -146,7 +146,7 @@ const App = () => {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <StatusBar barStyle="light-content" backgroundColor={theme.colors.canvas} />
+        <StatusBar barStyle="light-content" />
 
         <View style={[styles.content, isFullScreen && styles.fullScreenContent]}>
           

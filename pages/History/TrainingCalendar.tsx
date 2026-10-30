@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   cell: { height: 44, borderRadius: 3, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   cellEmpty: { backgroundColor: theme.colors.surfaceElevated },
   cellFuture: { backgroundColor: 'transparent' },
-  stripes: { ...StyleSheet.absoluteFillObject, flexDirection: 'row' },
+  stripes: { ...StyleSheet.absoluteFill, flexDirection: 'row' },
   labelWrap: { alignItems: 'center', justifyContent: 'center' },
   labelBacked: { backgroundColor: theme.colors.canvas, borderRadius: 2, paddingHorizontal: 4 },
   month: { fontFamily: theme.type.caption.fontFamily, fontSize: 12, lineHeight: 13 },

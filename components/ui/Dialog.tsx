@@ -42,7 +42,7 @@ export const DialogHost = () => {
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.overlay },
+  scrim: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.overlay },
   sheet: { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, padding: 20, paddingBottom: 28, gap: 8, ...theme.shadow.sheet },
   title: { ...theme.type.title, color: theme.colors.text },
   message: { ...theme.type.body, color: theme.colors.textMuted, marginBottom: 12 },

@@ -7,6 +7,6 @@ registerWidgets();
 
 if (Platform.OS === 'web') {
   const root = document.getElementById('root');
-  if (root) AppRegistry.runApplication('main', { rootTag: root });
+  if (root) AppRegistry.runApplication('main', { rootTag: root as never, initialProps: {} }); // react-native-web takes a DOM node, native typings a number
 }
 
