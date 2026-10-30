@@ -1,0 +1,26 @@
+# Two routines on the same day: Today leads with one and offers the other as "Also today".
+appId: com.HatefulRock.flextrack
+tags: [routines, schedule, edge]
+---
+- runFlow: ../subflows/launch-starter.yaml
+- evalScript: ${output.today = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]}
+- runFlow:
+    file: ../subflows/schedule-routine.yaml
+    env:
+      ROUTINE: "Full Body A"
+      DAY: ${output.today}
+- tapOn: "New routine"
+- tapOn: "Routine name"
+- inputText: "Second"
+- hideKeyboard
+- tapOn: ${output.today}
+- runFlow:
+    file: ../subflows/add-exercise.yaml
+    env:
+      EXERCISE: "Plank"
+- tapOn: "Save routine"
+- tapOn: "Today"
+- assertVisible: "Also today: Second"
+- tapOn: "Start Second"
+- assertVisible: "End session"
+- assertVisible: "Plank"

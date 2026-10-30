@@ -1,0 +1,23 @@
+# After the first session, a routine scheduled tomorrow leaves today as a rest day pointing at tomorrow.
+appId: com.HatefulRock.flextrack
+tags: [routines, schedule, edge]
+---
+- runFlow: ../subflows/launch-starter.yaml
+- evalScript: ${output.tomorrow = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][(new Date().getDay() + 1) % 7]}
+- runFlow:
+    file: ../subflows/schedule-routine.yaml
+    env:
+      ROUTINE: "Full Body A"
+      DAY: ${output.tomorrow}
+- tapOn: "Today"
+- tapOn: "Start session"
+- runFlow:
+    file: ../subflows/finish-session.yaml
+    env:
+      EXERCISES: "4"
+- tapOn: "Done"
+- assertVisible: "Rest day"
+- assertVisible: "Next: Full Body A tomorrow"
+# "Train anyway" goes to the routines list
+- tapOn: "Train anyway"
+- assertVisible: "Full Body A"

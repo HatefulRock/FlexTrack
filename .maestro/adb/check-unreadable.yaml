@@ -1,0 +1,20 @@
+# Step two: the app starts with unreadable stored routines. It says so, stays usable, and refuses to overwrite them.
+appId: com.HatefulRock.flextrack
+---
+- launchApp
+- assertVisible: "Some saved data could not be read"
+- assertVisible: ".*left it untouched.*"
+- tapOn: "OK"
+- tapOn: "Routines"
+- assertVisible: "No routines yet"
+# Saving would replace the unreadable data, so it fails loudly instead
+- tapOn: "New routine"
+- tapOn: "Routine name"
+- inputText: "Blocked"
+- hideKeyboard
+- tapOn: "Save routine"
+- assertVisible: "Save failed"
+- tapOn: "OK"
+# The rest of the app still works
+- tapOn: "History"
+- assertVisible: "No sessions yet"

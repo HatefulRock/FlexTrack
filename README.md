@@ -314,6 +314,8 @@ npm run e2e:smoke                        # the tagged smoke subset
 maestro test .maestro/flows/04-complete-workout.yaml
 ```
 
+Flows tagged `android-only` press the hardware back key. `npm run e2e:ios` skips them and runs the rest on an iOS simulator, and `npm run e2e:corrupt` checks how the app copes with unreadable stored routines (it needs `adb root`, so a Google APIs emulator image). CI runs the Android smoke flows on pull requests, and the full Android suite plus iOS nightly.
+
 Flows match on accessibility labels, so renaming a label means updating the flows that use it. If several devices are connected, pass `--device <id>`. Shared steps are in `.maestro/subflows/`.
 
 ## Architecture Notes

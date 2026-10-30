@@ -1,0 +1,8 @@
+# Toggles one weekday on an existing routine from the editor and saves.
+# env: ROUTINE, DAY (full weekday name, e.g. "Friday")
+appId: com.HatefulRock.flextrack
+---
+- tapOn: "Routines"
+- tapOn: "Edit routine ${ROUTINE}"
+- tapOn: ${DAY}
+- tapOn: "Save routine"

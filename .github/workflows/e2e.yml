@@ -1,6 +1,7 @@
 name: E2E
 
-# Smoke flows on every pull request, the full suite nightly. Android only: the emulator runs on a Linux runner.
+# Android: smoke flows on every pull request, the full suite nightly. iOS: nightly and on demand only, since macOS
+# minutes cost ten times as much.
 on:
   pull_request:
     paths:
@@ -80,6 +81,7 @@ jobs:
               maestro test --include-tags=smoke --format junit --output e2e-report.xml .maestro
             else
               maestro test --format junit --output e2e-report.xml .maestro
+              bash .maestro/adb/unreadable-data.sh
             fi
 
       - name: Upload report and debug output
@@ -87,6 +89,62 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: maestro-report
+          path: |
+            e2e-report.xml
+            ~/.maestro/tests
+          if-no-files-found: ignore
+
+  ios:
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    timeout-minutes: 75
+    # Not yet proven on a runner: report failures without turning the nightly red until it has run clean.
+    continue-on-error: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate the iOS project
+        run: npx expo prebuild --platform ios
+
+      - name: Build for the simulator
+        run: |
+          WORKSPACE=$(ls -d ios/*.xcworkspace | head -1)
+          xcodebuild -workspace "$WORKSPACE" -scheme FlexTrack -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build | tail -20
+
+      - name: Boot a simulator and install the app
+        run: |
+          UDID=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" ios/build/Build/Products/Release-iphonesimulator/FlexTrack.app
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run flows
+        run: maestro --device "$UDID" test --exclude-tags=android-only --format junit --output e2e-report.xml .maestro
+
+      - name: Upload report and debug output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: maestro-report-ios
           path: |
             e2e-report.xml
             ~/.maestro/tests

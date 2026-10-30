@@ -1,0 +1,8 @@
+# Step one of the unreadable-data check: a clean install that has created its storage, then stopped.
+appId: com.HatefulRock.flextrack
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- assertVisible: "Full Body A"
+- stopApp

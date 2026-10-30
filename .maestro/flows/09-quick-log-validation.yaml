@@ -1,6 +1,6 @@
 # Bad input in the activity form: every field rejects what it should, and fixing it lets the save through.
 appId: com.HatefulRock.flextrack
-tags: [quick-log, edge]
+tags: [quick-log, edge, android-only]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Quick start"

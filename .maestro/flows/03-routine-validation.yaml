@@ -1,6 +1,6 @@
-# Edge cases in the routine editor: missing name, unnamed exercise, custom exercise, reorder, remove, cancel.
+# Edge cases in the routine editor (android-only: it presses the hardware back key): missing name, unnamed exercise, custom exercise, reorder, remove, cancel.
 appId: com.HatefulRock.flextrack
-tags: [routines, edge]
+tags: [routines, edge, android-only]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Routines"

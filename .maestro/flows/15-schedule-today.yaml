@@ -1,0 +1,26 @@
+# Scheduling: put the starter routine on today's weekday, see it on Today and the week strip, then take it off.
+appId: com.HatefulRock.flextrack
+tags: [routines, schedule]
+---
+- runFlow: ../subflows/launch-starter.yaml
+- evalScript: ${output.today = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]}
+- evalScript: ${output.short = output.today.slice(0, 3)}
+- tapOn: "Routines"
+- assertVisible: "Not scheduled"
+- runFlow:
+    file: ../subflows/schedule-routine.yaml
+    env:
+      ROUTINE: "Full Body A"
+      DAY: ${output.today}
+- assertVisible: ${output.short}
+- assertNotVisible: "Not scheduled"
+- tapOn: "Today"
+- assertVisible: "This week"
+- assertVisible: "Start Full Body A"
+# Unscheduling removes it from the card and the week strip
+- runFlow:
+    file: ../subflows/schedule-routine.yaml
+    env:
+      ROUTINE: "Full Body A"
+      DAY: ${output.today}
+- assertVisible: "Not scheduled"
