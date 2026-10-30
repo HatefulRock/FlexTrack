@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, ComponentRef } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -49,7 +49,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
     const [nameError, setNameError] = useState(false);
     const [missingNames, setMissingNames] = useState<Set<string>>(new Set());
 
-    const scrollRef = useRef<ScrollView>(null);
+    const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
     const listY = useRef(0);
     const cardY = useRef<Record<string, number>>({});
     const scrollToCard = (id: string) => setTimeout(() => {

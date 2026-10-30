@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, ComponentRef } from 'react';
 import { PixelRatio, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -18,7 +18,7 @@ const web = Platform.OS === 'web';
 // web draws the same card on a canvas and downloads the PNG.
 export const ShareSheet = ({ visible, onClose, data }: { visible: boolean; onClose: () => void; data: ShareData }) => {
   const { width: ww, height: wh } = useWindowDimensions();
-  const capture = useRef<View>(null);
+  const capture = useRef<ComponentRef<typeof View>>(null);
   const [busy, setBusy] = useState(false);
   // Fit the preview inside the sheet (84% of the screen) above the title and two buttons.
   const preview = Math.floor(Math.max(200, Math.min(ww - 32, 588, (wh * 0.84 - 236) * CARD_W / CARD_H)));

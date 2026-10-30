@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, ComponentRef } from 'react';
 import { Animated, BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ChevronLeft, Zap } from 'lucide-react-native';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -124,7 +124,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const currentExercise = template.exercises[activeExerciseIndex], currentLog = logs[activeExerciseIndex];
   const isLast = activeExerciseIndex === template.exercises.length - 1;
 
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const enter = useRef(new Animated.Value(1)).current;
   const direction = useRef(1);
   const shownExercise = useRef(activeExerciseIndex);

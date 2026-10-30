@@ -125,7 +125,7 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
           <View style={styles.score} accessible accessibilityLabel={`Volume ${formatNumber(volume)} kilograms${deltaSpoken}`}>
             <Text style={styles.scoreValue} numberOfLines={1}>{formatNumber(shownVolume)}<Text style={styles.scoreUnit}> kg</Text></Text>
             <Text style={styles.scoreLabel}>Volume</Text>
-            {deltaText && <Text style={[styles.delta, fairDelta > 0 ? styles.deltaUp : styles.deltaFlat]}>{deltaText}</Text>}
+            {fairDelta !== null && deltaText && <Text style={[styles.delta, fairDelta > 0 ? styles.deltaUp : styles.deltaFlat]}>{deltaText}</Text>}
           </View>
         </Animated.View>
 

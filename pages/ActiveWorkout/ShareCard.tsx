@@ -1,11 +1,11 @@
-import React, { forwardRef, useMemo } from 'react';
+import React, { forwardRef, useMemo, ComponentRef } from 'react';
 import { Text, View } from 'react-native';
 import { theme } from '../../constants/theme';
 import { CARD_H, CARD_W, ShareData, describeShare, layoutCard } from './ShareLayout';
 
 // The session card as a view: the shared display list drawn at `width` points (card pixels × width/1080).
 // At full scale it is the capture source on native; scaled down it is the preview in the share sheet.
-export const ShareCard = forwardRef<View, { data: ShareData; width: number }>(({ data, width }, ref) => {
+export const ShareCard = forwardRef<ComponentRef<typeof View>, { data: ShareData; width: number }>(({ data, width }, ref) => {
   const ops = useMemo(() => layoutCard(data), [data]);
   const s = width / CARD_W;
   return <View ref={ref} collapsable={false} accessible accessibilityRole="image" accessibilityLabel={describeShare(data)}

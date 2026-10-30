@@ -132,7 +132,7 @@ export const RestOverlay = ({ onMinimise, ...props }: RestProps & { onMinimise: 
 
 const styles = StyleSheet.create({
   drainTrack: { height: 4, overflow: 'hidden', backgroundColor: theme.colors.surfaceElevated },
-  drainFill: { ...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.primary },
+  drainFill: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.primary },
   dock: { backgroundColor: theme.colors.surface },
   dockDrain: { height: 3 },
   dockRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 16, paddingRight: 12, paddingVertical: 8 },
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   dockBtn: { minWidth: 48, height: 48, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceElevated, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   dockSkip: { minWidth: 56 },
   dockBtnText: { ...theme.type.label, color: theme.colors.text, fontVariant: ['tabular-nums'] },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.canvas, zIndex: 200, paddingHorizontal: 16 },
+  overlay: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.canvas, zIndex: 200, paddingHorizontal: 16 },
   overlayTop: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   overlayLabel: { ...theme.type.heading, color: theme.colors.textMuted },
   minimise: { width: 48, height: 48, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface, alignItems: 'center', justifyContent: 'center' },
