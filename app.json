@@ -57,6 +57,7 @@
       "expo-font",
       "expo-notifications",
       "./plugins/withAsyncStorageSize.cjs",
+      "./plugins/withPodDeploymentTarget.cjs",
       [
         "@kingstinct/react-native-healthkit",
         {
