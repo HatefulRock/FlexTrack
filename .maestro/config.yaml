@@ -1,0 +1,4 @@
+# Maestro workspace for FlexTrack. Run everything with `npm run e2e`, or one flow with
+# `maestro test .maestro/flows/<name>.yaml`. Needs a build with the app installed (see README).
+flows:
+  - flows/*

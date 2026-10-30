@@ -1,0 +1,32 @@
+# The OS kills the app mid-workout: the session comes back on Today and can be resumed or discarded.
+appId: com.HatefulRock.flextrack
+tags: [workout, edge, persistence]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow:
+    file: ../subflows/create-routine.yaml
+    env:
+      ROUTINE: "Full body"
+      EXERCISE: "Deadlift"
+- tapOn: "Today"
+- tapOn: "Start Full body"
+- tapOn: "Complete set 1"
+- tapOn: "Skip rest"
+- stopApp
+- launchApp
+- assertVisible: "In progress.*1 of 3 sets"
+- tapOn: "Resume Full body"
+- assertVisible: "Set 1 done.*"
+# Leave, kill again, and discard from the resume card instead
+- tapOn: "End session"
+- tapOn: "Keep training"
+- stopApp
+- launchApp
+- assertVisible: "In progress.*"
+- tapOn: "Discard session in progress"
+- assertVisible: "Discard this session?"
+- tapOn: "Keep session"
+- assertVisible: "In progress.*"
+- tapOn: "Discard session in progress"
+- tapOn: "Discard session"
+- assertNotVisible: "In progress.*"

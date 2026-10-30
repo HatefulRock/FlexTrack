@@ -1,0 +1,69 @@
+# Bad input in the activity form: every field rejects what it should, and fixing it lets the save through.
+appId: com.HatefulRock.flextrack
+tags: [quick-log, edge]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Quick start"
+- tapOn: "Log a finished activity"
+# Cardio with no distance
+- scrollUntilVisible:
+    element: "Save activity"
+- tapOn: "Save activity"
+- assertVisible: "Enter a distance greater than zero."
+- assertVisible: "Fix the highlighted fields to save."
+# Zero distance
+- tapOn: "Distance in km"
+- inputText: "0"
+- hideKeyboard
+- tapOn: "Save activity"
+- assertVisible: "Enter a distance greater than zero."
+# Bad duration
+- tapOn: "Distance in km"
+- eraseText: 5
+- inputText: "5"
+- hideKeyboard
+- tapOn: "Duration"
+- inputText: "12:75"
+- hideKeyboard
+- tapOn: "Save activity"
+- assertVisible: ".*"
+# Empty name
+- scrollUntilVisible:
+    element: "Activity name"
+    direction: UP
+- tapOn: "Activity name"
+- eraseText: 30
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Save activity"
+- tapOn: "Save activity"
+- assertVisible: "Add a name for this activity."
+# A malformed and a future date
+- scrollUntilVisible:
+    element: "Pick an exact date"
+    direction: UP
+- tapOn: "Pick an exact date"
+- tapOn: "Exact date, year-month-day"
+- eraseText: 10
+- inputText: "2026-02-31"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Save activity"
+- tapOn: "Save activity"
+- assertVisible: "Use the format YYYY-MM-DD.*"
+- scrollUntilVisible:
+    element: "Exact date, year-month-day"
+    direction: UP
+- tapOn: "Exact date, year-month-day"
+- eraseText: 10
+- inputText: "2099-01-01"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Save activity"
+- tapOn: "Save activity"
+- assertVisible: "That is in the future.*"
+# The hardware back key leaves the form without saving anything
+- pressKey: back
+- assertVisible: "Build your first routine"
+- tapOn: "History"
+- assertVisible: "No sessions yet"

@@ -1,0 +1,24 @@
+# Logging something already done: a 5 km run lands in history.
+appId: com.HatefulRock.flextrack
+tags: [smoke, quick-log]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Quick start"
+- tapOn: "Log a finished activity"
+- assertVisible: "Log activity"
+- tapOn: "Distance in km"
+- inputText: "5"
+- hideKeyboard
+- tapOn: "Duration"
+- inputText: "24:30"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Notes"
+- tapOn: "Notes"
+- inputText: "Felt good"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Save activity"
+- tapOn: "Save activity"
+- assertVisible: "History"
+- assertVisible: "Run.*"

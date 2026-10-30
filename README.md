@@ -303,6 +303,19 @@ The icon, Android adaptive layers and splash mark are drawn from the SVGs in `as
 
 ---
 
+## End-to-end tests
+
+User flows live in `.maestro/` and run with [Maestro](https://maestro.mobile.dev). Each flow starts from a wiped install and drives the real app through a journey a user would take: first launch, building a routine, finishing a workout, resuming after the app is killed, quick-logging, body weight, and the edge cases around each.
+
+```bash
+npx expo run:android --variant release   # build and install once (a release build needs no Metro)
+npm run e2e                              # every flow
+npm run e2e:smoke                        # the tagged smoke subset
+maestro test .maestro/flows/04-complete-workout.yaml
+```
+
+Flows match on accessibility labels, so renaming a label means updating the flows that use it. If several devices are connected, pass `--device <id>`. Shared steps are in `.maestro/subflows/`.
+
 ## Architecture Notes
 
 **State management** is intentionally simple: local React state in `App.tsx` drives the current screen and active session. There is no Redux, Zustand, or application context.

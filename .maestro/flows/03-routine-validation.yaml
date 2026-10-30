@@ -1,0 +1,55 @@
+# Edge cases in the routine editor: missing name, unnamed exercise, custom exercise, reorder, remove, cancel.
+appId: com.HatefulRock.flextrack
+tags: [routines, edge]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Routines"
+- tapOn: "New routine"
+# Saving with no name is refused and explains why
+- tapOn: "Save routine"
+- assertVisible: "Name this routine to save it."
+- assertVisible: "New routine"
+# Whitespace alone is not a name
+- tapOn: "Routine name"
+- inputText: "   "
+- hideKeyboard
+- tapOn: "Save routine"
+- assertVisible: "Name this routine to save it."
+# A custom exercise typed into the picker
+- tapOn: "Routine name"
+- eraseText: 10
+- inputText: "Odd day"
+- hideKeyboard
+- tapOn: "Add exercise"
+- tapOn: "Search exercises"
+- inputText: "Zercher Squat"
+- tapOn: "Add custom exercise Zercher Squat"
+- runFlow:
+    file: ../subflows/add-exercise.yaml
+    env:
+      EXERCISE: "Plank"
+# Reorder: Plank up above the custom exercise, then drop the custom one
+- scrollUntilVisible:
+    element: "Move Plank up"
+- tapOn: "Move Plank up"
+- scrollUntilVisible:
+    element: "Edit Zercher Squat targets"
+- tapOn: "Edit Zercher Squat targets"
+- scrollUntilVisible:
+    element: "Remove Zercher Squat from routine"
+- tapOn: "Remove Zercher Squat from routine"
+- assertNotVisible: "Zercher Squat"
+- tapOn: "Save routine"
+- assertVisible: "Odd day"
+# Cancelling an edit leaves the routine untouched
+- tapOn: "Edit routine Odd day"
+- tapOn: "Routine name"
+- inputText: " changed"
+- hideKeyboard
+# The hardware back key leaves the editor, like the on-screen button, instead of closing the app
+- pressKey: back
+- assertVisible: "Odd day"
+- assertNotVisible: "Odd day changed"
+- tapOn: "Edit routine Odd day"
+- tapOn: "Go back"
+- assertVisible: "Odd day"

@@ -1,0 +1,28 @@
+# Core loop: start a routine, log every set, finish, review the summary, find it in history.
+appId: com.HatefulRock.flextrack
+tags: [smoke, workout]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow:
+    file: ../subflows/create-routine.yaml
+    env:
+      ROUTINE: "Leg day"
+      EXERCISE: "Back Squat"
+- tapOn: "Today"
+- tapOn: "Start Leg day"
+- assertVisible: "End session"
+# First set the long way, which starts the rest timer
+- tapOn: "Complete set 1"
+- assertVisible: "Skip rest"
+- tapOn: "Skip rest"
+- assertNotVisible: "Skip rest"
+- runFlow:
+    file: ../subflows/finish-session.yaml
+    env:
+      EXERCISES: "1"
+- assertVisible: "Duration"
+- assertVisible: "Volume.*"
+- tapOn: "View in history"
+- assertVisible: "Leg day.*"
+- tapOn: "Today"
+- assertVisible: "1 total"

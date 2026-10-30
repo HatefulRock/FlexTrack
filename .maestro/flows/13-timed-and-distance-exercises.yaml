@@ -1,0 +1,35 @@
+# Non-weighted exercises in a live session: a timed hold and a distance run use their own inputs.
+appId: com.HatefulRock.flextrack
+tags: [workout]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Routines"
+- tapOn: "New routine"
+- tapOn: "Routine name"
+- inputText: "Conditioning"
+- hideKeyboard
+- runFlow:
+    file: ../subflows/add-exercise.yaml
+    env:
+      EXERCISE: "Plank"
+- runFlow:
+    file: ../subflows/add-exercise.yaml
+    env:
+      EXERCISE: "Run"
+- tapOn: "Save routine"
+- tapOn: "Today"
+- tapOn: "Start Conditioning"
+- assertVisible: "Start timer"
+- tapOn: "Start timer"
+- assertVisible: "Pause"
+- tapOn: "Pause"
+- tapOn: "Mark all sets of this exercise done"
+- runFlow:
+    when:
+      visible: "Skip rest"
+    commands:
+      - tapOn: "Skip rest"
+- tapOn: "Next exercise"
+- assertVisible: "Distance"
+- tapOn: "Complete set 1"
+- assertVisible: "Finish session"

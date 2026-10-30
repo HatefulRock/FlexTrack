@@ -1,0 +1,16 @@
+# Marks every set done on each exercise and ends on the summary. Rest timers are skipped when they appear.
+# env: EXERCISES (how many exercises the routine has)
+appId: com.HatefulRock.flextrack
+---
+- repeat:
+    times: ${EXERCISES}
+    commands:
+      - tapOn: "Mark all sets of this exercise done"
+      - runFlow:
+          when:
+            visible: "Skip rest"
+          commands:
+            - tapOn: "Skip rest"
+      - tapOn:
+          text: "(Next exercise|Finish session)"
+- assertVisible: "Done"

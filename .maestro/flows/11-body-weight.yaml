@@ -1,0 +1,35 @@
+# Body tab: log weight, reject bad input, set height and see BMI.
+appId: com.HatefulRock.flextrack
+tags: [body, edge]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Progress"
+- tapOn: "Body"
+- tapOn: "Weight in kilograms"
+- inputText: "0"
+- hideKeyboard
+- pressKey: Enter
+- assertVisible: "Enter a weight in kg.*"
+- tapOn: "Weight in kilograms"
+- eraseText: 5
+- inputText: "81.4"
+- hideKeyboard
+- pressKey: Enter
+- assertVisible: "Saved 81.4 kg"
+- assertVisible: "Current weight 81.4 kilograms"
+- tapOn: "Height in centimetres"
+- inputText: "180"
+- hideKeyboard
+- assertVisible: "BMI"
+# Absurd weights are refused
+- tapOn: "Weight in kilograms"
+- inputText: "9999"
+- hideKeyboard
+- pressKey: Enter
+- assertVisible: "Enter a weight in kg.*"
+# Persists across a restart
+- stopApp
+- launchApp
+- tapOn: "Progress"
+- tapOn: "Body"
+- assertVisible: "Current weight 81.4 kilograms"
