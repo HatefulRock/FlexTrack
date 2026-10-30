@@ -95,6 +95,21 @@ jobs:
               bash .maestro/adb/unreadable-data.sh
             fi
 
+      - name: Report failed flows
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          if not os.path.exists('e2e-report.xml'):
+              print('::error title=E2E::no report was written, so Maestro never got as far as running a flow')
+          else:
+              for case in ET.parse('e2e-report.xml').getroot().iter('testcase'):
+                  failure = case.find('failure')
+                  if failure is not None:
+                      text = ' '.join((failure.get('message') or failure.text or 'failed').split())[:400]
+                      print(f"::error title=Flow {case.get('name')}::{text}")
+          PY
+
       - name: Upload report and debug output
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -150,6 +165,21 @@ jobs:
 
       - name: Run flows
         run: maestro --device "$UDID" test --exclude-tags=android-only --format junit --output e2e-report.xml .maestro
+
+      - name: Report failed flows
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import os, xml.etree.ElementTree as ET
+          if not os.path.exists('e2e-report.xml'):
+              print('::error title=E2E::no report was written, so Maestro never got as far as running a flow')
+          else:
+              for case in ET.parse('e2e-report.xml').getroot().iter('testcase'):
+                  failure = case.find('failure')
+                  if failure is not None:
+                      text = ' '.join((failure.get('message') or failure.text or 'failed').split())[:400]
+                      print(f"::error title=Flow {case.get('name')}::{text}")
+          PY
 
       - name: Upload report and debug output
         if: always()
