@@ -5,12 +5,20 @@ tags: [smoke, routines]
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Routines"
 - tapOn: "New routine"
-- tapOn: "Routine name"
-- inputText: "Push day"
-- hideKeyboard
-- tapOn: "Notes for this routine"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Notes for this routine"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: "Notes for this routine Optional.*"
 - inputText: "Heavy chest and shoulders"
-- hideKeyboard
+- tapOn: "e.g. Push day"
+- inputText: "Push day"
+- runFlow: ../subflows/hide-keyboard.yaml
 - runFlow:
     file: ../subflows/add-exercise.yaml
     env:
@@ -24,8 +32,13 @@ tags: [smoke, routines]
     env:
       EXERCISE: "Push-up"
 - tapOn: "Save routine"
-- assertVisible: "Push day"
-- assertVisible: "Heavy chest and shoulders"
+- assertVisible: "Edit routine Push day"
+# The description sits inside the card's labelled button, which iOS exposes as one element
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible: "Heavy chest and shoulders"
 - assertVisible: "1 routine"
 - tapOn: "Today"
 - assertVisible: "Your first session.*"

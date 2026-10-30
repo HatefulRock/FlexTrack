@@ -14,17 +14,17 @@ tags: [quick-log, edge, android-only]
 # Zero distance
 - tapOn: "Distance in km"
 - inputText: "0"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - tapOn: "Save activity"
 - assertVisible: "Enter a distance greater than zero."
 # Bad duration
 - tapOn: "Distance in km"
 - eraseText: 5
 - inputText: "5"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - tapOn: "Duration"
 - inputText: "12:75"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - tapOn: "Save activity"
 - assertVisible: ".*"
 # Empty name
@@ -33,7 +33,7 @@ tags: [quick-log, edge, android-only]
     direction: UP
 - tapOn: "Activity name"
 - eraseText: 30
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - scrollUntilVisible:
     element: "Save activity"
 - tapOn: "Save activity"
@@ -46,7 +46,7 @@ tags: [quick-log, edge, android-only]
 - tapOn: "Exact date, year-month-day"
 - eraseText: 10
 - inputText: "2026-02-31"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - scrollUntilVisible:
     element: "Save activity"
 - tapOn: "Save activity"
@@ -57,7 +57,7 @@ tags: [quick-log, edge, android-only]
 - tapOn: "Exact date, year-month-day"
 - eraseText: 10
 - inputText: "2099-01-01"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - scrollUntilVisible:
     element: "Save activity"
 - tapOn: "Save activity"

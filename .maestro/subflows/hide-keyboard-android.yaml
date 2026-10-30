@@ -1,0 +1,8 @@
+# For fields whose results stay visible above the iOS keyboard (the exercise search): only Android needs to dismiss it.
+appId: com.HatefulRock.flextrack
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard

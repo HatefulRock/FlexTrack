@@ -5,5 +5,5 @@ appId: com.HatefulRock.flextrack
 - tapOn: "Add exercise"
 - tapOn: "Search exercises"
 - inputText: ${EXERCISE}
-- hideKeyboard
+- runFlow: hide-keyboard-android.yaml
 - tapOn: "Add ${EXERCISE}, .*"

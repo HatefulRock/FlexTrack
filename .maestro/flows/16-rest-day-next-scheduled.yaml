@@ -10,7 +10,7 @@ tags: [routines, schedule, edge]
       ROUTINE: "Full Body A"
       DAY: ${output.tomorrow}
 - tapOn: "Today"
-- tapOn: "Start session"
+- tapOn: "Start Full Body A"
 - runFlow:
     file: ../subflows/finish-session.yaml
     env:
@@ -20,4 +20,4 @@ tags: [routines, schedule, edge]
 - assertVisible: "Next: Full Body A tomorrow"
 # "Train anyway" goes to the routines list
 - tapOn: "Train anyway"
-- assertVisible: "Full Body A"
+- assertVisible: "Edit routine Full Body A"

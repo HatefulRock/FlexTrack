@@ -4,7 +4,7 @@ tags: [smoke]
 ---
 - runFlow: ../subflows/launch-starter.yaml
 - assertVisible: "Your first session.*"
-- assertVisible: "Start session"
+- assertVisible: "Start Full Body A"
 - tapOn: "Routines"
 - assertVisible: "1 routine"
 - tapOn: "History"

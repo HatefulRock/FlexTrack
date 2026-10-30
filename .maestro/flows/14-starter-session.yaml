@@ -3,13 +3,13 @@ appId: com.HatefulRock.flextrack
 tags: [smoke, workout]
 ---
 - runFlow: ../subflows/launch-starter.yaml
-- tapOn: "Start session"
+- tapOn: "Start Full Body A"
 - assertVisible: "End session"
 - runFlow:
     file: ../subflows/finish-session.yaml
     env:
       EXERCISES: "4"
-- assertVisible: "Duration"
+- assertVisible: "Duration.*"
 - tapOn: "Done"
-- assertVisible: "1 total"
+- assertVisible: ".*1 total.*"
 - assertVisible: "Rest day"

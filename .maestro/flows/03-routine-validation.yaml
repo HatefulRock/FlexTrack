@@ -12,14 +12,14 @@ tags: [routines, edge, android-only]
 # Whitespace alone is not a name
 - tapOn: "Routine name"
 - inputText: "   "
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - tapOn: "Save routine"
 - assertVisible: "Name this routine to save it."
 # A custom exercise typed into the picker
 - tapOn: "Routine name"
 - eraseText: 10
 - inputText: "Odd day"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - tapOn: "Add exercise"
 - tapOn: "Search exercises"
 - inputText: "Zercher Squat"
@@ -40,16 +40,16 @@ tags: [routines, edge, android-only]
 - tapOn: "Remove Zercher Squat from routine"
 - assertNotVisible: "Zercher Squat"
 - tapOn: "Save routine"
-- assertVisible: "Odd day"
+- assertVisible: "Edit routine Odd day"
 # Cancelling an edit leaves the routine untouched
 - tapOn: "Edit routine Odd day"
 - tapOn: "Routine name"
 - inputText: " changed"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 # The hardware back key leaves the editor, like the on-screen button, instead of closing the app
 - pressKey: back
-- assertVisible: "Odd day"
-- assertNotVisible: "Odd day changed"
+- assertVisible: "Edit routine Odd day"
+- assertNotVisible: "Edit routine Odd day changed"
 - tapOn: "Edit routine Odd day"
 - tapOn: "Go back"
-- assertVisible: "Odd day"
+- assertVisible: "Edit routine Odd day"

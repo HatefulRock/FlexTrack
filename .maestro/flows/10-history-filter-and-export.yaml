@@ -19,10 +19,10 @@ tags: [history]
 - tapOn: "Log a finished activity"
 - tapOn: "Distance in km"
 - inputText: "3"
-- hideKeyboard
-- tapOn: "Duration"
+- runFlow: ../subflows/hide-keyboard.yaml
+- tapOn: "e.g. 24:30"
 - inputText: "20:00"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - scrollUntilVisible:
     element: "Save activity"
 - tapOn: "Save activity"

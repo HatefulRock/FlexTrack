@@ -5,9 +5,9 @@ tags: [workout]
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Routines"
 - tapOn: "New routine"
-- tapOn: "Routine name"
+- tapOn: "e.g. Push day"
 - inputText: "Conditioning"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - runFlow:
     file: ../subflows/add-exercise.yaml
     env:

@@ -13,7 +13,7 @@ tags: [workout, edge]
 # Weight stepper moves and the "make this the default" shortcut appears
 - tapOn: "Increase Weight by.*"
 - tapOn: "Increase Weight by.*"
-- assertVisible: "Use .* kg as default.*"
+- assertVisible: "Use .*(kg|kilograms).*default.*"
 - tapOn: "Complete set 1"
 # Rest dock controls are optional taps: emulator steps are slow and the 2-minute rest can expire between steps.
 - tapOn:

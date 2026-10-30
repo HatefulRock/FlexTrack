@@ -3,7 +3,7 @@ appId: com.HatefulRock.flextrack
 tags: [workout, share]
 ---
 - runFlow: ../subflows/launch-starter.yaml
-- tapOn: "Start session"
+- tapOn: "Start Full Body A"
 - runFlow:
     file: ../subflows/finish-session.yaml
     env:
@@ -13,8 +13,12 @@ tags: [workout, share]
 - assertVisible: "Share image"
 - tapOn: "Cancel"
 - assertNotVisible: "Share image"
-- tapOn: "Share session as an image"
-- tapOn: "Share image"
-# A system chooser (or an error dialog on a device with none) appears; back returns to the app
-- pressKey: back
-- assertVisible: "Done"
+# Android only: hand off to the system chooser (or an error dialog on a device with none); back returns to the app
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "Share session as an image"
+      - tapOn: "Share image"
+      - pressKey: back
+      - assertVisible: "Done"

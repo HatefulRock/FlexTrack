@@ -8,15 +8,15 @@ tags: [smoke, quick-log]
 - assertVisible: "Log activity"
 - tapOn: "Distance in km"
 - inputText: "5"
-- hideKeyboard
-- tapOn: "Duration"
+- runFlow: ../subflows/hide-keyboard.yaml
+- tapOn: "e.g. 24:30"
 - inputText: "24:30"
-- hideKeyboard
-- scrollUntilVisible:
-    element: "Notes"
-- tapOn: "Notes"
+- runFlow: ../subflows/hide-keyboard.yaml
+# Scrolling dismisses the numeric keyboard, which has no return key
+- scroll
+- tapOn: "Notes( How did it feel\\?)?"
 - inputText: "Felt good"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - scrollUntilVisible:
     element: "Save activity"
 - tapOn: "Save activity"

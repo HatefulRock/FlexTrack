@@ -20,9 +20,9 @@ tags: [smoke, workout]
     file: ../subflows/finish-session.yaml
     env:
       EXERCISES: "1"
-- assertVisible: "Duration"
+- assertVisible: "Duration.*"
 - assertVisible: "Volume.*"
 - tapOn: "View in history"
 - assertVisible: "Leg day.*"
 - tapOn: "Today"
-- assertVisible: "1 total"
+- assertVisible: ".*1 total.*"

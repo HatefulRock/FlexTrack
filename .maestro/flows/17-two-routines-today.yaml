@@ -10,9 +10,9 @@ tags: [routines, schedule, edge]
       ROUTINE: "Full Body A"
       DAY: ${output.today}
 - tapOn: "New routine"
-- tapOn: "Routine name"
+- tapOn: "e.g. Push day"
 - inputText: "Second"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - tapOn: ${output.today}
 - runFlow:
     file: ../subflows/add-exercise.yaml
@@ -20,7 +20,7 @@ tags: [routines, schedule, edge]
       EXERCISE: "Plank"
 - tapOn: "Save routine"
 - tapOn: "Today"
-- assertVisible: "Also today: Second"
+- assertVisible: "Start Second"
 - tapOn: "Start Second"
 - assertVisible: "End session"
 - assertVisible: "Plank"

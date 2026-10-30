@@ -1,0 +1,14 @@
+# Dismisses the keyboard. Android has a real command. On iOS hideKeyboard taps the screen, which can hit a row or
+# button underneath, so the single-line fields are dismissed with their return key instead.
+appId: com.HatefulRock.flextrack
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - pressKey: Enter

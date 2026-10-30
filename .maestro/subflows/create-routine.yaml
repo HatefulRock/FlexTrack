@@ -4,13 +4,13 @@ appId: com.HatefulRock.flextrack
 ---
 - tapOn: "Routines"
 - tapOn: "New routine"
-- tapOn: "Routine name"
+- tapOn: "e.g. Push day"
 - inputText: ${ROUTINE}
-- hideKeyboard
+- runFlow: hide-keyboard.yaml
 - tapOn: "Add exercise"
 - tapOn: "Search exercises"
 - inputText: ${EXERCISE}
-- hideKeyboard
+- runFlow: hide-keyboard-android.yaml
 - tapOn: "Add ${EXERCISE}, .*"
 - tapOn: "Save routine"
-- assertVisible: ${ROUTINE}
+- assertVisible: "Edit routine ${ROUTINE}"

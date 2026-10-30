@@ -7,24 +7,24 @@ tags: [body, edge]
 - tapOn: "Body"
 - tapOn: "Weight in kilograms"
 - inputText: "0"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - pressKey: Enter
 - assertVisible: "Enter a weight in kg.*"
 - tapOn: "Weight in kilograms"
 - eraseText: 5
 - inputText: "81.4"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - pressKey: Enter
 - assertVisible: "Saved 81.4 kg"
 - assertVisible: "Current weight 81.4 kilograms"
 - tapOn: "Height in centimetres"
 - inputText: "180"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - assertVisible: "BMI"
 # Absurd weights are refused
 - tapOn: "Weight in kilograms"
 - inputText: "9999"
-- hideKeyboard
+- runFlow: ../subflows/hide-keyboard.yaml
 - pressKey: Enter
 - assertVisible: "Enter a weight in kg.*"
 # Persists across a restart

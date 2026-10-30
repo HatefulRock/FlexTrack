@@ -20,11 +20,11 @@ tags: [workout, edge]
 # Save the partial session
 - tapOn: "End session"
 - tapOn: "Save & end"
-- assertVisible: "Duration"
+- assertVisible: "Duration.*"
 - tapOn: "Done"
-- assertVisible: "1 total"
+- assertVisible: ".*1 total.*"
 # Start again and discard: nothing new is logged
 - tapOn: "Start Pull day.*"
 - tapOn: "End session"
 - tapOn: "Discard"
-- assertVisible: "1 total"
+- assertVisible: ".*1 total.*"
