@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "maestro test .maestro",
+    "e2e:smoke": "maestro test --include-tags=smoke .maestro",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@bacons/apple-targets": "^5.0.0",

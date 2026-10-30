@@ -1,0 +1,12 @@
+# A brand-new install: wipes local data. First run ships one starter routine, "Full Body A".
+appId: com.HatefulRock.flextrack
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- assertVisible: "Full Body A"

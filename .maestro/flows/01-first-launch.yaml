@@ -1,0 +1,22 @@
+# A new user opens the app: the starter routine is there, other tabs are empty, and deleting the starter shows the empty states.
+appId: com.HatefulRock.flextrack
+tags: [smoke]
+---
+- runFlow: ../subflows/launch-starter.yaml
+- assertVisible: "Your first session.*"
+- assertVisible: "Start session"
+- tapOn: "Routines"
+- assertVisible: "1 routine"
+- tapOn: "History"
+- assertVisible: "No sessions yet"
+- tapOn: "Progress"
+- assertVisible: "Training"
+- tapOn: "Body"
+- assertVisible: "No weight logged"
+- tapOn: "Routines"
+- tapOn: "More actions for Full Body A"
+- tapOn: "Delete routine"
+- tapOn: "Delete routine"
+- assertVisible: "No routines yet"
+- tapOn: "Today"
+- assertVisible: "Build your first routine"

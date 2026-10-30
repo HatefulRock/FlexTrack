@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { View, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, StatusBar, ActivityIndicator, BackHandler, Platform } from 'react-native';
 import { theme } from './constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -57,6 +57,17 @@ const App = () => {
   } = useWorkoutData();
   const health = useHealthSync();
   useWidgetSync(templates, logs, !loading);
+
+  // The editor and the activity form have an on-screen back button; the hardware key does the same
+  // instead of closing the app. Active workout and the other tabs keep their own behaviour.
+  useEffect(() => {
+    if (Platform.OS === 'web' || (view !== 'template-editor' && view !== 'quick-log')) return;
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      setView(view === 'quick-log' ? 'dashboard' : 'templates');
+      return true;
+    });
+    return () => handler.remove();
+  }, [view]);
 
   const ready = !loading && fontsReady && sessionChecked;
   const hasUnreadable = Object.keys(unreadable).length > 0;

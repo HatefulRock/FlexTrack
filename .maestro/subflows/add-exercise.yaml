@@ -1,0 +1,9 @@
+# Adds one picker exercise to the routine being edited.
+# env: EXERCISE
+appId: com.HatefulRock.flextrack
+---
+- tapOn: "Add exercise"
+- tapOn: "Search exercises"
+- inputText: ${EXERCISE}
+- hideKeyboard
+- tapOn: "Add ${EXERCISE}, .*"

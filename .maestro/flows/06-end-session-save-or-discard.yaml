@@ -1,0 +1,30 @@
+# Ending early: "Keep training" backs out, "Save & end" logs partial work, "Discard" drops it.
+appId: com.HatefulRock.flextrack
+tags: [workout, edge]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow:
+    file: ../subflows/create-routine.yaml
+    env:
+      ROUTINE: "Pull day"
+      EXERCISE: "Barbell Row"
+- tapOn: "Today"
+- tapOn: "Start Pull day"
+- tapOn: "Complete set 1"
+- tapOn: "Skip rest"
+# Back out of the dialog
+- tapOn: "End session"
+- assertVisible: "End this session?"
+- tapOn: "Keep training"
+- assertVisible: "End session"
+# Save the partial session
+- tapOn: "End session"
+- tapOn: "Save & end"
+- assertVisible: "Duration"
+- tapOn: "Done"
+- assertVisible: "1 total"
+# Start again and discard: nothing new is logged
+- tapOn: "Start Pull day.*"
+- tapOn: "End session"
+- tapOn: "Discard"
+- assertVisible: "1 total"

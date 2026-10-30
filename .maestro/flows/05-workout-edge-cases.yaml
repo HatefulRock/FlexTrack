@@ -1,0 +1,37 @@
+# Mid-session behaviours: adjusting weight, reopening a set, rest timer controls, previous/next navigation.
+appId: com.HatefulRock.flextrack
+tags: [workout, edge]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow:
+    file: ../subflows/create-routine.yaml
+    env:
+      ROUTINE: "Upper"
+      EXERCISE: "Bench Press"
+- tapOn: "Today"
+- tapOn: "Start Upper"
+# Weight stepper moves and the "make this the default" shortcut appears
+- tapOn: "Increase Weight by.*"
+- tapOn: "Increase Weight by.*"
+- assertVisible: "Use .* kg as default.*"
+- tapOn: "Complete set 1"
+# Rest dock controls are optional taps: emulator steps are slow and the 2-minute rest can expire between steps.
+- tapOn:
+    text: "Expand rest timer"
+    optional: true
+- tapOn:
+    text: "Minimize rest timer"
+    optional: true
+- tapOn:
+    text: "Add 15 seconds of rest"
+    optional: true
+- tapOn:
+    text: "Skip rest"
+    optional: true
+# A completed set can be reopened
+- tapOn: "Set 1 done.*"
+- assertVisible: "Complete set 1"
+# The first exercise has nothing before it
+- assertVisible:
+    text: "Previous exercise"
+    enabled: false

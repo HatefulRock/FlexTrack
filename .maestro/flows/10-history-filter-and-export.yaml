@@ -1,0 +1,36 @@
+# History with mixed content: filter by type, clear the filter, and open the export.
+appId: com.HatefulRock.flextrack
+tags: [history]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- runFlow:
+    file: ../subflows/create-routine.yaml
+    env:
+      ROUTINE: "Chest"
+      EXERCISE: "Bench Press"
+- tapOn: "Today"
+- tapOn: "Start Chest"
+- runFlow:
+    file: ../subflows/finish-session.yaml
+    env:
+      EXERCISES: "1"
+- tapOn: "Done"
+- tapOn: "Quick start"
+- tapOn: "Log a finished activity"
+- tapOn: "Distance in km"
+- inputText: "3"
+- hideKeyboard
+- tapOn: "Duration"
+- inputText: "20:00"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Save activity"
+- tapOn: "Save activity"
+- assertVisible: "Chest, .*"
+- assertVisible: "Run, .*"
+- tapOn: "Show Run sessions"
+- assertVisible: "Run, .*"
+- assertNotVisible: "Chest, .*"
+- tapOn: "Show all sessions"
+- assertVisible: "Chest, .*"
+- tapOn: "Export all data"

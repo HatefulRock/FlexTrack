@@ -1,0 +1,32 @@
+# New user builds a routine, schedules a day, adds exercises, and sees it on Today.
+appId: com.HatefulRock.flextrack
+tags: [smoke, routines]
+---
+- runFlow: ../subflows/launch-clean.yaml
+- tapOn: "Routines"
+- tapOn: "New routine"
+- tapOn: "Routine name"
+- inputText: "Push day"
+- hideKeyboard
+- tapOn: "Notes for this routine"
+- inputText: "Heavy chest and shoulders"
+- hideKeyboard
+- runFlow:
+    file: ../subflows/add-exercise.yaml
+    env:
+      EXERCISE: "Bench Press"
+- runFlow:
+    file: ../subflows/add-exercise.yaml
+    env:
+      EXERCISE: "Overhead Press"
+- runFlow:
+    file: ../subflows/add-exercise.yaml
+    env:
+      EXERCISE: "Push-up"
+- tapOn: "Save routine"
+- assertVisible: "Push day"
+- assertVisible: "Heavy chest and shoulders"
+- assertVisible: "1 routine"
+- tapOn: "Today"
+- assertVisible: "Your first session.*"
+- assertVisible: "Start Push day"

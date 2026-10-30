@@ -1,0 +1,16 @@
+# Creates a routine with one exercise from the picker and returns to the Routines list.
+# env: ROUTINE (name), EXERCISE (exercise name from the picker, e.g. "Bench Press")
+appId: com.HatefulRock.flextrack
+---
+- tapOn: "Routines"
+- tapOn: "New routine"
+- tapOn: "Routine name"
+- inputText: ${ROUTINE}
+- hideKeyboard
+- tapOn: "Add exercise"
+- tapOn: "Search exercises"
+- inputText: ${EXERCISE}
+- hideKeyboard
+- tapOn: "Add ${EXERCISE}, .*"
+- tapOn: "Save routine"
+- assertVisible: ${ROUTINE}

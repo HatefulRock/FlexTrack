@@ -1,0 +1,11 @@
+# A new install with the starter routine deleted, so tests that build their own routines start from nothing.
+appId: com.HatefulRock.flextrack
+---
+- runFlow: launch-starter.yaml
+- tapOn: "Routines"
+- tapOn: "More actions for Full Body A"
+- tapOn: "Delete routine"
+- tapOn: "Delete routine"
+- assertVisible: "No routines yet"
+- tapOn: "Today"
+- assertVisible: "Build your first routine"

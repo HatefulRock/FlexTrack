@@ -1,0 +1,15 @@
+# The very first session a new user does: start the starter routine from Today and finish it.
+appId: com.HatefulRock.flextrack
+tags: [smoke, workout]
+---
+- runFlow: ../subflows/launch-starter.yaml
+- tapOn: "Start session"
+- assertVisible: "End session"
+- runFlow:
+    file: ../subflows/finish-session.yaml
+    env:
+      EXERCISES: "4"
+- assertVisible: "Duration"
+- tapOn: "Done"
+- assertVisible: "1 total"
+- assertVisible: "Rest day"
