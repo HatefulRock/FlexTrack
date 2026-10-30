@@ -1,7 +1,0 @@
-# Starts a routine from the Routines tab.
-# env: ROUTINE
-appId: com.HatefulRock.flextrack
----
-- tapOn: "Routines"
-- tapOn: "Start ${ROUTINE}"
-- assertVisible: "End session"
