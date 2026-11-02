@@ -3,20 +3,20 @@ appId: com.HatefulRock.flextrack
 tags: [routines, edge, android-only]
 ---
 - runFlow: ../subflows/launch-clean.yaml
-- tapOn: "Routines"
-- tapOn: "New routine"
+- tapOn: "Workouts"
+- tapOn: "New workout"
 # Saving with no name is refused and explains why
-- tapOn: "Save routine"
-- assertVisible: "Name this routine to save it."
-- assertVisible: "New routine"
+- tapOn: "Save workout"
+- assertVisible: "Name this workout to save it."
+- assertVisible: "New workout"
 # Whitespace alone is not a name
-- tapOn: "Routine name"
+- tapOn: "Workout name"
 - inputText: "   "
 - runFlow: ../subflows/hide-keyboard.yaml
-- tapOn: "Save routine"
-- assertVisible: "Name this routine to save it."
+- tapOn: "Save workout"
+- assertVisible: "Name this workout to save it."
 # A custom exercise typed into the picker
-- tapOn: "Routine name"
+- tapOn: "Workout name"
 - eraseText: 10
 - inputText: "Odd day"
 - runFlow: ../subflows/hide-keyboard.yaml
@@ -36,20 +36,20 @@ tags: [routines, edge, android-only]
     element: "Edit Zercher Squat targets"
 - tapOn: "Edit Zercher Squat targets"
 - scrollUntilVisible:
-    element: "Remove Zercher Squat from routine"
-- tapOn: "Remove Zercher Squat from routine"
+    element: "Remove Zercher Squat from workout"
+- tapOn: "Remove Zercher Squat from workout"
 - assertNotVisible: "Zercher Squat"
-- tapOn: "Save routine"
-- assertVisible: "Edit routine Odd day"
+- tapOn: "Save workout"
+- assertVisible: "Edit workout Odd day"
 # Cancelling an edit leaves the routine untouched
-- tapOn: "Edit routine Odd day"
-- tapOn: "Routine name"
+- tapOn: "Edit workout Odd day"
+- tapOn: "Workout name"
 - inputText: " changed"
 - runFlow: ../subflows/hide-keyboard.yaml
 # The hardware back key leaves the editor, like the on-screen button, instead of closing the app
 - pressKey: back
-- assertVisible: "Edit routine Odd day"
-- assertNotVisible: "Edit routine Odd day changed"
-- tapOn: "Edit routine Odd day"
+- assertVisible: "Edit workout Odd day"
+- assertNotVisible: "Edit workout Odd day changed"
+- tapOn: "Edit workout Odd day"
 - tapOn: "Go back"
-- assertVisible: "Edit routine Odd day"
+- assertVisible: "Edit workout Odd day"

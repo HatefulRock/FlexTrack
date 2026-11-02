@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Exercise } from '../../types';
 import { theme } from '../../constants/theme';
 import { formatTime } from '../../utils/time';
-import { categoryColor, exerciseCategory, formatDecimal } from '../../utils/training';
+import { formatDecimal } from '../../utils/training';
 
 const n = (v?: number) => formatDecimal(v ?? 0);
 
@@ -17,11 +17,11 @@ export const targetLabel = (exercise: Exercise) => {
   return `${sets} × ${exercise.targetReps || 0} at ${n(exercise.targetWeight)} kg`;
 };
 
-export const ExerciseView = ({ exercise, index, total, setNumber, setCount }: { exercise: Exercise; index: number; total: number; setNumber?: number; setCount?: number }) => {
+export const ExerciseView = ({ exercise, index, total, setNumber, setCount, color }: { exercise: Exercise; index: number; total: number; setNumber?: number; setCount?: number; color: string }) => {
   const progress = setNumber && setCount ? `Set ${setNumber} of ${setCount}` : setCount ? `${setCount} of ${setCount} sets done` : `Exercise ${index + 1} of ${total}`;
   return <View style={styles.container}>
     <View style={styles.titleRow}>
-      <View style={[styles.category, { backgroundColor: categoryColor(exerciseCategory(exercise.name, exercise.type)) }]} />
+      <View style={[styles.category, { backgroundColor: color }]} />
       <Text accessibilityRole="header" style={styles.title}>{exercise.name}</Text>
     </View>
     <Text style={styles.target}>{progress} · {targetLabel(exercise)}</Text>

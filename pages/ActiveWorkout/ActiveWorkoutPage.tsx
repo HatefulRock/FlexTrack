@@ -17,6 +17,7 @@ import { ProgressionSuggestion, suggestProgression } from '../../utils/progressi
 import { Button, EmptyState, PressableScale, useReducedMotion } from '../../components/ui/Primitives';
 import { showAlert } from '../../components/ui/Dialog';
 import { theme } from '../../constants/theme';
+import { colorKeyOf, workoutColor } from '../../utils/workoutColor';
 
 interface Props {
   template: WorkoutTemplate; resume?: ActiveSession | null; previousLogs: WorkoutLog[];
@@ -154,7 +155,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const finishWorkout = () => {
     cancelRest();
     onFinish({
-      id: generateId(), templateId: template.id, templateName: template.name, source: 'routine', startTime, endTime: Date.now(),
+      id: generateId(), templateId: template.id, templateName: template.name, source: 'routine', color: colorKeyOf(template), startTime, endTime: Date.now(),
       exercises: logs.map((e, eIndex) => ({
         ...e,
         sets: e.sets.map((set, setIndex) => withTimedDuration(e, set, timers[`${eIndex}-${setIndex}`])),
@@ -277,13 +278,13 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
 
   if (!currentExercise || !currentLog) {
     return <View style={styles.container}>
-      <EmptyState icon={Zap} title="Nothing to train yet" message="This routine has no exercises. Add at least one exercise before starting."
+      <EmptyState icon={Zap} title="Nothing to train yet" message="This workout has no exercises. Add at least one exercise before starting."
         action="Leave session" onAction={() => onFinish(null)} />
     </View>;
   }
 
   const nextExercise = template.exercises[activeExerciseIndex + 1];
-  const doneLabel = nextExercise ? `Next: ${nextExercise.name} · ${targetLabel(nextExercise)}` : 'Last exercise of the routine.';
+  const doneLabel = nextExercise ? `Next: ${nextExercise.name} · ${targetLabel(nextExercise)}` : 'Last exercise of the workout.';
   const translateX = reduced ? 0 : enter.interpolate({ inputRange: [0, 1], outputRange: [16 * direction.current, 0] });
   const restProps = {
     restEndsAt, restTotal, next: restNext,
@@ -310,7 +311,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
       <ScrollView ref={scrollRef} style={styles.flex} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: enter, transform: [{ translateX }] }}>
-          <ExerciseView exercise={currentExercise} index={activeExerciseIndex} total={template.exercises.length}
+          <ExerciseView color={workoutColor(template)} exercise={currentExercise} index={activeExerciseIndex} total={template.exercises.length}
             setNumber={currentIndex >= 0 ? currentIndex + 1 : undefined} setCount={currentLog.sets.length} />
           <SetList exercise={currentExercise} sets={currentLog.sets} historySets={historySets} exerciseIndex={activeExerciseIndex}
             suggestion={suggestions[activeExerciseIndex]} onUseLastValues={revertToLast}

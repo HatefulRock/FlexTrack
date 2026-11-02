@@ -14,28 +14,28 @@ export const TemplatesPage = ({ templates, onEdit, onDelete, onCreate, onStart }
   const [focused, setFocused] = useState(false);
   const q = query.trim().toLowerCase();
   const shown = useMemo(() => templates.filter(t => `${t.name} ${t.description || ''} ${t.exercises.map(e => e.name).join(' ')}`.toLowerCase().includes(q)), [templates, q]);
-  const newButton = <PressableScale accessibilityRole="button" accessibilityLabel="New routine" onPress={onCreate} style={styles.add}>
-    <Plus size={18} color={theme.colors.onPrimary} strokeWidth={2.6} /><Text style={styles.addText}>New routine</Text>
+  const newButton = <PressableScale accessibilityRole="button" accessibilityLabel="New workout" onPress={onCreate} style={styles.add}>
+    <Plus size={18} color={theme.colors.onPrimary} strokeWidth={2.6} /><Text style={styles.addText}>New workout</Text>
   </PressableScale>;
 
   return <View style={styles.container}>
-    <Header title="Routines" rightAction={templates.length ? newButton : undefined} />
+    <Header title="Workouts" rightAction={templates.length ? newButton : undefined} />
     <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       {templates.length > 0 && <>
         <View style={[styles.search, focused && styles.searchFocused]}>
           <Search size={18} color={theme.colors.textMuted} />
-          <TextInput value={query} onChangeText={setQuery} placeholder="Search routines or exercises" placeholderTextColor={theme.colors.textMuted}
-            accessibilityLabel="Search routines" style={styles.input} returnKeyType="search" autoCorrect={false}
+          <TextInput value={query} onChangeText={setQuery} placeholder="Search workouts or exercises" placeholderTextColor={theme.colors.textMuted}
+            accessibilityLabel="Search workouts" style={styles.input} returnKeyType="search" autoCorrect={false}
             onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} />
           {query.length > 0 && <PressableScale accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} scaleTo={0.92} style={styles.clear}>
             <X size={18} color={theme.colors.textSecondary} />
           </PressableScale>}
         </View>
-        {shown.length > 0 && <Text style={styles.count}>{q ? `${shown.length} of ${templates.length}` : shown.length} {templates.length === 1 && !q ? 'routine' : 'routines'}</Text>}
+        {shown.length > 0 && <Text style={styles.count}>{q ? `${shown.length} of ${templates.length}` : shown.length} {templates.length === 1 && !q ? 'workout' : 'workouts'}</Text>}
       </>}
       <View style={styles.list}>{shown.map(t => <WorkoutCard key={t.id} template={t} onEdit={onEdit} onDelete={onDelete} onStart={onStart} />)}</View>
-      {!templates.length && <EmptyState icon={Dumbbell} title="No routines yet" message="Build a routine once: pick the exercises, set the days. Then start it from Today or Quick start in one tap." action="New routine" onAction={onCreate} />}
-      {!!templates.length && !shown.length && <EmptyState icon={SearchX} title="No matching routines" message={`Nothing named or containing “${query.trim()}”. Try an exercise name, or clear the search.`} action="Clear search" onAction={() => setQuery('')} />}
+      {!templates.length && <EmptyState icon={Dumbbell} title="No workouts yet" message="Build a workout once: pick the exercises, set the days. Then start it from Today or Quick start in one tap." action="New workout" onAction={onCreate} />}
+      {!!templates.length && !shown.length && <EmptyState icon={SearchX} title="No matching workouts" message={`Nothing named or containing “${query.trim()}”. Try an exercise name, or clear the search.`} action="Clear search" onAction={() => setQuery('')} />}
     </ScrollView>
   </View>;
 };

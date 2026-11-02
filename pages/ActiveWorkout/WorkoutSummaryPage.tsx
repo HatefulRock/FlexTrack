@@ -10,6 +10,7 @@ import { detectRecords, formatDuration, formatNumber, logVolume } from '../../ut
 import { ExerciseRow, JudgeLights, RecordCard, lightsVerdict, whiteLights } from './SummaryParts';
 import { buildShareData } from './ShareLayout';
 import { ShareSheet } from './ShareSheet';
+import { logColor } from '../../utils/workoutColor';
 
 const c = theme.colors;
 const nd = theme.motion.nativeDriver;
@@ -131,7 +132,7 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
 
         <Animated.View style={up(rise[2])}>
           <SectionHeader title="Exercises" />
-          <View style={styles.list}>{log.exercises.map((e, i) => <ExerciseRow key={`${e.exerciseId}-${i}`} exercise={e} first={i === 0} />)}</View>
+          <View style={styles.list}>{log.exercises.map((e, i) => <ExerciseRow key={`${e.exerciseId}-${i}`} exercise={e} first={i === 0} color={logColor(log)} />)}</View>
         </Animated.View>
       </Animated.View>
     </ScrollView>

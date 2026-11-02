@@ -25,6 +25,7 @@ export interface WorkoutTemplate {
   exercises: Exercise[];
   tags?: string[];
   scheduleDays?: number[]; // Array of 0-6 (Sun-Sat). Empty = no schedule.
+  color?: string; // a WORKOUT_COLORS key the lifter picked; unset falls back to a stable default
 }
 
 export interface SetLog {
@@ -54,6 +55,7 @@ export interface WorkoutLog {
   templateName: string;
   source?: 'routine' | 'quick';
   activityCategory?: ActivityCategory;
+  color?: string; // the workout's colour when the session was logged
   notes?: string;
   startTime: number;
   endTime?: number;

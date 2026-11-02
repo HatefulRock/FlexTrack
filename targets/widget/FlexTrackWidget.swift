@@ -96,7 +96,7 @@ struct NextWorkoutView: View {
       Eyebrow(text: next?.when ?? "Next workout")
       Spacer(minLength: 0)
       Text(next?.name ?? "Nothing scheduled").font(.system(size: 30, weight: .heavy).width(.compressed)).foregroundStyle(chalk).lineLimit(2).minimumScaleFactor(0.7)
-      Text(next.map { "\($0.exercises) exercise\($0.exercises == 1 ? "" : "s")" } ?? "Pick days on a routine to see it here")
+      Text(next.map { "\($0.exercises) exercise\($0.exercises == 1 ? "" : "s")" } ?? "Pick days on a workout to see it here")
         .font(.caption).foregroundStyle(muted).lineLimit(2)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -121,7 +121,7 @@ struct NextWorkoutWidget: Widget {
       NextWorkoutView(entry: entry).containerBackground(rubber, for: .widget).widgetURL(URL(string: "flextrack://"))
     }
     .configurationDisplayName("Next workout")
-    .description("Today's routine, or the next one on your schedule.")
+    .description("Today's workout, or the next one on your schedule.")
     .supportedFamilies([.systemSmall, .systemMedium])
   }
 }

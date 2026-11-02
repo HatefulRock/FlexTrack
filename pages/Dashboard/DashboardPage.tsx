@@ -2,11 +2,12 @@ import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { format } from 'date-fns';
 import { Header } from '../../components/layout/Header';
+import { CircleHelp } from 'lucide-react-native';
 import { PressableScale, SectionHeader } from '../../components/ui/Primitives';
 import { WeeklySchedule } from './WeeklySchedule';
 import { TodayFocusCard } from './TodayFocusCard';
 import { ResumeCard } from './ResumeCard';
-import { CategoryStrip, exerciseCount, lastDone, relativeDay } from './CategoryStrip';
+import { WorkoutBar, exerciseCount, lastDone, relativeDay } from './CategoryStrip';
 import { WorkoutLog, WorkoutTemplate, ViewState } from '../../types';
 import { ActiveSession } from '../../utils/activeSession';
 import { currentStreak, sessionsThisWeek } from '../../utils/training';
@@ -16,23 +17,26 @@ interface DashboardPageProps {
   templates: WorkoutTemplate[]; logs: WorkoutLog[];
   startWorkout: (t: WorkoutTemplate) => void; setView: (v: ViewState) => void;
   activeSession?: ActiveSession | null; onResume?: (s: ActiveSession) => void; onDiscardSession?: () => void;
+  onAddSample?: () => void; onCreate?: () => void; onHelp?: () => void;
 }
 
 const Score = ({ value, label }: { value: number; label: string }) =>
   <Text style={styles.scoreLabel}><Text style={styles.scoreValue}>{value}</Text>{label}</Text>;
 
-export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSession, onResume, onDiscardSession }: DashboardPageProps) => {
+export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSession, onResume, onDiscardSession, onAddSample, onCreate, onHelp }: DashboardPageProps) => {
   const todayIndex = new Date().getDay();
   const todaysWorkouts = useMemo(() => templates.filter(t => t.scheduleDays?.includes(todayIndex)), [templates, todayIndex]);
   const week = useMemo(() => sessionsThisWeek(logs), [logs]);
   const streak = useMemo(() => currentStreak(logs), [logs]);
 
   return <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-    <Header title="Today" subtitle={format(new Date(), 'EEEE d MMMM')} />
+    <Header title="Today" subtitle={format(new Date(), 'EEEE d MMMM')} rightAction={onHelp && <PressableScale accessibilityRole="button" accessibilityLabel="How FlexTrack works" onPress={onHelp} scaleTo={0.92} style={styles.help}>
+      <CircleHelp size={24} color={theme.colors.textMuted} />
+    </PressableScale>} />
     <View style={styles.content}>
       {activeSession && onResume && <ResumeCard session={activeSession} onResume={onResume} onDiscard={() => onDiscardSession?.()} />}
       <TodayFocusCard todaysWorkouts={todaysWorkouts} templates={templates} logs={logs} onStartWorkout={startWorkout}
-        onBrowse={() => setView('templates')} onCreate={() => setView('templates')} secondaryStart={!!activeSession} />
+        onBrowse={() => setView('templates')} onCreate={onCreate ?? (() => setView('templates'))} onAddSample={onAddSample} secondaryStart={!!activeSession} />
 
       {(logs.length > 0 || templates.some(t => t.scheduleDays?.length)) && <View style={styles.week}>
         <WeeklySchedule templates={templates} logs={logs} onStartWorkout={startWorkout} />
@@ -45,7 +49,7 @@ export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSe
       </View>}
 
       {templates.length > 0 && <View>
-        <SectionHeader title="Your routines" action="See all" onAction={() => setView('templates')} />
+        <SectionHeader title="Your workouts" action="See all" onAction={() => setView('templates')} />
         <View style={styles.list}>{templates.slice(0, 3).map((t, i) => {
           const last = lastDone(t, logs);
           const meta = `${exerciseCount(t.exercises.length)} · ${last ? `last done ${relativeDay(last)}` : 'not done yet'}`;
@@ -56,7 +60,7 @@ export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSe
               <Text style={styles.routineStart}>Start</Text>
             </View>
             <Text style={styles.routineMeta} numberOfLines={1}>{meta}</Text>
-            <View style={styles.routineStrip}><CategoryStrip exercises={t.exercises} height={4} /></View>
+            <View style={styles.routineStrip}><WorkoutBar template={t} height={4} /></View>
           </PressableScale>;
         })}</View>
       </View>}
@@ -68,6 +72,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.canvas }, scroll: { paddingBottom: 110 },
   content: { paddingHorizontal: 16, paddingTop: 8, gap: 28, maxWidth: 620, width: '100%', alignSelf: 'center' },
   week: { gap: 14 },
+  help: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
   scoreboard: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 2 },
   scoreValue: { ...theme.type.metric, fontVariant: ['tabular-nums'], color: theme.colors.text },
   scoreLabel: { ...theme.type.label, color: theme.colors.textMuted },

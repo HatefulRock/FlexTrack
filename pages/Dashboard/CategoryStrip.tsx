@@ -1,10 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { differenceInCalendarDays } from 'date-fns';
 import { Exercise, WorkoutLog, WorkoutTemplate } from '../../types';
-import { CATEGORY_LABEL, Category, categoryColor, exerciseCategory } from '../../utils/training';
-import { theme } from '../../constants/theme';
-import { CATEGORY_ORDER } from '../History/historyModel';
+import { workoutColor } from '../../utils/workoutColor';
 
 const LIFT_SET_SECONDS = 40;
 const SECONDS_PER_KM = 360;
@@ -41,35 +39,6 @@ export const relativeDay = (time: number, now = new Date()) => {
 export const lastDone = (t: WorkoutTemplate, logs: WorkoutLog[]) =>
   logs.reduce<number | null>((best, l) => l.templateId === t.id && (best === null || l.startTime > best) ? l.startTime : best, null);
 
-const segments = (exercises: Exercise[]) => exercises.map(e => ({ id: e.id, category: exerciseCategory(e.name, e.type), sets: setCount(e) }));
-
-// The session's shape: one segment per exercise, width = sets, hue = training category.
-export const CategoryStrip = ({ exercises, height = 10 }: { exercises: Exercise[]; height?: number }) => {
-  const segs = segments(exercises);
-  if (!segs.length) return <View style={[styles.strip, { height }, styles.emptyStrip]} />;
-  return <View style={[styles.strip, { height, gap: height >= 8 ? 3 : 2 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-    {segs.map((s, i) => <View key={`${s.id}-${i}`} style={{ flex: s.sets, backgroundColor: categoryColor(s.category), borderRadius: height >= 8 ? 2 : 1 }} />)}
-  </View>;
-};
-
-export const CategoryLegend = ({ exercises }: { exercises: Exercise[] }) => {
-  const sets = segments(exercises).reduce<Partial<Record<Category, number>>>((acc, s) => ({ ...acc, [s.category]: (acc[s.category] || 0) + s.sets }), {});
-  const present = CATEGORY_ORDER.filter(c => sets[c]);
-  if (!present.length) return null;
-  return <View style={styles.legend} accessibilityLabel={present.map(c => `${CATEGORY_LABEL[c]} ${sets[c]} sets`).join(', ')}>
-    {present.map(c => <View key={c} style={styles.legendItem}>
-      <View style={[styles.swatch, { backgroundColor: categoryColor(c) }]} />
-      <Text style={styles.legendText}>{CATEGORY_LABEL[c]} <Text style={styles.legendCount}>{sets[c]}</Text> sets</Text>
-    </View>)}
-  </View>;
-};
-
-const styles = StyleSheet.create({
-  strip: { flexDirection: 'row', width: '100%', overflow: 'hidden' },
-  emptyStrip: { backgroundColor: theme.colors.border, borderRadius: 2 },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 4 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  swatch: { width: 8, height: 8, borderRadius: 1 },
-  legendText: { ...theme.type.caption, color: theme.colors.textMuted },
-  legendCount: { ...theme.type.numeric, fontVariant: ['tabular-nums'], fontSize: 12, color: theme.colors.textSecondary },
-});
+// The workout's own colour, as a bar: what the lifter recognises a session by.
+export const WorkoutBar = ({ template, height = 10, width = '100%' }: { template: Pick<WorkoutTemplate, 'id' | 'color'>; height?: number; width?: `${number}%` | number }) =>
+  <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ height, width, borderRadius: height >= 8 ? 3 : 2, backgroundColor: workoutColor(template) }} />;

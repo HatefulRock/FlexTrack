@@ -1,9 +1,9 @@
-# Creates a routine with one exercise from the picker and returns to the Routines list.
+# Creates a routine with one exercise from the picker and returns to the Workouts list.
 # env: ROUTINE (name), EXERCISE (exercise name from the picker, e.g. "Bench Press")
 appId: com.HatefulRock.flextrack
 ---
-- tapOn: "Routines"
-- tapOn: "New routine"
+- tapOn: "Workouts"
+- tapOn: "New workout"
 - tapOn: "e.g. Push day"
 - inputText: ${ROUTINE}
 - runFlow: hide-keyboard.yaml
@@ -12,5 +12,5 @@ appId: com.HatefulRock.flextrack
 - inputText: ${EXERCISE}
 - runFlow: hide-keyboard-android.yaml
 - tapOn: "Add ${EXERCISE}, .*"
-- tapOn: "Save routine"
-- assertVisible: "Edit routine ${ROUTINE}"
+- tapOn: "Save workout"
+- assertVisible: "Edit workout ${ROUTINE}"

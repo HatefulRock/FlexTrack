@@ -7,7 +7,7 @@ import { getShortDayName } from '../../utils/formatters';
 import { theme } from '../../constants/theme';
 import { PressableScale } from '../../components/ui/Primitives';
 import { showAlert } from '../../components/ui/Dialog';
-import { CategoryStrip, routineSummary } from '../Dashboard/CategoryStrip';
+import { WorkoutBar, routineSummary } from '../Dashboard/CategoryStrip';
 
 interface Props { template: WorkoutTemplate; onEdit: (t: WorkoutTemplate) => void; onDelete: (id: string) => void; onStart: (t: WorkoutTemplate) => void; }
 
@@ -20,13 +20,13 @@ export const WorkoutCard = ({ template, onEdit, onDelete, onStart }: Props) => {
   const description = template.description?.trim();
   const days = ORDER.filter(d => template.scheduleDays?.includes(d));
   const more = () => showAlert(template.name, undefined, [
-    { text: 'Edit routine', onPress: () => onEdit(template) },
-    { text: 'Delete routine', style: 'destructive', onPress: () => onDelete(template.id) },
+    { text: 'Edit workout', onPress: () => onEdit(template) },
+    { text: 'Delete workout', style: 'destructive', onPress: () => onDelete(template.id) },
     { text: 'Cancel', style: 'cancel' },
   ]);
   return <View style={styles.card}>
     <View style={styles.top}>
-      <View style={styles.grow}><PressableScale accessibilityRole="button" accessibilityLabel={`Edit routine ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.98} style={styles.main}>
+      <View style={styles.grow}><PressableScale accessibilityRole="button" accessibilityLabel={`Edit workout ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.98} style={styles.main}>
         <Text accessibilityRole="header" style={styles.title} numberOfLines={2}>{template.name}</Text>
         {!!description && !FILLER.test(description) && <Text numberOfLines={2} style={styles.description}>{description}</Text>}
       </PressableScale></View>
@@ -40,13 +40,13 @@ export const WorkoutCard = ({ template, onEdit, onDelete, onStart }: Props) => {
       </View> : <Text style={styles.metaText}>Not scheduled</Text>}
       <Text style={styles.metaText}>{routineSummary(template)}</Text>
     </View>
-    {template.exercises.length > 0 && <View style={styles.strip}><CategoryStrip exercises={template.exercises} height={6} /></View>}
+    <View style={styles.strip}><WorkoutBar template={template} height={6} /></View>
     <View style={styles.actions}>
       <View style={styles.grow}><PressableScale accessibilityRole="button" accessibilityLabel={`Start ${template.name}`} onPress={start} style={styles.start}>
         <Play size={18} color={theme.colors.onPrimary} fill={theme.colors.onPrimary} />
         <Text style={styles.startText}>Start</Text>
       </PressableScale></View>
-      <PressableScale accessibilityRole="button" accessibilityLabel={`Edit routine ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.92} style={styles.edit}>
+      <PressableScale accessibilityRole="button" accessibilityLabel={`Edit workout ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.92} style={styles.edit}>
         <Pencil size={19} color={theme.colors.text} />
       </PressableScale>
     </View>

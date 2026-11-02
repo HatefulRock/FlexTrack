@@ -1,7 +1,8 @@
 import { format } from 'date-fns';
 import { WorkoutLog } from '../../types';
 import { fonts, theme } from '../../constants/theme';
-import { RecordHit, categoryColor, exerciseCategory, formatDuration, formatNumber } from '../../utils/training';
+import { RecordHit, formatDuration, formatNumber } from '../../utils/training';
+import { logColor } from '../../utils/workoutColor';
 import { bestSet, recordValue, recordWas, whiteLights } from './SummaryParts';
 
 // The shareable session card: a 1080×1350 (4:5) meet-scoreboard result.
@@ -39,7 +40,7 @@ export const buildShareData = (log: WorkoutLog, s: { doneSets: number; totalSets
     volume: formatNumber(s.volume),
     records: s.records.map(r => ({ name: r.exerciseName, value: recordValue(r), was: r.kind === 'oneRM' ? `est. 1RM ${recordWas(r)}` : recordWas(r) })),
     exercises: log.exercises.map(e => ({
-      name: e.exerciseName, color: categoryColor(exerciseCategory(e.exerciseName, e.exerciseType)),
+      name: e.exerciseName, color: logColor(log),
       best: bestSet(e), skipped: !e.sets.some(x => x.completed),
     })),
   };

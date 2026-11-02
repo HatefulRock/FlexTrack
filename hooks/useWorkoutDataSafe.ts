@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, WorkoutLog, WorkoutTemplate } from '../types';
 import { MAX_LOGS, sanitizeLog, sanitizeProfile, sanitizeTemplate } from '../utils/sanitize';
-import { loadAll, removeLogs, Section, STARTER_TEMPLATES, writeLog, writeProfile, writeTemplates } from '../utils/storage';
+import { loadAll, removeLogs, Section, writeLog, writeProfile, writeTemplates } from '../utils/storage';
 
 export const useWorkoutData = () => {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
@@ -36,9 +36,9 @@ export const useWorkoutData = () => {
       .catch(() => {
         if (!mounted) return;
         (['templates', 'logs', 'profile'] as const).forEach(section => blocked.current.add(section));
-        templateRef.current = STARTER_TEMPLATES;
+        templateRef.current = [];
         logRef.current = [];
-        setTemplates(STARTER_TEMPLATES);
+        setTemplates([]);
         setLogs([]);
         setUserProfileState({ weightLogs: [], height: 0 });
       })

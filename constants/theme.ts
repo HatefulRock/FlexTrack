@@ -27,7 +27,7 @@ export const theme = {
     record: '#F3C316', onRecord: '#141516', recordSoft: 'rgba(243, 195, 22, 0.12)',
     // Kept as an alias of record so old call sites cannot introduce a second accent.
     energy: '#F3C316', energySoft: 'rgba(243, 195, 22, 0.12)',
-    // A good lift is a white light. Improvement is printed in chalk with a sign: green belongs to the legs category only.
+    // A good lift is a white light. Improvement is printed in chalk with a sign.
     done: '#F2F1EC', success: '#F2F1EC', successFill: '#F2F1EC', successSoft: 'rgba(242, 241, 236, 0.08)',
     warning: '#F3C316',
     // Red 25 kg plate is the judges' no-lift light: missed sets and destructive actions.
@@ -36,7 +36,8 @@ export const theme = {
     text: '#F2F1EC', textSecondary: '#C9C9C3', textMuted: '#A3A59F', textSubtle: '#8E908B',
     white: '#FFFFFF', black: '#000000', overlay: 'rgba(8, 9, 10, 0.82)',
   },
-  category: { push: plates[25], pull: plates[20], legs: plates[10], cardio: plates[1.25], other: '#5A5E62' },
+  // Training categories are told apart by their labels; colour belongs to the workout the lifter picked (utils/workoutColor).
+  category: { push: '#C9C9C3', pull: '#C9C9C3', legs: '#C9C9C3', cardio: '#C9C9C3', other: '#5A5E62' },
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 },
   radius: { sm: 4, md: 6, lg: 10, xl: 14, pill: 999 },
   type: {

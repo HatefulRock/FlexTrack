@@ -1,8 +1,11 @@
 # Step one of the unreadable-data check: a clean install that has created its storage, then stopped.
+# Skipping the tour writes its flag, so the storage database exists before it is corrupted.
 appId: com.HatefulRock.flextrack
 ---
 - launchApp:
     clearState: true
     stopApp: true
-- assertVisible: "Full Body A"
+- assertVisible: "How FlexTrack works.*"
+- tapOn: "Skip the tour"
+- assertVisible: "Build your first workout"
 - stopApp

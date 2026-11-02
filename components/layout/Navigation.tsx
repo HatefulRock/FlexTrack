@@ -17,7 +17,7 @@ interface NavigationProps {
 
 const tabs: { view: ViewState; label: string; icon: typeof CalendarDays }[] = [
   { view: 'dashboard', label: 'Today', icon: CalendarDays },
-  { view: 'templates', label: 'Routines', icon: Dumbbell },
+  { view: 'templates', label: 'Workouts', icon: Dumbbell },
   { view: 'history', label: 'History', icon: History },
   { view: 'stats', label: 'Progress', icon: TrendingUp },
 ];
@@ -50,10 +50,10 @@ export const Navigation = ({ currentView, setView, templates, onStart, onCreate,
           <View style={styles.routineText}><Text style={styles.routineTitle} numberOfLines={1}>{t.name}</Text><Text style={styles.routineMeta}>{t.exercises.length} {t.exercises.length === 1 ? 'exercise' : 'exercises'}</Text></View>
           <ChevronRight size={20} color={theme.colors.textSubtle} />
         </PressableScale>)}
-      </ScrollView> : <Text style={styles.emptyText}>Create your first routine to make quick starts effortless.</Text>}
+      </ScrollView> : <Text style={styles.emptyText}>Create your first workout to make quick starts effortless.</Text>}
       <View style={styles.sheetActions}>
         <Button label="Log a finished activity" variant="secondary" onPress={() => { setQuickOpen(false); onQuickLog(); }} />
-        <Button label="New routine" icon={Plus} variant={templates.length ? 'ghost' : 'primary'} onPress={() => { setQuickOpen(false); onCreate(); }} />
+        <Button label="New workout" icon={Plus} variant={templates.length ? 'ghost' : 'primary'} onPress={() => { setQuickOpen(false); onCreate(); }} />
       </View>
     </Sheet>
   </>;

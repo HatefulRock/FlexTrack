@@ -3,14 +3,14 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Header } from '../../components/layout/Header';
 import { PressableScale } from '../../components/ui/Primitives';
-import { WorkoutLog, UserProfile } from '../../types';
+import { WorkoutLog, WorkoutTemplate, UserProfile } from '../../types';
 import { TrainingTab } from './TrainingTab';
 import { BodyTab } from './BodyTab';
 import { theme } from '../../constants/theme';
 
 const TABS = [{ key: 'training', label: 'Training' }, { key: 'body', label: 'Body' }] as const;
 
-export const StatsPage = ({ logs, userProfile, setUserProfile }: { logs: WorkoutLog[]; userProfile: UserProfile; setUserProfile: (p: UserProfile) => void }) => {
+export const StatsPage = ({ logs, templates, userProfile, setUserProfile }: { logs: WorkoutLog[]; templates?: WorkoutTemplate[]; userProfile: UserProfile; setUserProfile: (p: UserProfile) => void }) => {
   const [tab, setTab] = useState<'training' | 'body'>('training');
   return <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
     <Header title="Progress" />
@@ -21,7 +21,7 @@ export const StatsPage = ({ logs, userProfile, setUserProfile }: { logs: Workout
           <Text style={[styles.tabText, on && styles.tabTextActive]}>{t.label}</Text>
         </PressableScale></View>; })}
       </View>
-      {tab === 'training' ? <TrainingTab logs={logs} /> : <BodyTab userProfile={userProfile} setUserProfile={setUserProfile} />}
+      {tab === 'training' ? <TrainingTab logs={logs} templates={templates} /> : <BodyTab userProfile={userProfile} setUserProfile={setUserProfile} />}
     </View>
   </ScrollView>;
 };

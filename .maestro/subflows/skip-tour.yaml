@@ -1,0 +1,10 @@
+# A new install opens the "How FlexTrack works" tour; most flows skip straight past it.
+appId: com.HatefulRock.flextrack
+---
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- assertVisible: "How FlexTrack works.*"
+- tapOn: "Skip the tour"

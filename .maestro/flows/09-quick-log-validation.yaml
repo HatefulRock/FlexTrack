@@ -64,6 +64,6 @@ tags: [quick-log, edge, android-only]
 - assertVisible: "That is in the future.*"
 # The hardware back key leaves the form without saving anything
 - pressKey: back
-- assertVisible: "Build your first routine"
+- assertVisible: "Build your first workout"
 - tapOn: "History"
 - assertVisible: "No sessions yet"

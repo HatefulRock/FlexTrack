@@ -12,6 +12,8 @@ import { DialogHost, showAlert } from './components/ui/Dialog';
 import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/activeSession';
 import { buildExport, shareExport } from './utils/exportData';
 import { clearSharedFiles } from './utils/sharedFiles';
+import { SAMPLE_ROUTINE } from './utils/storage';
+import { Onboarding, loadOnboardingSeen, markOnboardingSeen } from './components/Onboarding';
 
 // Layout
 import { Navigation } from './components/layout/Navigation';
@@ -37,11 +39,15 @@ const App = () => {
   // Gates the first render: a read that resolved after the user had already started a new
   // session would resurrect the old one as a resume card.
   const [sessionChecked, setSessionChecked] = useState(false);
+  // null until read; the tour only opens for a brand-new install, never over an upgrade with data in it.
+  const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
   const fontsReady = useAppFonts();
 
   useEffect(() => {
     clearSharedFiles();
     void loadActiveSession().then(session => { setSavedSession(session); setSessionChecked(true); });
+    void loadOnboardingSeen().then(setOnboardingSeen);
   }, []);
 
   const {
@@ -69,8 +75,10 @@ const App = () => {
     return () => handler.remove();
   }, [view]);
 
-  const ready = !loading && fontsReady && sessionChecked;
+  const ready = !loading && fontsReady && sessionChecked && onboardingSeen !== null;
   const hasUnreadable = Object.keys(unreadable).length > 0;
+  const firstRun = ready && !onboardingSeen && !hasUnreadable && templates.length === 0 && logs.length === 0;
+  useEffect(() => { if (firstRun) setTourOpen(true); }, [firstRun]);
   // Runs once DialogHost has mounted with the first full render.
   useEffect(() => {
     if (ready && hasUnreadable) showAlert('Some saved data could not be read', 'FlexTrack has left it untouched so nothing is lost. Exporting your data from History includes a copy of it.');
@@ -115,7 +123,7 @@ const App = () => {
   };
 
   const handleSaveTemplate = (t: WorkoutTemplate) => {
-    void saveTemplate(t).catch(() => showAlert('Save failed', 'This routine could not be written to local storage.'));
+    void saveTemplate(t).catch(() => showAlert('Save failed', 'This workout could not be written to local storage.'));
     setEditingTemplate(null);
     setView('templates');
   };
@@ -127,13 +135,19 @@ const App = () => {
 
   const handleDeleteTemplate = (id: string) => {
     showAlert(
-      "Delete this routine?",
-      "Its history stays in your logs. The routine itself cannot be restored.",
+      "Delete this workout?",
+      "Its history stays in your logs. The workout itself cannot be restored.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete routine", style: "destructive", onPress: () => { void deleteTemplate(id).catch(() => showAlert('Delete failed', 'The routine could not be removed from local storage.')); } }
+        { text: "Delete workout", style: "destructive", onPress: () => { void deleteTemplate(id).catch(() => showAlert('Delete failed', 'The workout could not be removed from local storage.')); } }
       ]
     );
+  };
+
+  const closeTour = () => { setTourOpen(false); setOnboardingSeen(true); void markOnboardingSeen(); };
+
+  const handleAddSample = () => {
+    void saveTemplate(SAMPLE_ROUTINE).catch(() => showAlert('Save failed', 'The sample workout could not be written to local storage.'));
   };
 
   const handleExport = () => {
@@ -159,6 +173,9 @@ const App = () => {
                   activeSession={savedSession}
                   onResume={handleResumeWorkout}
                   onDiscardSession={handleDiscardSession}
+                  onAddSample={handleAddSample}
+                  onCreate={() => { setEditingTemplate(null); setView('template-editor'); }}
+                  onHelp={() => setTourOpen(true)}
               />
           )}
           
@@ -175,6 +192,7 @@ const App = () => {
           {view === 'template-editor' && (
               <TemplateEditor 
                   template={editingTemplate} 
+                  templates={templates}
                   onSave={handleSaveTemplate} 
                   onCancel={() => setView('templates')} 
               />
@@ -203,13 +221,14 @@ const App = () => {
               <QuickLogPage onSave={(log) => { void addLog(log).then(() => health.onLogSaved(log), () => showAlert('Save failed', 'This activity could not be written to local storage.')); setView('history'); }} onCancel={() => setView('dashboard')} />
           )}
           {view === 'history' && (
-              <HistoryPage logs={logs} onExport={handleExport} health={health.available ? { name: health.platformName!, enabled: health.enabled, onPress: () => health.openSettings(logs) } : undefined} />
+              <HistoryPage logs={logs} templates={templates} onExport={handleExport} health={health.available ? { name: health.platformName!, enabled: health.enabled, onPress: () => health.openSettings(logs) } : undefined} />
           )}
 
           {view === 'stats' && (
             <Suspense fallback={<View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>}>
               <StatsPage 
                   logs={logs} 
+                  templates={templates}
                   userProfile={userProfile} 
                   setUserProfile={setUserProfile} 
               />
@@ -221,6 +240,7 @@ const App = () => {
           <Navigation currentView={view} setView={setView} templates={templates} onStart={handleStartWorkout} onCreate={() => { setEditingTemplate(null); setView('template-editor'); }} onQuickLog={() => setView('quick-log')} />
         )}
 
+        <Onboarding visible={tourOpen} onClose={closeTour} />
         <DialogHost />
       </SafeAreaView>
     </SafeAreaProvider>

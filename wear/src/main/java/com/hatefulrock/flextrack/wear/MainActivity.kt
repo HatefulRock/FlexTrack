@@ -103,7 +103,7 @@ class MainActivity : Activity(), DataClient.OnDataChangedListener {
       }
       return
     }
-    text(if (snapshot == null) "Open FlexTrack on your phone to sync." else "Nothing scheduled. Pick days on a routine in FlexTrack.", 13f, muted, top = 16)
+    text(if (snapshot == null) "Open FlexTrack on your phone to sync." else "Nothing scheduled. Pick days on a workout in FlexTrack.", 13f, muted, top = 16)
   }
 
   private fun text(value: String, sizeSp: Float, color: Int, bold: Boolean = false, top: Int = 0) {

@@ -1,6 +1,6 @@
 import React, { useRef, useState, ComponentRef } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
-import { Plus } from 'lucide-react-native';
+import { Check, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Header } from '../../components/layout/Header';
 import { Button, PressableScale } from '../../components/ui/Primitives';
@@ -10,6 +10,7 @@ import { WorkoutTemplate, Exercise } from '../../types';
 import { generateId } from '../../utils/helpers';
 import { getShortDayName } from '../../utils/formatters';
 import { EditorExerciseRow } from './EditorExerciseRow';
+import { WORKOUT_COLORS, WorkoutColorKey, colorKeyOf, nextColorKey } from '../../utils/workoutColor';
 import { EditorExercisePicker, ExercisePreset } from './EditorExercisePicker';
 
 const { colors, type, radius } = theme;
@@ -37,12 +38,14 @@ interface TemplateEditorProps {
     template: WorkoutTemplate | null;
     onSave: (t: WorkoutTemplate) => void;
     onCancel: () => void;
+    templates?: WorkoutTemplate[];
 }
 
-export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorProps) => {
+export const TemplateEditor = ({ template, onSave, onCancel, templates = [] }: TemplateEditorProps) => {
     const [name, setName] = useState(template?.name || '');
     const [description, setDescription] = useState(template?.description || '');
     const [scheduleDays, setScheduleDays] = useState<number[]>(template?.scheduleDays || []);
+    const [color, setColor] = useState<WorkoutColorKey>(() => (template ? colorKeyOf(template) : nextColorKey(templates)));
     const [exercises, setExercises] = useState<Exercise[]>(template?.exercises || []);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -69,7 +72,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
 
     const openPicker = () => {
         if (exercises.length >= MAX_EXERCISES) {
-            showAlert('Exercise limit reached', `A routine can contain at most ${MAX_EXERCISES} exercises.`);
+            showAlert('Exercise limit reached', `A workout can contain at most ${MAX_EXERCISES} exercises.`);
             return;
         }
         setPickerOpen(true);
@@ -123,23 +126,24 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
             description: description.trim(),
             exercises: exercises.map(normalizeExercise),
             scheduleDays,
+            color,
         });
     };
 
     return (
         <SafeAreaView style={styles.container}>
             <Header
-                title={template ? 'Edit routine' : 'New routine'}
+                title={template ? 'Edit workout' : 'New workout'}
                 onBack={onCancel}
-                rightAction={<Button label="Save" accessibilityLabel="Save routine" onPress={handleSave} style={styles.saveBtn} />}
+                rightAction={<Button label="Save" accessibilityLabel="Save workout" onPress={handleSave} style={styles.saveBtn} />}
             />
 
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
                 <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                     <View style={styles.field}>
-                        <Text style={styles.label}>Routine name</Text>
+                        <Text style={styles.label}>Workout name</Text>
                         <TextInput
-                            accessibilityLabel="Routine name"
+                            accessibilityLabel="Workout name"
                             value={name}
                             onChangeText={t => { setName(t); if (nameError && t.trim()) setNameError(false); }}
                             style={[styles.nameInput, nameError && styles.nameInputError]}
@@ -147,13 +151,13 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
                             placeholderTextColor={colors.textSubtle}
                             returnKeyType="done"
                         />
-                        {nameError && <Text accessibilityRole="alert" style={styles.errorText}>Name this routine to save it.</Text>}
+                        {nameError && <Text accessibilityRole="alert" style={styles.errorText}>Name this workout to save it.</Text>}
                     </View>
 
                     <View style={styles.field}>
-                        <Text style={styles.label}>Notes for this routine</Text>
+                        <Text style={styles.label}>Notes for this workout</Text>
                         <TextInput
-                            accessibilityLabel="Notes for this routine"
+                            accessibilityLabel="Notes for this workout"
                             value={description}
                             onChangeText={setDescription}
                             style={styles.notesInput}
@@ -162,6 +166,19 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
                             multiline
                             maxLength={500}
                         />
+                    </View>
+
+                    <View style={styles.section}>
+                        <Text accessibilityRole="header" style={styles.sectionTitle}>Colour</Text>
+                        <View accessibilityRole="radiogroup" style={styles.colorRow}>
+                            {WORKOUT_COLORS.map(c => {
+                                const on = color === c.key;
+                                return <PressableScale key={c.key} accessibilityRole="radio" accessibilityLabel={`${c.label} colour`} accessibilityState={{ selected: on }}
+                                    onPress={() => { Haptics.selectionAsync(); setColor(c.key); }} scaleTo={0.9} style={[styles.colorRing, on && styles.colorRingOn]}>
+                                    <View style={[styles.colorDot, { backgroundColor: c.hex }]}>{on && <Check size={18} color={c.key === 'chalk' ? colors.onPrimary : colors.white} strokeWidth={3} />}</View>
+                                </PressableScale>;
+                            })}
+                        </View>
                     </View>
 
                     <View style={styles.section}>
@@ -189,7 +206,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
                                 index={i}
                                 count={exercises.length}
                                 expanded={expandedId === ex.id}
-                                error={missingNames.has(ex.id) && !ex.name.trim() ? 'Name this exercise to save the routine.' : undefined}
+                                error={missingNames.has(ex.id) && !ex.name.trim() ? 'Name this exercise to save the workout.' : undefined}
                                 onToggle={() => setExpandedId(prev => prev === ex.id ? null : ex.id)}
                                 onChange={patch => updateExercise(ex.id, patch)}
                                 onMove={dir => moveExercise(ex.id, dir)}
@@ -230,6 +247,10 @@ const styles = StyleSheet.create({
     sectionTitle: { ...type.title, fontSize: 24, lineHeight: 28, color: colors.text, marginBottom: 10 },
     count: { fontFamily: type.metric.fontFamily, fontVariant: ['tabular-nums'], fontSize: 24, lineHeight: 28, color: colors.textMuted },
     daysRow: { flexDirection: 'row', gap: 6 },
+    colorRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
+    colorRing: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+    colorRingOn: { borderColor: colors.text },
+    colorDot: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     dayCell: { flex: 1 },
     day: { minHeight: 48, borderRadius: radius.sm, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
     dayOn: { backgroundColor: colors.primary },

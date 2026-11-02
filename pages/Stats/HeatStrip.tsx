@@ -1,16 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../../constants/theme';
-import { Category, CATEGORY_LABEL, categoryColor } from '../../utils/training';
 import { inkOn, mix, rgb, shortDate } from './chartUtils';
 
-export interface HeatRow { key: Category; values: number[] }
+import type { HeatRow } from './workoutHeat';
+export type { HeatRow };
 
-const LABEL_W = 56, GAP = 2, CELL_H = 30, WEEK_LABEL_W = 64;
-const STEPS = [0, 0.32, 0.55, 0.78, 1]; // four opacity steps of the category hue; 0 is the empty surface
+const LABEL_W = 84, GAP = 2, CELL_H = 30, WEEK_LABEL_W = 64;
+const STEPS = [0, 0.32, 0.55, 0.78, 1]; // four opacity steps of the row's hue; 0 is the empty surface
 const BASE = theme.colors.surfaceElevated;
 
-// Rows = training categories, columns = weeks. Each cell is that category's completed sets for the week.
+// Rows = workouts (in their colours), columns = weeks. Each cell is that row's completed sets for the week.
 export const HeatStrip = ({ rows, weeks }: { rows: HeatRow[]; weeks: number[] }) => {
   const [width, setWidth] = useState(0);
   const [sel, setSel] = useState<{ r: number; c: number } | null>(null);
@@ -23,17 +23,17 @@ export const HeatStrip = ({ rows, weeks }: { rows: HeatRow[]; weeks: number[] })
   const level = (v: number) => v <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((v / max) * 4)));
   const cellX = (c: number) => LABEL_W + c * (cellW + GAP);
   const weekText = (c: number) => c === n - 1 ? 'this week' : `week of ${shortDate(weeks[c])}`;
-  const cellText = (r: number, c: number) => { const v = rows[r].values[c]; return `${CATEGORY_LABEL[rows[r].key]}, ${weekText(c)}, ${v} ${v === 1 ? 'set' : 'sets'}`; };
+  const cellText = (r: number, c: number) => { const v = rows[r].values[c]; const unit = rows[r].key === 'cardio' ? 'session' : 'set'; return `${rows[r].label}, ${weekText(c)}, ${v} ${unit}${v === 1 ? '' : 's'}`; };
   const selection = sel && rows[sel.r] && sel.c < n ? sel : null; // rows can change under a stale selection
-  const readout = selection ? cellText(selection.r, selection.c) : `Completed sets per week, last ${n} weeks. Tap a cell to read it.`;
+  const readout = selection ? cellText(selection.r, selection.c) : `Sets per workout each week, last ${n} weeks. Tap a cell to read it.`;
 
   return <View onLayout={onLayout}>
     <Text style={[styles.readout, !!selection && styles.readoutActive]} numberOfLines={1}>{readout}</Text>
     {!!width && <>
       {rows.map((row, r) => {
-        const hue = categoryColor(row.key);
+        const hue = row.color;
         return <View key={row.key} style={styles.row}>
-          <Text style={styles.rowLabel} numberOfLines={1}>{CATEGORY_LABEL[row.key]}</Text>
+          <Text style={styles.rowLabel} numberOfLines={1}>{row.label}</Text>
           {row.values.map((v, c) => {
             const lv = level(v), fill = lv ? mix(BASE, hue, STEPS[lv]) : null;
             const selected = selection?.r === r && selection?.c === c;

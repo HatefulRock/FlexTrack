@@ -3,7 +3,7 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
 import { ExerciseLog } from '../../types';
 import { theme } from '../../constants/theme';
-import { CATEGORY_LABEL, RecordHit, categoryColor, exerciseCategory, formatDecimal as num } from '../../utils/training';
+import { CATEGORY_LABEL, RecordHit, exerciseCategory, formatDecimal as num } from '../../utils/training';
 import { formatTime } from '../../utils/time';
 
 const c = theme.colors;
@@ -56,7 +56,7 @@ export const bestSet = (e: ExerciseLog): string => {
   return best.weight ? `${num(best.weight)} × ${best.reps || 0}` : `${best.reps || 0} reps`;
 };
 
-export const ExerciseRow = ({ exercise, first }: { exercise: ExerciseLog; first: boolean }) => {
+export const ExerciseRow = ({ exercise, first, color }: { exercise: ExerciseLog; first: boolean; color: string }) => {
   const total = exercise.sets.length, count = exercise.sets.filter(s => s.completed).length;
   const done = total > 0 && count === total, skipped = count === 0, best = bestSet(exercise);
   const status = done ? `Done · ${count} ${count === 1 ? 'set' : 'sets'}` : skipped ? 'Skipped' : `${count} of ${total}`;
@@ -68,7 +68,7 @@ export const ExerciseRow = ({ exercise, first }: { exercise: ExerciseLog; first:
       : <View style={[styles.tick, styles.tickHalf]}><View style={styles.tickHalfFill} /></View>}
     <View style={styles.rowCopy}>
       <View style={styles.nameLine}>
-        <View style={[styles.category, { backgroundColor: categoryColor(category) }]} />
+        <View style={[styles.category, { backgroundColor: color }]} />
         <Text style={[styles.rowName, skipped && styles.muted]} numberOfLines={1}>{exercise.exerciseName}</Text>
       </View>
       <Text style={[styles.rowMeta, !done && !skipped && styles.rowPartial]}>{status}</Text>
