@@ -66,7 +66,9 @@ const NumberStepper = ({ label, unit, value, step, onChange, onEdit }: { label: 
     onEdit?.();
     onChange(Math.max(0, Math.round(((value ?? 0) + d) * 100) / 100));
   };
-  return <View style={styles.stepper}>
+  return <View>
+    <Text style={styles.stepLabel} importantForAccessibility="no">{label}</Text>
+    <View style={styles.stepper}>
     <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel={`Decrease ${label} by ${fmtNum(step)}`} onPress={() => bump(-step)} style={styles.stepBtn}>
       <Minus size={24} color={theme.colors.text} strokeWidth={2.5} />
     </PressableScale>
@@ -80,6 +82,7 @@ const NumberStepper = ({ label, unit, value, step, onChange, onEdit }: { label: 
     <PressableScale scaleTo={0.92} accessibilityRole="button" accessibilityLabel={`Increase ${label} by ${fmtNum(step)}`} onPress={() => bump(step)} style={styles.stepBtn}>
       <Plus size={24} color={theme.colors.text} strokeWidth={2.5} />
     </PressableScale>
+    </View>
   </View>;
 };
 
@@ -116,6 +119,9 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
 
       {exercise.type === 'reps' && <>
         {mode === 'external' && renderBar(set.weight)}
+        {!historySets?.length && i === 0 && <Text style={styles.hint}>
+          {mode === 'bodyweight' ? 'Enter the reps you did below, then tap Set done.' : `Enter the ${mode === 'assisted' ? 'assistance' : 'weight'} and reps you actually did below, then tap Set done.`}
+        </Text>}
         <View style={styles.steppers}>
           {mode !== 'bodyweight' && <NumberStepper label={mode === 'assisted' ? 'Assistance' : 'Weight'} unit={mode === 'assisted' ? 'kg assist' : 'kg'}
             value={set.weight} step={WEIGHT_STEP_KG} onEdit={weightEdit} onChange={v => onUpdateSet(i, 'weight', v)} />}
@@ -212,7 +218,9 @@ const styles = StyleSheet.create({
   lightOn: { width: 14, height: 14, borderRadius: 7, backgroundColor: theme.colors.done },
   emptyBar: { height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: theme.radius.md, backgroundColor: theme.colors.canvas },
   emptyBarText: { ...theme.type.label, color: theme.colors.textMuted },
-  steppers: { gap: 8 },
+  steppers: { gap: 10 },
+  stepLabel: { ...theme.type.caption, color: theme.colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 },
+  hint: { ...theme.type.body, color: theme.colors.textSecondary, textAlign: 'center' },
   stepper: { flexDirection: 'row', alignItems: 'stretch', gap: 8, height: 64 },
   stepBtn: { width: 56, height: 64, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceElevated, alignItems: 'center', justifyContent: 'center' },
   stepValue: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: theme.radius.sm, backgroundColor: theme.colors.canvas, borderWidth: 1, borderColor: theme.colors.borderStrong, paddingHorizontal: 8 },

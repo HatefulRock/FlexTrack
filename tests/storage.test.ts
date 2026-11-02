@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KEYS, KeyValueStore, loadAll, logKey, STARTER_TEMPLATES, writeLog } from '../utils/storage';
+import { KEYS, KeyValueStore, loadAll, logKey, writeLog } from '../utils/storage';
 
 const memoryStore = (initial: Record<string, string> = {}, failSetAfter = Infinity) => {
   const data = new Map(Object.entries(initial));
@@ -23,10 +23,10 @@ const memoryStore = (initial: Record<string, string> = {}, failSetAfter = Infini
 const session = (id: string, startTime: number) => ({ id, templateName: 'Push', source: 'routine', startTime, endTime: startTime + 60_000, exercises: [] });
 
 describe('loadAll', () => {
-  it('starts a fresh install with the starter routine and nothing blocked', async () => {
+  it('starts a fresh install empty, with no pre-filled routine and nothing blocked', async () => {
     const { store } = memoryStore();
     const data = await loadAll(store);
-    expect(data.templates).toEqual(STARTER_TEMPLATES);
+    expect(data.templates).toEqual([]);
     expect(data.logs).toEqual([]);
     expect(data.blocked).toEqual([]);
     expect(data.unreadable).toEqual({});

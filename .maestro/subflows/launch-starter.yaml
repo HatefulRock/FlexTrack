@@ -1,12 +1,6 @@
-# A brand-new install: wipes local data. First run ships one starter routine, "Full Body A".
+# A new install that adds the sample routine, "Full Body A", from the empty Today card.
 appId: com.HatefulRock.flextrack
 ---
-- launchApp:
-    clearState: true
-    stopApp: true
-- runFlow:
-    when:
-      visible: "Allow"
-    commands:
-      - tapOn: "Allow"
+- runFlow: launch-clean.yaml
+- tapOn: "Add a sample routine"
 - assertVisible: "Full Body A"

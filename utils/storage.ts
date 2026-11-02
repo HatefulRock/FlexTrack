@@ -20,8 +20,9 @@ export const logKey = (id: string) => `${LOG_PREFIX}${id}`;
 const MAX_STORED_CHARACTERS = 5_000_000;
 const BATCH = 500;
 
-// First run gets one complete, startable routine instead of an empty example.
-export const STARTER_TEMPLATES: WorkoutTemplate[] = [{
+// Offered on the empty Today card for people who want to try a session before building their own.
+// A new install starts empty: beta testers read a routine they had not made as someone else's workout.
+export const SAMPLE_ROUTINE: WorkoutTemplate = {
   id: 'starter-full-body', name: 'Full Body A', description: 'Three compound lifts and a plank. Edit the weights to match you.', scheduleDays: [],
   exercises: [
     { id: 'starter-squat', name: 'Back Squat', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 5, targetWeight: 40, restSeconds: 150 },
@@ -29,7 +30,7 @@ export const STARTER_TEMPLATES: WorkoutTemplate[] = [{
     { id: 'starter-row', name: 'Barbell Row', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 8, targetWeight: 30, restSeconds: 90 },
     { id: 'starter-plank', name: 'Plank', type: 'timer', targetSets: 2, targetDurationSeconds: 45, restSeconds: 60 },
   ],
-}];
+};
 
 export type Section = 'templates' | 'logs' | 'profile';
 
@@ -84,9 +85,8 @@ export const loadAll = async (store: KeyValueStore): Promise<LoadedData> => {
 
   let templates: WorkoutTemplate[] = [];
   const t = read(rawTemplates);
-  if (t.state === 'missing') templates = STARTER_TEMPLATES;
-  else if (t.state === 'ok' && Array.isArray(t.value)) templates = t.value.slice(0, MAX_TEMPLATES).map(sanitizeTemplate).filter((item): item is WorkoutTemplate => item !== null);
-  else { blocked.push('templates'); unreadable[KEYS.templates] = rawTemplates ?? ''; }
+  if (t.state === 'ok' && Array.isArray(t.value)) templates = t.value.slice(0, MAX_TEMPLATES).map(sanitizeTemplate).filter((item): item is WorkoutTemplate => item !== null);
+  else if (t.state !== 'missing') { blocked.push('templates'); unreadable[KEYS.templates] = rawTemplates ?? ''; }
 
   let profile: UserProfile = { weightLogs: [], height: 0 };
   const p = read(rawProfile);

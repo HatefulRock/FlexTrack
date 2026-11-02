@@ -1,22 +1,40 @@
-# A new user opens the app: the starter routine is there, other tabs are empty, and deleting the starter shows the empty states.
+# A new user opens the app: the tour explains the basics, nothing is pre-filled, and the sample routine is opt-in.
 appId: com.HatefulRock.flextrack
 tags: [smoke]
 ---
-- runFlow: ../subflows/launch-starter.yaml
-- assertVisible: "Your first session.*"
-- assertVisible: "Start Full Body A"
+- launchApp:
+    clearState: true
+    stopApp: true
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- assertVisible: "How FlexTrack works.*"
+- assertVisible: "Build a routine"
+- tapOn: "Next"
+- assertVisible: "Start it from Today"
+- tapOn: "Next"
+- assertVisible: "Log every set"
+- tapOn: "Next"
+- assertVisible: "Watch it add up"
+- tapOn: "Get started"
+- assertVisible: "Build your first routine"
 - tapOn: "Routines"
-- assertVisible: "1 routine"
+- assertVisible: "No routines yet"
 - tapOn: "History"
 - assertVisible: "No sessions yet"
 - tapOn: "Progress"
 - assertVisible: "Training"
 - tapOn: "Body"
 - assertVisible: "No weight logged"
-- tapOn: "Routines"
-- tapOn: "More actions for Full Body A"
-- tapOn: "Delete routine"
-- tapOn: "Delete routine"
-- assertVisible: "No routines yet"
+# The tour stays reachable from Today
 - tapOn: "Today"
-- assertVisible: "Build your first routine"
+- tapOn: "How FlexTrack works"
+- assertVisible: "Build a routine"
+- tapOn: "Skip the tour"
+- tapOn: "Add a sample routine"
+- assertVisible: "Your first session.*"
+- assertVisible: "Start Full Body A"
+- tapOn: "Routines"
+- assertVisible: "1 routine"

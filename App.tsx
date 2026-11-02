@@ -12,6 +12,8 @@ import { DialogHost, showAlert } from './components/ui/Dialog';
 import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/activeSession';
 import { buildExport, shareExport } from './utils/exportData';
 import { clearSharedFiles } from './utils/sharedFiles';
+import { SAMPLE_ROUTINE } from './utils/storage';
+import { Onboarding, loadOnboardingSeen, markOnboardingSeen } from './components/Onboarding';
 
 // Layout
 import { Navigation } from './components/layout/Navigation';
@@ -37,11 +39,15 @@ const App = () => {
   // Gates the first render: a read that resolved after the user had already started a new
   // session would resurrect the old one as a resume card.
   const [sessionChecked, setSessionChecked] = useState(false);
+  // null until read; the tour only opens for a brand-new install, never over an upgrade with data in it.
+  const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
   const fontsReady = useAppFonts();
 
   useEffect(() => {
     clearSharedFiles();
     void loadActiveSession().then(session => { setSavedSession(session); setSessionChecked(true); });
+    void loadOnboardingSeen().then(setOnboardingSeen);
   }, []);
 
   const {
@@ -69,8 +75,10 @@ const App = () => {
     return () => handler.remove();
   }, [view]);
 
-  const ready = !loading && fontsReady && sessionChecked;
+  const ready = !loading && fontsReady && sessionChecked && onboardingSeen !== null;
   const hasUnreadable = Object.keys(unreadable).length > 0;
+  const firstRun = ready && !onboardingSeen && !hasUnreadable && templates.length === 0 && logs.length === 0;
+  useEffect(() => { if (firstRun) setTourOpen(true); }, [firstRun]);
   // Runs once DialogHost has mounted with the first full render.
   useEffect(() => {
     if (ready && hasUnreadable) showAlert('Some saved data could not be read', 'FlexTrack has left it untouched so nothing is lost. Exporting your data from History includes a copy of it.');
@@ -136,6 +144,12 @@ const App = () => {
     );
   };
 
+  const closeTour = () => { setTourOpen(false); setOnboardingSeen(true); void markOnboardingSeen(); };
+
+  const handleAddSample = () => {
+    void saveTemplate(SAMPLE_ROUTINE).catch(() => showAlert('Save failed', 'The sample routine could not be written to local storage.'));
+  };
+
   const handleExport = () => {
     void shareExport(buildExport(templates, logs, userProfile, new Date(), unreadable))
       .catch(() => showAlert('Export failed', 'Your data could not be exported. Try again.'));
@@ -159,6 +173,9 @@ const App = () => {
                   activeSession={savedSession}
                   onResume={handleResumeWorkout}
                   onDiscardSession={handleDiscardSession}
+                  onAddSample={handleAddSample}
+                  onCreate={() => { setEditingTemplate(null); setView('template-editor'); }}
+                  onHelp={() => setTourOpen(true)}
               />
           )}
           
@@ -221,6 +238,7 @@ const App = () => {
           <Navigation currentView={view} setView={setView} templates={templates} onStart={handleStartWorkout} onCreate={() => { setEditingTemplate(null); setView('template-editor'); }} onQuickLog={() => setView('quick-log')} />
         )}
 
+        <Onboarding visible={tourOpen} onClose={closeTour} />
         <DialogHost />
       </SafeAreaView>
     </SafeAreaProvider>
