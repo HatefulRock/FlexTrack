@@ -20,13 +20,13 @@ export const WorkoutCard = ({ template, onEdit, onDelete, onStart }: Props) => {
   const description = template.description?.trim();
   const days = ORDER.filter(d => template.scheduleDays?.includes(d));
   const more = () => showAlert(template.name, undefined, [
-    { text: 'Edit routine', onPress: () => onEdit(template) },
-    { text: 'Delete routine', style: 'destructive', onPress: () => onDelete(template.id) },
+    { text: 'Edit workout', onPress: () => onEdit(template) },
+    { text: 'Delete workout', style: 'destructive', onPress: () => onDelete(template.id) },
     { text: 'Cancel', style: 'cancel' },
   ]);
   return <View style={styles.card}>
     <View style={styles.top}>
-      <View style={styles.grow}><PressableScale accessibilityRole="button" accessibilityLabel={`Edit routine ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.98} style={styles.main}>
+      <View style={styles.grow}><PressableScale accessibilityRole="button" accessibilityLabel={`Edit workout ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.98} style={styles.main}>
         <Text accessibilityRole="header" style={styles.title} numberOfLines={2}>{template.name}</Text>
         {!!description && !FILLER.test(description) && <Text numberOfLines={2} style={styles.description}>{description}</Text>}
       </PressableScale></View>
@@ -46,7 +46,7 @@ export const WorkoutCard = ({ template, onEdit, onDelete, onStart }: Props) => {
         <Play size={18} color={theme.colors.onPrimary} fill={theme.colors.onPrimary} />
         <Text style={styles.startText}>Start</Text>
       </PressableScale></View>
-      <PressableScale accessibilityRole="button" accessibilityLabel={`Edit routine ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.92} style={styles.edit}>
+      <PressableScale accessibilityRole="button" accessibilityLabel={`Edit workout ${template.name}`} onPress={() => onEdit(template)} scaleTo={0.92} style={styles.edit}>
         <Pencil size={19} color={theme.colors.text} />
       </PressableScale>
     </View>

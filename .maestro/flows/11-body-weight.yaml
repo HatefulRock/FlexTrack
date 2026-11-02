@@ -16,7 +16,7 @@ tags: [body, edge]
 - runFlow: ../subflows/hide-keyboard.yaml
 - pressKey: Enter
 - assertVisible: "Saved 81.4 kg"
-- assertVisible: "Current weight 81.4 kilograms"
+- assertVisible: "Latest weight 81.4 kilograms.*"
 - tapOn: "Height in centimetres"
 - inputText: "180"
 - runFlow: ../subflows/hide-keyboard.yaml
@@ -32,4 +32,4 @@ tags: [body, edge]
 - launchApp
 - tapOn: "Progress"
 - tapOn: "Body"
-- assertVisible: "Current weight 81.4 kilograms"
+- assertVisible: "Latest weight 81.4 kilograms.*"

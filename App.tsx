@@ -123,7 +123,7 @@ const App = () => {
   };
 
   const handleSaveTemplate = (t: WorkoutTemplate) => {
-    void saveTemplate(t).catch(() => showAlert('Save failed', 'This routine could not be written to local storage.'));
+    void saveTemplate(t).catch(() => showAlert('Save failed', 'This workout could not be written to local storage.'));
     setEditingTemplate(null);
     setView('templates');
   };
@@ -135,11 +135,11 @@ const App = () => {
 
   const handleDeleteTemplate = (id: string) => {
     showAlert(
-      "Delete this routine?",
-      "Its history stays in your logs. The routine itself cannot be restored.",
+      "Delete this workout?",
+      "Its history stays in your logs. The workout itself cannot be restored.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete routine", style: "destructive", onPress: () => { void deleteTemplate(id).catch(() => showAlert('Delete failed', 'The routine could not be removed from local storage.')); } }
+        { text: "Delete workout", style: "destructive", onPress: () => { void deleteTemplate(id).catch(() => showAlert('Delete failed', 'The workout could not be removed from local storage.')); } }
       ]
     );
   };
@@ -147,7 +147,7 @@ const App = () => {
   const closeTour = () => { setTourOpen(false); setOnboardingSeen(true); void markOnboardingSeen(); };
 
   const handleAddSample = () => {
-    void saveTemplate(SAMPLE_ROUTINE).catch(() => showAlert('Save failed', 'The sample routine could not be written to local storage.'));
+    void saveTemplate(SAMPLE_ROUTINE).catch(() => showAlert('Save failed', 'The sample workout could not be written to local storage.'));
   };
 
   const handleExport = () => {

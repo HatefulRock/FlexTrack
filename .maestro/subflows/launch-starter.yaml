@@ -2,5 +2,5 @@
 appId: com.HatefulRock.flextrack
 ---
 - runFlow: launch-clean.yaml
-- tapOn: "Add a sample routine"
+- tapOn: "Add a sample workout"
 - assertVisible: "Full Body A"

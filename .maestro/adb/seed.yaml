@@ -7,5 +7,5 @@ appId: com.HatefulRock.flextrack
     stopApp: true
 - assertVisible: "How FlexTrack works.*"
 - tapOn: "Skip the tour"
-- assertVisible: "Build your first routine"
+- assertVisible: "Build your first workout"
 - stopApp

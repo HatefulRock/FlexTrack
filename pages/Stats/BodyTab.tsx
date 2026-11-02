@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Scale } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { BodyMetricLog, UserProfile } from '../../types';
-import { Button, Chip, SectionHeader } from '../../components/ui/Primitives';
+import { Button, Chip, PressableScale, SectionHeader } from '../../components/ui/Primitives';
 import { theme } from '../../constants/theme';
 import { DAY_MS, shortDate, trimNumber } from './chartUtils';
 import { LineChartSvg } from './LineChartSvg';
@@ -37,6 +37,7 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; error: boolean } | null>(null);
   const [range, setRange] = useState<RangeKey>('90');
+  const weightInput = useRef<React.ComponentRef<typeof TextInput>>(null);
   const validLogs = useMemo(() => userProfile.weightLogs.filter(l => Number.isFinite(l.date) && Number.isFinite(l.weight) && l.weight > 0).sort((a, b) => a.date - b.date), [userProfile.weightLogs]);
   const latest = validLogs.at(-1);
   const current = latest?.weight || 0;
@@ -82,10 +83,12 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
   return <View style={styles.container}>
     <View style={styles.card}>
       <View style={styles.scoreRow}>
-        <View style={styles.scoreCell}>
-          <Text style={styles.caption}>Weight</Text>
-          <Text style={styles.score} accessibilityLabel={current ? `Current weight ${trimNumber(current, 1)} kilograms` : 'No weight logged'}>{current ? trimNumber(current, 1) : '–'}<Text style={styles.scoreUnit}> kg</Text></Text>
-        </View>
+        {/* Testers read the big number as the place to type: it is a readout, and tapping it jumps to the log field below. */}
+        <PressableScale scaleTo={0.98} accessibilityRole="button" accessibilityLabel={current ? `Latest weight ${trimNumber(current, 1)} kilograms. Log a new weight` : 'No weight logged. Log your weight'}
+          onPress={() => weightInput.current?.focus()} style={styles.scoreCell}>
+          <Text style={styles.caption}>Latest weight</Text>
+          <Text style={styles.score}>{current ? trimNumber(current, 1) : '–'}<Text style={styles.scoreUnit}> kg</Text></Text>
+        </PressableScale>
         <Text style={styles.scoreSep}>·</Text>
         <View style={styles.scoreCell}>
           <Text style={styles.caption}>Height</Text>
@@ -101,15 +104,16 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
         {bmi ? <Text style={styles.bmiText}><Text style={styles.bmiValue}>{bmi.toFixed(1)}</Text>{`  ${bmiCategory(bmi)}`}</Text>
           : <Text style={styles.bmiHint}>{current ? 'Add your height to see BMI.' : 'Log your weight to see BMI.'}</Text>}
       </View>
-      {!!latest && <Text style={styles.caption}>Latest weigh-in {shortDate(latest.date, true)}</Text>}
+      <Text style={styles.caption}>{latest ? `Last weigh-in ${shortDate(latest.date, true)} · log a new one below` : 'Log your weight below to see it here'}</Text>
     </View>
 
     <View>
       <SectionHeader title="Log weight" />
       <View style={styles.card}>
+        <Text style={styles.logHint}>{latest ? 'Weigh in and enter it here. Each entry adds a point to your trend.' : 'Enter your bodyweight here to start tracking it. Each entry adds a point to your trend.'}</Text>
         <View style={styles.controls}>
-          <TextInput accessibilityLabel="Weight in kilograms" value={weight} onChangeText={setWeight} onSubmitEditing={saveWeight} keyboardType="decimal-pad" returnKeyType="done"
-            placeholder="Weight in kg" placeholderTextColor={theme.colors.textSubtle} selectionColor={theme.colors.text} style={styles.weightInput} />
+          <TextInput ref={weightInput} accessibilityLabel="Weight in kilograms" value={weight} onChangeText={setWeight} onSubmitEditing={saveWeight} keyboardType="decimal-pad" returnKeyType="done"
+            placeholder="e.g. 75.5 kg" placeholderTextColor={theme.colors.textSubtle} selectionColor={theme.colors.text} style={styles.weightInput} />
           <Button label="Log weight" onPress={saveWeight} loading={saving} style={styles.logButton} />
         </View>
         {message && <Text accessibilityRole={message.error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[styles.message, message.error && styles.error]}>{message.text}</Text>}
@@ -160,8 +164,9 @@ const styles = StyleSheet.create({
   bmiText: { ...theme.type.body, color: theme.colors.textSecondary, flex: 1 },
   bmiValue: { fontFamily: theme.type.metric.fontFamily, fontSize: 28, lineHeight: 32, fontVariant: ['tabular-nums'], color: theme.colors.text },
   bmiHint: { ...theme.type.body, color: theme.colors.textMuted, flex: 1 },
+  logHint: { ...theme.type.body, color: theme.colors.textMuted, marginBottom: 10 },
   controls: { flexDirection: 'row', gap: 8 },
-  weightInput: { flex: 1, minHeight: 52, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.colors.borderStrong, backgroundColor: theme.colors.canvas, color: theme.colors.text,
+  weightInput: { flex: 1, minWidth: 0, minHeight: 52, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.colors.borderStrong, backgroundColor: theme.colors.canvas, color: theme.colors.text,
     paddingHorizontal: 14, fontFamily: theme.type.label.fontFamily, fontSize: 17 },
   logButton: { minHeight: 52 },
   message: { ...theme.type.caption, color: theme.colors.textSecondary, marginTop: 8 },

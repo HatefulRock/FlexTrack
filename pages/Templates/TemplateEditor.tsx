@@ -69,7 +69,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
 
     const openPicker = () => {
         if (exercises.length >= MAX_EXERCISES) {
-            showAlert('Exercise limit reached', `A routine can contain at most ${MAX_EXERCISES} exercises.`);
+            showAlert('Exercise limit reached', `A workout can contain at most ${MAX_EXERCISES} exercises.`);
             return;
         }
         setPickerOpen(true);
@@ -129,17 +129,17 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
     return (
         <SafeAreaView style={styles.container}>
             <Header
-                title={template ? 'Edit routine' : 'New routine'}
+                title={template ? 'Edit workout' : 'New workout'}
                 onBack={onCancel}
-                rightAction={<Button label="Save" accessibilityLabel="Save routine" onPress={handleSave} style={styles.saveBtn} />}
+                rightAction={<Button label="Save" accessibilityLabel="Save workout" onPress={handleSave} style={styles.saveBtn} />}
             />
 
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
                 <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                     <View style={styles.field}>
-                        <Text style={styles.label}>Routine name</Text>
+                        <Text style={styles.label}>Workout name</Text>
                         <TextInput
-                            accessibilityLabel="Routine name"
+                            accessibilityLabel="Workout name"
                             value={name}
                             onChangeText={t => { setName(t); if (nameError && t.trim()) setNameError(false); }}
                             style={[styles.nameInput, nameError && styles.nameInputError]}
@@ -147,13 +147,13 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
                             placeholderTextColor={colors.textSubtle}
                             returnKeyType="done"
                         />
-                        {nameError && <Text accessibilityRole="alert" style={styles.errorText}>Name this routine to save it.</Text>}
+                        {nameError && <Text accessibilityRole="alert" style={styles.errorText}>Name this workout to save it.</Text>}
                     </View>
 
                     <View style={styles.field}>
-                        <Text style={styles.label}>Notes for this routine</Text>
+                        <Text style={styles.label}>Notes for this workout</Text>
                         <TextInput
-                            accessibilityLabel="Notes for this routine"
+                            accessibilityLabel="Notes for this workout"
                             value={description}
                             onChangeText={setDescription}
                             style={styles.notesInput}
@@ -189,7 +189,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
                                 index={i}
                                 count={exercises.length}
                                 expanded={expandedId === ex.id}
-                                error={missingNames.has(ex.id) && !ex.name.trim() ? 'Name this exercise to save the routine.' : undefined}
+                                error={missingNames.has(ex.id) && !ex.name.trim() ? 'Name this exercise to save the workout.' : undefined}
                                 onToggle={() => setExpandedId(prev => prev === ex.id ? null : ex.id)}
                                 onChange={patch => updateExercise(ex.id, patch)}
                                 onMove={dir => moveExercise(ex.id, dir)}

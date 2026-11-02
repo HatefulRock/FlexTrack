@@ -40,7 +40,7 @@ export const sanitizeTemplate = (value: unknown): WorkoutTemplate | null => {
   const scheduleDays = Array.isArray(value.scheduleDays)
     ? Array.from(new Set(value.scheduleDays.filter(day => Number.isInteger(day) && Number(day) >= 0 && Number(day) <= 6).map(Number))).sort((a, b) => a - b) : [];
   return {
-    id: text(value.id, '', 128) || generateId(), name: text(value.name, 'Untitled routine', 200),
+    id: text(value.id, '', 128) || generateId(), name: text(value.name, 'Untitled workout', 200),
     description: text(value.description, '', 2_000) || undefined, exercises,
     tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 50).map(tag => tag.slice(0, 100)) : undefined,
     scheduleDays,

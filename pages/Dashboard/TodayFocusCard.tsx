@@ -48,16 +48,16 @@ export const TodayFocusCard = ({ todaysWorkouts, templates = todaysWorkouts, log
   }
 
   if (!templates.length) return <View style={styles.panel}>
-    <Text accessibilityRole="header" style={styles.title}>Build your first routine</Text>
+    <Text accessibilityRole="header" style={styles.title}>Build your first workout</Text>
     <Text style={styles.body}>Pick the exercises once. Schedule the days and today&apos;s session shows up here, ready to start.</Text>
-    <Button label="New routine" onPress={onCreate ?? onBrowse} style={styles.start} />
-    {onAddSample && <Button label="Try a sample routine" variant="ghost" accessibilityLabel="Add a sample routine" onPress={onAddSample} style={styles.sample} />}
+    <Button label="New workout" onPress={onCreate ?? onBrowse} style={styles.start} />
+    {onAddSample && <Button label="Try a sample workout" variant="ghost" accessibilityLabel="Add a sample workout" onPress={onAddSample} style={styles.sample} />}
   </View>;
 
   const next = nextScheduled(templates, now);
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>Rest day</Text>
-    <Text style={styles.body}>{next ? <>Next: <Text style={styles.strong}>{next.template.name}</Text> {next.when}</> : 'No routine is scheduled this week.'}</Text>
+    <Text style={styles.body}>{next ? <>Next: <Text style={styles.strong}>{next.template.name}</Text> {next.when}</> : 'No workout is scheduled this week.'}</Text>
     {next && next.template.exercises.length > 0 && <View style={styles.shapeQuiet}><CategoryStrip exercises={next.template.exercises} height={6} /></View>}
     <Button label="Train anyway" variant="secondary" onPress={onBrowse} style={styles.restButton} />
   </View>;

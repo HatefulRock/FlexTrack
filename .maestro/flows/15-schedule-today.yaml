@@ -5,7 +5,7 @@ tags: [routines, schedule]
 - runFlow: ../subflows/launch-starter.yaml
 - evalScript: ${output.today = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]}
 - evalScript: ${output.short = output.today.slice(0, 3)}
-- tapOn: "Routines"
+- tapOn: "Workouts"
 - assertVisible: "Not scheduled"
 - runFlow:
     file: ../subflows/schedule-routine.yaml

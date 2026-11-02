@@ -108,7 +108,7 @@ export const EditorExerciseRow = ({ exercise: ex, index, count, expanded, error,
           <ArrowDown size={20} color={colors.text} />
         </PressableScale>
         <View style={styles.flex} />
-        <PressableScale accessibilityRole="button" accessibilityLabel={`Remove ${label} from routine`} onPress={onRemove} scaleTo={0.97} style={styles.removeBtn}>
+        <PressableScale accessibilityRole="button" accessibilityLabel={`Remove ${label} from workout`} onPress={onRemove} scaleTo={0.97} style={styles.removeBtn}>
           <Text style={styles.removeText}>Remove exercise</Text>
         </PressableScale>
       </View>

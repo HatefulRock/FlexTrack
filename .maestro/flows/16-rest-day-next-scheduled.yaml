@@ -20,4 +20,4 @@ tags: [routines, schedule, edge]
 - assertVisible: "Next: Full Body A tomorrow"
 # "Train anyway" goes to the routines list
 - tapOn: "Train anyway"
-- assertVisible: "Edit routine Full Body A"
+- assertVisible: "Edit workout Full Body A"

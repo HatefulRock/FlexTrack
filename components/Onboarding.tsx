@@ -14,8 +14,8 @@ export const markOnboardingSeen = () => AsyncStorage.setItem(ONBOARDING_KEY, '1'
 type Step = { icon: LucideIcon; title: string; body: string; extra?: 'set' | 'colors' };
 
 const STEPS: Step[] = [
-  { icon: Dumbbell, title: 'Build a routine', body: 'A routine is a workout you repeat: pick the exercises, the sets and a starting weight. Give it days of the week if you want it scheduled.' },
-  { icon: CalendarDays, title: 'Start it from Today', body: "Today shows the session scheduled for today. Tap Start session, or use the round + button at the bottom to start any routine." },
+  { icon: Dumbbell, title: 'Build a workout', body: 'A workout is the plan you repeat: pick the exercises, the sets and a starting weight. Give it days of the week if you want it scheduled.' },
+  { icon: CalendarDays, title: 'Start it from Today', body: "Today shows the session scheduled for today. Tap Start session, or use the round + button at the bottom to start any workout." },
   { icon: Check, title: 'Log every set', body: 'For each set, enter the weight and reps you actually did in the boxes under the barbell, then tap Set done. The rest timer starts on its own.', extra: 'set' },
   { icon: TrendingUp, title: 'Watch it add up', body: 'Finished sessions land in History. Progress shows your records and how your training is split. The coloured bars tell you what each session works:', extra: 'colors' },
 ];

@@ -277,13 +277,13 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
 
   if (!currentExercise || !currentLog) {
     return <View style={styles.container}>
-      <EmptyState icon={Zap} title="Nothing to train yet" message="This routine has no exercises. Add at least one exercise before starting."
+      <EmptyState icon={Zap} title="Nothing to train yet" message="This workout has no exercises. Add at least one exercise before starting."
         action="Leave session" onAction={() => onFinish(null)} />
     </View>;
   }
 
   const nextExercise = template.exercises[activeExerciseIndex + 1];
-  const doneLabel = nextExercise ? `Next: ${nextExercise.name} · ${targetLabel(nextExercise)}` : 'Last exercise of the routine.';
+  const doneLabel = nextExercise ? `Next: ${nextExercise.name} · ${targetLabel(nextExercise)}` : 'Last exercise of the workout.';
   const translateX = reduced ? 0 : enter.interpolate({ inputRange: [0, 1], outputRange: [16 * direction.current, 0] });
   const restProps = {
     restEndsAt, restTotal, next: restNext,

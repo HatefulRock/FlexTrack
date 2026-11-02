@@ -69,7 +69,7 @@ export const HistoryPage = ({ logs, onExport, health }: { logs: WorkoutLog[]; on
     sections={sections} keyExtractor={l => l.id} stickySectionHeadersEnabled={false} initialNumToRender={12} windowSize={7}
     ListHeaderComponent={top}
     ListEmptyComponent={<View style={styles.content}>
-      {!logs.length ? <EmptyState icon={HistoryIcon} title="No sessions yet" message="Finish a routine or quick-log a run and it lands here, filling the calendar by training split: every set, weight and minute you put in." /> :
+      {!logs.length ? <EmptyState icon={HistoryIcon} title="No sessions yet" message="Finish a workout or quick-log a run and it lands here, filling the calendar by training split: every set, weight and minute you put in." /> :
         <EmptyState icon={CalendarDays} title={selected && filter === 'All' ? 'Rest day' : 'No sessions match'} message={selected && filter === 'All' ? `Nothing logged on ${format(selected, 'EEEE, MMMM d')}. Tap a filled day to see its session.` : `No ${filter} session${selected ? ` on ${format(selected, 'MMMM d')}` : ''}.`} action="Clear filters" onAction={clear} />}
     </View>}
     renderSectionHeader={({ section }) => <View style={styles.content}><SectionHeader title={section.title} /></View>}

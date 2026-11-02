@@ -3,18 +3,18 @@ appId: com.HatefulRock.flextrack
 tags: [smoke, routines]
 ---
 - runFlow: ../subflows/launch-clean.yaml
-- tapOn: "Routines"
-- tapOn: "New routine"
+- tapOn: "Workouts"
+- tapOn: "New workout"
 - runFlow:
     when:
       platform: Android
     commands:
-      - tapOn: "Notes for this routine"
+      - tapOn: "Notes for this workout"
 - runFlow:
     when:
       platform: iOS
     commands:
-      - tapOn: "Notes for this routine Optional.*"
+      - tapOn: "Notes for this workout Optional.*"
 - inputText: "Heavy chest and shoulders"
 - tapOn: "e.g. Push day"
 - inputText: "Push day"
@@ -31,15 +31,15 @@ tags: [smoke, routines]
     file: ../subflows/add-exercise.yaml
     env:
       EXERCISE: "Push-up"
-- tapOn: "Save routine"
-- assertVisible: "Edit routine Push day"
+- tapOn: "Save workout"
+- assertVisible: "Edit workout Push day"
 # The description sits inside the card's labelled button, which iOS exposes as one element
 - runFlow:
     when:
       platform: Android
     commands:
       - assertVisible: "Heavy chest and shoulders"
-- assertVisible: "1 routine"
+- assertVisible: "1 workout"
 - tapOn: "Today"
 - assertVisible: "Your first session.*"
 - assertVisible: "Start Push day"

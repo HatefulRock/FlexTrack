@@ -32,10 +32,10 @@ export const StreakWidget = ({ snapshot, now = new Date() }: { snapshot: WidgetS
 
 export const NextWorkoutWidget = ({ snapshot, now = new Date() }: { snapshot: WidgetSnapshot | null; now?: Date }) => {
   const next = snapshot ? widgetView(snapshot, now).next : null;
-  if (!next) return <Frame label="No routine scheduled">
+  if (!next) return <Frame label="No workout scheduled">
     <Eyebrow text="Next workout" />
     <TextWidget text="Nothing scheduled" style={{ fontFamily: DISPLAY, fontSize: 28, color: C.text }} />
-    <TextWidget text="Pick days on a routine to see it here" truncate="END" maxLines={2} style={{ fontFamily: TEXT, fontSize: 13, color: C.muted }} />
+    <TextWidget text="Pick days on a workout to see it here" truncate="END" maxLines={2} style={{ fontFamily: TEXT, fontSize: 13, color: C.muted }} />
   </Frame>;
   const detail = `${next.exercises} exercise${next.exercises === 1 ? '' : 's'}`;
   return <Frame label={`Next workout ${next.when}: ${next.name}, ${detail}`}>

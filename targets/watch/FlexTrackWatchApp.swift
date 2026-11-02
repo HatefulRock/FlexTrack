@@ -103,7 +103,7 @@ struct ContentView: View {
               .accessibilityElement(children: .combine)
             }
           } else {
-            Text(store.snapshot == nil ? "Open FlexTrack on your iPhone to sync." : "Nothing scheduled. Pick days on a routine in FlexTrack.")
+            Text(store.snapshot == nil ? "Open FlexTrack on your iPhone to sync." : "Nothing scheduled. Pick days on a workout in FlexTrack.")
               .font(.footnote).foregroundStyle(muted)
           }
         }

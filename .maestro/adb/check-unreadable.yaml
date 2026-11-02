@@ -5,14 +5,14 @@ appId: com.HatefulRock.flextrack
 - assertVisible: "Some saved data could not be read"
 - assertVisible: ".*left it untouched.*"
 - tapOn: "OK"
-- tapOn: "Routines"
-- assertVisible: "No routines yet"
+- tapOn: "Workouts"
+- assertVisible: "No workouts yet"
 # Saving would replace the unreadable data, so it fails loudly instead
-- tapOn: "New routine"
-- tapOn: "Routine name"
+- tapOn: "New workout"
+- tapOn: "Workout name"
 - inputText: "Blocked"
 - hideKeyboard
-- tapOn: "Save routine"
+- tapOn: "Save workout"
 - assertVisible: "Save failed"
 - tapOn: "OK"
 # The rest of the app still works

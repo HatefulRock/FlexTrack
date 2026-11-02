@@ -49,7 +49,7 @@ export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSe
       </View>}
 
       {templates.length > 0 && <View>
-        <SectionHeader title="Your routines" action="See all" onAction={() => setView('templates')} />
+        <SectionHeader title="Your workouts" action="See all" onAction={() => setView('templates')} />
         <View style={styles.list}>{templates.slice(0, 3).map((t, i) => {
           const last = lastDone(t, logs);
           const meta = `${exerciseCount(t.exercises.length)} · ${last ? `last done ${relativeDay(last)}` : 'not done yet'}`;

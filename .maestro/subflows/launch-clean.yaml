@@ -5,4 +5,4 @@ appId: com.HatefulRock.flextrack
     clearState: true
     stopApp: true
 - runFlow: skip-tour.yaml
-- assertVisible: "Build your first routine"
+- assertVisible: "Build your first workout"

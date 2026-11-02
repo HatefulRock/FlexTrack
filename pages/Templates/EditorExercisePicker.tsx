@@ -93,7 +93,7 @@ export const EditorExercisePicker = ({ visible, onClose, routineExercises, onPic
         <Text style={styles.rowName} numberOfLines={1}>Add “{custom}”</Text>
         <Text style={styles.rowKind}>New</Text>
       </PressableScale>}
-      {inRoutine.length > 0 && <Text accessibilityRole="header" style={styles.group}>In this routine</Text>}
+      {inRoutine.length > 0 && <Text accessibilityRole="header" style={styles.group}>In this workout</Text>}
       {inRoutine.map(row)}
       {common.length > 0 && <Text accessibilityRole="header" style={styles.group}>Common lifts and cardio</Text>}
       {common.map(row)}

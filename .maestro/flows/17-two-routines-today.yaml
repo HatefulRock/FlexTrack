@@ -9,7 +9,7 @@ tags: [routines, schedule, edge]
     env:
       ROUTINE: "Full Body A"
       DAY: ${output.today}
-- tapOn: "New routine"
+- tapOn: "New workout"
 - tapOn: "e.g. Push day"
 - inputText: "Second"
 - runFlow: ../subflows/hide-keyboard.yaml
@@ -18,7 +18,7 @@ tags: [routines, schedule, edge]
     file: ../subflows/add-exercise.yaml
     env:
       EXERCISE: "Plank"
-- tapOn: "Save routine"
+- tapOn: "Save workout"
 - tapOn: "Today"
 - assertVisible: "Start Second"
 - tapOn: "Start Second"
