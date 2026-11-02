@@ -4,7 +4,7 @@ import { addDays, format, isSameDay } from 'date-fns';
 import { WorkoutLog, WorkoutTemplate } from '../../types';
 import { theme } from '../../constants/theme';
 import { Button, PressableScale } from '../../components/ui/Primitives';
-import { CategoryLegend, CategoryStrip, routineSummary } from './CategoryStrip';
+import { WorkoutBar, routineSummary } from './CategoryStrip';
 import { FilledPlay } from './FilledPlay';
 
 // The next scheduled routine after today, within the coming week.
@@ -34,10 +34,7 @@ export const TodayFocusCard = ({ todaysWorkouts, templates = todaysWorkouts, log
     return <View style={styles.panel}>
       <Text accessibilityRole="header" style={styles.title} numberOfLines={2}>{workout.name}</Text>
       <Text style={styles.meta}>{isNew ? 'Your first session · ' : ''}{routineSummary(workout)}{doneToday ? ` · done at ${format(doneToday.startTime, 'HH:mm')}` : ''}</Text>
-      {workout.exercises.length > 0 && <View style={styles.shape}>
-        <CategoryStrip exercises={workout.exercises} height={12} />
-        <CategoryLegend exercises={workout.exercises} />
-      </View>}
+      <View style={styles.shape}><WorkoutBar template={workout} height={8} /></View>
       <Button label={doneToday ? 'Start again' : 'Start session'} icon={FilledPlay} variant={doneToday || secondaryStart ? 'secondary' : 'primary'}
         accessibilityLabel={`Start ${workout.name}`} onPress={() => onStartWorkout(workout)} style={styles.start} />
       {others.map(t => <PressableScale key={t.id} accessibilityRole="button" accessibilityLabel={`Start ${t.name}`} onPress={() => onStartWorkout(t)} scaleTo={0.98} style={styles.also}>
@@ -58,7 +55,7 @@ export const TodayFocusCard = ({ todaysWorkouts, templates = todaysWorkouts, log
   return <View style={styles.panel}>
     <Text accessibilityRole="header" style={styles.title}>Rest day</Text>
     <Text style={styles.body}>{next ? <>Next: <Text style={styles.strong}>{next.template.name}</Text> {next.when}</> : 'No workout is scheduled this week.'}</Text>
-    {next && next.template.exercises.length > 0 && <View style={styles.shapeQuiet}><CategoryStrip exercises={next.template.exercises} height={6} /></View>}
+    {next && next.template.exercises.length > 0 && <View style={styles.shapeQuiet}><WorkoutBar template={next.template} height={6} /></View>}
     <Button label="Train anyway" variant="secondary" onPress={onBrowse} style={styles.restButton} />
   </View>;
 };

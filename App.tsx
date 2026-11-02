@@ -192,6 +192,7 @@ const App = () => {
           {view === 'template-editor' && (
               <TemplateEditor 
                   template={editingTemplate} 
+                  templates={templates}
                   onSave={handleSaveTemplate} 
                   onCancel={() => setView('templates')} 
               />
@@ -220,7 +221,7 @@ const App = () => {
               <QuickLogPage onSave={(log) => { void addLog(log).then(() => health.onLogSaved(log), () => showAlert('Save failed', 'This activity could not be written to local storage.')); setView('history'); }} onCancel={() => setView('dashboard')} />
           )}
           {view === 'history' && (
-              <HistoryPage logs={logs} onExport={handleExport} health={health.available ? { name: health.platformName!, enabled: health.enabled, onPress: () => health.openSettings(logs) } : undefined} />
+              <HistoryPage logs={logs} templates={templates} onExport={handleExport} health={health.available ? { name: health.platformName!, enabled: health.enabled, onPress: () => health.openSettings(logs) } : undefined} />
           )}
 
           {view === 'stats' && (

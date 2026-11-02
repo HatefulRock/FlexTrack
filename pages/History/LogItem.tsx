@@ -3,11 +3,12 @@ import { Animated, LayoutAnimation, Platform, StyleSheet, Text, View } from 'rea
 import * as Haptics from 'expo-haptics';
 import { ChevronDown } from 'lucide-react-native';
 import { format } from 'date-fns';
-import { ExerciseLog, SetLog, WorkoutLog } from '../../types';
+import { ExerciseLog, SetLog, WorkoutLog, WorkoutTemplate } from '../../types';
 import { formatTime } from '../../utils/time';
 import { theme } from '../../constants/theme';
 import { PressableScale, useReducedMotion } from '../../components/ui/Primitives';
-import { CATEGORY_LABEL, categoryColor, estimate1RM, formatDecimal, formatDuration, formatNumber, logVolume } from '../../utils/training';
+import { logColor } from '../../utils/workoutColor';
+import { CATEGORY_LABEL, estimate1RM, formatDecimal, formatDuration, formatNumber, logVolume } from '../../utils/training';
 import { ACTIVITY_LABEL, sessionCategories, sessionMs } from './historyModel';
 
 const num = (n = 0) => formatDecimal(n);
@@ -39,7 +40,7 @@ const SetLine = ({ e }: { e: ExerciseLog }) => {
   </Text>)}{unit && <Text style={styles.setsMuted}>{unit}</Text>}</Text>;
 };
 
-export const LogItem = ({ log, first = false }: { log: WorkoutLog; first?: boolean }) => {
+export const LogItem = ({ log, first = false, templates }: { log: WorkoutLog; first?: boolean; templates?: WorkoutTemplate[] }) => {
   const [open, setOpen] = useState(false);
   const reduced = useReducedMotion();
   const turn = useRef(new Animated.Value(0)).current;
@@ -75,7 +76,7 @@ export const LogItem = ({ log, first = false }: { log: WorkoutLog; first?: boole
         <Text style={styles.title} numberOfLines={1}>{log.templateName}</Text>
         <View style={styles.sub}>
           <Text style={styles.subText}>{format(date, 'EEEE')}</Text>
-          <View style={styles.swatches}>{shares.map(s => <View key={s.category} style={[styles.swatch, { backgroundColor: categoryColor(s.category) }]} />)}</View>
+          <View style={styles.swatches}><View style={[styles.swatch, { backgroundColor: logColor(log, templates) }]} /></View>
           <Text style={styles.subText} numberOfLines={1}>{categoryNames.join(' · ')}{quick ? ' · Quick log' : ''}</Text>
         </View>
         <Text style={styles.meta} numberOfLines={1}>{meta.join('  ·  ')}</Text>

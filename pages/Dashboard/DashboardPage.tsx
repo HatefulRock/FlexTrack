@@ -7,7 +7,7 @@ import { PressableScale, SectionHeader } from '../../components/ui/Primitives';
 import { WeeklySchedule } from './WeeklySchedule';
 import { TodayFocusCard } from './TodayFocusCard';
 import { ResumeCard } from './ResumeCard';
-import { CategoryStrip, exerciseCount, lastDone, relativeDay } from './CategoryStrip';
+import { WorkoutBar, exerciseCount, lastDone, relativeDay } from './CategoryStrip';
 import { WorkoutLog, WorkoutTemplate, ViewState } from '../../types';
 import { ActiveSession } from '../../utils/activeSession';
 import { currentStreak, sessionsThisWeek } from '../../utils/training';
@@ -60,7 +60,7 @@ export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSe
               <Text style={styles.routineStart}>Start</Text>
             </View>
             <Text style={styles.routineMeta} numberOfLines={1}>{meta}</Text>
-            <View style={styles.routineStrip}><CategoryStrip exercises={t.exercises} height={4} /></View>
+            <View style={styles.routineStrip}><WorkoutBar template={t} height={4} /></View>
           </PressableScale>;
         })}</View>
       </View>}

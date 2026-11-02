@@ -4,7 +4,7 @@ import { CalendarDays, Download, HeartPulse, History as HistoryIcon } from 'luci
 import { format, isSameDay } from 'date-fns';
 import { Header } from '../../components/layout/Header';
 import { Chip, EmptyState, PressableScale, SectionHeader } from '../../components/ui/Primitives';
-import { WorkoutLog } from '../../types';
+import { WorkoutLog, WorkoutTemplate } from '../../types';
 import { theme } from '../../constants/theme';
 import { currentStreak, formatDuration } from '../../utils/training';
 import { LogItem } from './LogItem';
@@ -13,7 +13,7 @@ import { sessionMs } from './historyModel';
 
 export interface HealthSyncAction { name: string; enabled: boolean; onPress: () => void }
 
-export const HistoryPage = ({ logs, onExport, health }: { logs: WorkoutLog[]; onExport: () => void; health?: HealthSyncAction }) => {
+export const HistoryPage = ({ logs, templates, onExport, health }: { logs: WorkoutLog[]; templates?: WorkoutTemplate[]; onExport: () => void; health?: HealthSyncAction }) => {
   const [filter, setFilter] = useState('All'), [selected, setSelected] = useState<Date | null>(null);
   const options = useMemo(() => ['All', ...Array.from(new Set(logs.map(l => l.templateName)))], [logs]);
   // Sessions logged without a duration don't pull the average towards zero.
@@ -51,7 +51,7 @@ export const HistoryPage = ({ logs, onExport, health }: { logs: WorkoutLog[]; on
         <Text style={styles.scoreDot}>{'  ·  '}</Text>
         <Text style={styles.scoreNum}>{stats.streak}</Text><Text style={styles.scoreLabel}>-day streak</Text>
       </Text>}
-      <TrainingCalendar logs={logs} selected={selected} onSelect={d => setSelected(selected && isSameDay(selected, d) ? null : d)} />
+      <TrainingCalendar logs={logs} templates={templates} selected={selected} onSelect={d => setSelected(selected && isSameDay(selected, d) ? null : d)} />
       {logs.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filters}>
         {options.map(o => <Chip key={o} label={o} active={filter === o} onPress={() => setFilter(o)} accessibilityLabel={o === 'All' ? 'Show all sessions' : `Show ${o} sessions`} />)}
       </ScrollView>}
@@ -76,7 +76,7 @@ export const HistoryPage = ({ logs, onExport, health }: { logs: WorkoutLog[]; on
     renderSectionFooter={() => <View style={styles.sectionGap} />}
     renderItem={({ item, index, section }) => <View style={styles.content}>
       <View style={[styles.row, index === 0 && styles.rowFirst, index === section.data.length - 1 && styles.rowLast]}>
-        <LogItem log={item} first={index === 0} />
+        <LogItem log={item} first={index === 0} templates={templates} />
       </View>
     </View>}
   />;

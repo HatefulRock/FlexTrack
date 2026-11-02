@@ -23,7 +23,7 @@ const BATCH = 500;
 // Offered on the empty Today card for people who want to try a session before building their own.
 // A new install starts empty: beta testers read a routine they had not made as someone else's workout.
 export const SAMPLE_ROUTINE: WorkoutTemplate = {
-  id: 'starter-full-body', name: 'Full Body A', description: 'Three compound lifts and a plank. Edit the weights to match you.', scheduleDays: [],
+  id: 'starter-full-body', name: 'Full Body A', color: 'blue', description: 'Three compound lifts and a plank. Edit the weights to match you.', scheduleDays: [],
   exercises: [
     { id: 'starter-squat', name: 'Back Squat', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 5, targetWeight: 40, restSeconds: 150 },
     { id: 'starter-bench', name: 'Bench Press', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 5, targetWeight: 30, restSeconds: 120 },

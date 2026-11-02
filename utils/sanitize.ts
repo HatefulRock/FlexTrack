@@ -1,5 +1,6 @@
 import { Exercise, ExerciseLog, SetLog, UserProfile, WorkoutLog, WorkoutTemplate } from '../types';
 import { generateId } from './helpers';
+import { isWorkoutColor } from './workoutColor';
 
 // Everything read back from storage passes through these: stored data is never trusted to match the current types.
 export const MAX_TEMPLATES = 500;
@@ -44,6 +45,7 @@ export const sanitizeTemplate = (value: unknown): WorkoutTemplate | null => {
     description: text(value.description, '', 2_000) || undefined, exercises,
     tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 50).map(tag => tag.slice(0, 100)) : undefined,
     scheduleDays,
+    color: isWorkoutColor(value.color) ? value.color : undefined,
   };
 };
 
@@ -82,6 +84,7 @@ export const sanitizeLog = (value: unknown): WorkoutLog | null => {
     templateName: text(value.templateName, 'Workout', 200), source: value.source === 'quick' ? 'quick' : 'routine',
     activityCategory: typeof value.activityCategory === 'string' && categories.includes(value.activityCategory)
       ? value.activityCategory as WorkoutLog['activityCategory'] : undefined,
+    color: isWorkoutColor(value.color) ? value.color : undefined,
     notes: text(value.notes, '', 2_000) || undefined, startTime,
     endTime: finite(value.endTime, startTime, startTime), exercises,
   };

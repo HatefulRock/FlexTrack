@@ -4,7 +4,7 @@ import { CalendarDays, Check, Dumbbell, LucideIcon, TrendingUp } from 'lucide-re
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../constants/theme';
 import { Button, PressableScale } from './ui/Primitives';
-import { CATEGORY_LABEL, categoryColor } from '../utils/training';
+import { WORKOUT_COLORS } from '../utils/workoutColor';
 
 export const ONBOARDING_KEY = 'onboarding-seen';
 
@@ -14,10 +14,10 @@ export const markOnboardingSeen = () => AsyncStorage.setItem(ONBOARDING_KEY, '1'
 type Step = { icon: LucideIcon; title: string; body: string; extra?: 'set' | 'colors' };
 
 const STEPS: Step[] = [
-  { icon: Dumbbell, title: 'Build a workout', body: 'A workout is the plan you repeat: pick the exercises, the sets and a starting weight. Give it days of the week if you want it scheduled.' },
+  { icon: Dumbbell, title: 'Build a workout', body: 'A workout is the plan you repeat: pick the exercises, the sets and a starting weight. Give it days of the week if you want it scheduled, and a colour so you can spot it at a glance.', extra: 'colors' },
   { icon: CalendarDays, title: 'Start it from Today', body: "Today shows the session scheduled for today. Tap Start session, or use the round + button at the bottom to start any workout." },
   { icon: Check, title: 'Log every set', body: 'For each set, enter the weight and reps you actually did in the boxes under the barbell, then tap Set done. The rest timer starts on its own.', extra: 'set' },
-  { icon: TrendingUp, title: 'Watch it add up', body: 'Finished sessions land in History. Progress shows your records and how your training is split. The coloured bars tell you what each session works:', extra: 'colors' },
+  { icon: TrendingUp, title: 'Watch it add up', body: 'Finished sessions land in History. Each one is marked in its workout\'s colour. Progress shows your records, your bodyweight and how your training is split.' },
 ];
 
 // The bit of the set card a new lifter misses: the labelled boxes they type into.
@@ -29,12 +29,9 @@ const SetPreview = () => <View style={styles.preview} accessible={false} importa
   <View style={styles.previewDone}><Check size={16} color={theme.colors.onPrimary} strokeWidth={3} /><Text style={styles.previewDoneText}>Set done</Text></View>
 </View>;
 
-const ColorKey = () => <View style={styles.colors}>
-  {([['push', 'chest, shoulders, triceps'], ['pull', 'back, biceps'], ['legs', 'squats, deadlifts, lunges'], ['cardio', 'runs, rides, rowing']] as const).map(([c, what]) =>
-    <View key={c} style={styles.colorRow}>
-      <View style={[styles.swatch, { backgroundColor: categoryColor(c) }]} />
-      <Text style={styles.colorText}><Text style={styles.colorName}>{CATEGORY_LABEL[c]}</Text>  {what}</Text>
-    </View>)}
+// The colours a workout can wear: picked in the editor, then shown everywhere that workout appears.
+const ColorKey = () => <View style={styles.colors} accessible={false} importantForAccessibility="no-hide-descendants">
+  <View style={styles.colorRow}>{WORKOUT_COLORS.map(c => <View key={c.key} style={[styles.swatch, { backgroundColor: c.hex }]} />)}</View>
 </View>;
 
 export const Onboarding = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
@@ -84,11 +81,9 @@ const styles = StyleSheet.create({
   previewUnit: { ...theme.type.label, color: theme.colors.textMuted },
   previewDone: { height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: theme.radius.md, backgroundColor: theme.colors.primary },
   previewDoneText: { ...theme.type.button, color: theme.colors.onPrimary },
-  colors: { gap: 10, marginTop: 6 },
-  colorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  swatch: { width: 28, height: 10, borderRadius: 2 },
-  colorText: { ...theme.type.body, color: theme.colors.textMuted, flex: 1 },
-  colorName: { fontFamily: theme.type.label.fontFamily, color: theme.colors.text },
+  colors: { marginTop: 6 },
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  swatch: { width: 28, height: 28, borderRadius: 14 },
   actions: { flexDirection: 'row', gap: 10, paddingTop: 12, maxWidth: 520, width: '100%', alignSelf: 'center' },
   back: { flex: 1, minHeight: 56 },
   next: { flex: 2, minHeight: 56 },

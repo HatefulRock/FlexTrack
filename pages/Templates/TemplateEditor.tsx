@@ -1,6 +1,6 @@
 import React, { useRef, useState, ComponentRef } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
-import { Plus } from 'lucide-react-native';
+import { Check, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Header } from '../../components/layout/Header';
 import { Button, PressableScale } from '../../components/ui/Primitives';
@@ -10,6 +10,7 @@ import { WorkoutTemplate, Exercise } from '../../types';
 import { generateId } from '../../utils/helpers';
 import { getShortDayName } from '../../utils/formatters';
 import { EditorExerciseRow } from './EditorExerciseRow';
+import { WORKOUT_COLORS, WorkoutColorKey, colorKeyOf, nextColorKey } from '../../utils/workoutColor';
 import { EditorExercisePicker, ExercisePreset } from './EditorExercisePicker';
 
 const { colors, type, radius } = theme;
@@ -37,12 +38,14 @@ interface TemplateEditorProps {
     template: WorkoutTemplate | null;
     onSave: (t: WorkoutTemplate) => void;
     onCancel: () => void;
+    templates?: WorkoutTemplate[];
 }
 
-export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorProps) => {
+export const TemplateEditor = ({ template, onSave, onCancel, templates = [] }: TemplateEditorProps) => {
     const [name, setName] = useState(template?.name || '');
     const [description, setDescription] = useState(template?.description || '');
     const [scheduleDays, setScheduleDays] = useState<number[]>(template?.scheduleDays || []);
+    const [color, setColor] = useState<WorkoutColorKey>(() => (template ? colorKeyOf(template) : nextColorKey(templates)));
     const [exercises, setExercises] = useState<Exercise[]>(template?.exercises || []);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -123,6 +126,7 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
             description: description.trim(),
             exercises: exercises.map(normalizeExercise),
             scheduleDays,
+            color,
         });
     };
 
@@ -162,6 +166,19 @@ export const TemplateEditor = ({ template, onSave, onCancel }: TemplateEditorPro
                             multiline
                             maxLength={500}
                         />
+                    </View>
+
+                    <View style={styles.section}>
+                        <Text accessibilityRole="header" style={styles.sectionTitle}>Colour</Text>
+                        <View accessibilityRole="radiogroup" style={styles.colorRow}>
+                            {WORKOUT_COLORS.map(c => {
+                                const on = color === c.key;
+                                return <PressableScale key={c.key} accessibilityRole="radio" accessibilityLabel={`${c.label} colour`} accessibilityState={{ selected: on }}
+                                    onPress={() => { Haptics.selectionAsync(); setColor(c.key); }} scaleTo={0.9} style={[styles.colorRing, on && styles.colorRingOn]}>
+                                    <View style={[styles.colorDot, { backgroundColor: c.hex }]}>{on && <Check size={18} color={c.key === 'chalk' ? colors.onPrimary : colors.white} strokeWidth={3} />}</View>
+                                </PressableScale>;
+                            })}
+                        </View>
                     </View>
 
                     <View style={styles.section}>
@@ -230,6 +247,10 @@ const styles = StyleSheet.create({
     sectionTitle: { ...type.title, fontSize: 24, lineHeight: 28, color: colors.text, marginBottom: 10 },
     count: { fontFamily: type.metric.fontFamily, fontVariant: ['tabular-nums'], fontSize: 24, lineHeight: 28, color: colors.textMuted },
     daysRow: { flexDirection: 'row', gap: 6 },
+    colorRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
+    colorRing: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+    colorRingOn: { borderColor: colors.text },
+    colorDot: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     dayCell: { flex: 1 },
     day: { minHeight: 48, borderRadius: radius.sm, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
     dayOn: { backgroundColor: colors.primary },
