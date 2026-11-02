@@ -1,8 +1,20 @@
 name: EAS build
 
-# Starts a build on Expo's servers. Run it from the Actions tab.
-# Needs the EXPO_TOKEN repository secret (Settings > Secrets and variables > Actions).
+# Builds on Expo's servers and, when submitting, uploads the result to Google Play.
+#
+# Triggers:
+#   - Push a tag like v1.0.1: Android production build, uploaded to the Play closed
+#     testing track (eas.json > submit.production).
+#   - Run it by hand from the Actions tab and pick platform, profile and whether to submit.
+#
+# Needs:
+#   - EXPO_TOKEN repository secret.
+#   - For submitting: a Google Play service account key uploaded to EAS
+#     (expo.dev > project > Credentials > Android > Google Service Account Key).
+#   - For iOS: APPLE_TEAM_ID repository secret.
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       platform:
@@ -15,18 +27,27 @@ on:
         type: choice
         options: [production, preview, wear]
         default: production
+      submit:
+        description: Upload to the store when the build finishes (production only)
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: eas-build-${{ inputs.platform }}-${{ inputs.profile }}
+  group: eas-build-${{ github.ref }}-${{ inputs.platform || 'android' }}-${{ inputs.profile || 'production' }}
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      PLATFORM: ${{ inputs.platform || 'android' }}
+      PROFILE: ${{ inputs.profile || 'production' }}
+      # Tag pushes always submit; manual runs submit when asked, and only for production.
+      SUBMIT: ${{ (github.event_name == 'push' || (inputs.submit && inputs.profile == 'production')) && 'true' || 'false' }}
 
     steps:
       - name: Check for the Expo token
@@ -51,13 +72,18 @@ jobs:
         run: npm ci
 
       # --no-wait queues the build and exits; follow it on expo.dev.
+      # With --auto-submit, EAS uploads to the store itself once the build succeeds.
       # versionCode is bumped on Expo's side (autoIncrement + remote app version).
       - name: Start EAS build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: >
-          npx --yes eas-cli@latest build
-          --platform ${{ inputs.platform }}
-          --profile ${{ inputs.profile }}
-          --non-interactive --no-wait
+        run: |
+          args=(--platform "$PLATFORM" --profile "$PROFILE" --non-interactive --no-wait)
+          if [ "$SUBMIT" = "true" ]; then args+=(--auto-submit); fi
+          npx --yes eas-cli@latest build "${args[@]}" | tee eas-output.txt
+          {
+            echo "### EAS build: $PLATFORM / $PROFILE"
+            echo "Submit to store: $SUBMIT"
+            grep -Eo 'https://expo\.dev/\S+' eas-output.txt | sed 's/^/- /' || true
+          } >> "$GITHUB_STEP_SUMMARY"
