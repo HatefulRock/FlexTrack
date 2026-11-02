@@ -21,8 +21,9 @@ describe('workout colours', () => {
     expect(WORKOUT_COLORS.map(c => c.key)).toContain(nextColorKey(all));
   });
 
-  it('colours a session by what it was logged with, then its workout, then grey for quick cardio', () => {
-    expect(logColor(log({ color: 'teal', templateId: 'a' }), [t('a', 'red')])).toBe(hexOf('teal'));
+  it('colours a session by its workout, then by what it was logged with once deleted, then grey for quick cardio', () => {
+    expect(logColor(log({ color: 'teal', templateId: 'a' }), [t('a', 'red')])).toBe(hexOf('red'));
+    expect(logColor(log({ color: 'teal', templateId: 'gone' }), [t('a', 'red')])).toBe(hexOf('teal'));
     expect(logColor(log({ templateId: 'a' }), [t('a', 'red')])).toBe(hexOf('red'));
     expect(logColor(log({ source: 'quick', activityCategory: 'run' }))).toBe(CARDIO_COLOR);
   });
@@ -31,5 +32,24 @@ describe('workout colours', () => {
     expect(sanitizeTemplate({ id: 'a', name: 'A', color: 'pink' })?.color).toBe('pink');
     expect(sanitizeTemplate({ id: 'a', name: 'A', color: '#123456' })?.color).toBeUndefined();
     expect(sanitizeLog({ id: 'l', startTime: 5, color: 'blue' })?.color).toBe('blue');
+  });
+});
+
+describe('workout heat grid', () => {
+  it('gives each workout a row in its colour, keeps cardio separate, and labels by the current name', async () => {
+    const { workoutHeat } = await import('../pages/Stats/workoutHeat');
+    const now = new Date(2026, 10, 4);
+    const set = { setNumber: 1, completed: true };
+    const ex = (n: number) => [{ exerciseId: 'e', exerciseName: 'Squat', completed: true, sets: Array.from({ length: n }, () => set) }];
+    const logs: WorkoutLog[] = [
+      log({ id: '1', templateId: 'a', templateName: 'Old name', startTime: now.getTime() - 86_400_000, exercises: ex(3) }),
+      log({ id: '2', templateId: 'a', templateName: 'Legs', startTime: now.getTime(), exercises: ex(2) }),
+      log({ id: '3', source: 'quick', activityCategory: 'run', templateName: 'Run', startTime: now.getTime() }),
+    ];
+    const { rows } = workoutHeat(logs, [t('a', 'purple')], 4, now);
+    expect(rows.map(r => r.label)).toEqual(['a', 'Cardio']);
+    expect(rows[0].color).toBe(hexOf('purple'));
+    expect(rows[0].values.at(-1)).toBe(5);
+    expect(rows[1].color).toBe(CARDIO_COLOR);
   });
 });

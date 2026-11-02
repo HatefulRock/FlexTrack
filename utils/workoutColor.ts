@@ -37,11 +37,12 @@ export const colorKeyOf = (t: Pick<WorkoutTemplate, 'id' | 'color'>): WorkoutCol
 export const hexOf = (key: WorkoutColorKey) => WORKOUT_COLORS.find(c => c.key === key)!.hex;
 export const workoutColor = (t: Pick<WorkoutTemplate, 'id' | 'color'>) => hexOf(colorKeyOf(t));
 
-// A logged session keeps the colour its workout had; older logs borrow the workout's current colour, and quick logs are cardio grey.
+// A session follows its workout's current colour, so recolouring a workout recolours its history too. Once the workout is
+// deleted, the session keeps the colour it was logged with; older logs fall back to their workout id, quick cardio is grey.
 export const logColor = (log: WorkoutLog, templates: WorkoutTemplate[] = []) => {
-  if (isWorkoutColor(log.color)) return hexOf(log.color);
   const template = log.templateId ? templates.find(t => t.id === log.templateId) : undefined;
   if (template) return workoutColor(template);
+  if (isWorkoutColor(log.color)) return hexOf(log.color);
   if (log.source === 'quick') return log.activityCategory === 'strength' || log.activityCategory === 'timed' || log.activityCategory === 'other' ? NEUTRAL_COLOR : CARDIO_COLOR;
   return log.templateId ? hexOf(defaultColorKey(log.templateId)) : NEUTRAL_COLOR;
 };

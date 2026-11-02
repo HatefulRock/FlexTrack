@@ -228,6 +228,7 @@ const App = () => {
             <Suspense fallback={<View style={styles.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>}>
               <StatsPage 
                   logs={logs} 
+                  templates={templates}
                   userProfile={userProfile} 
                   setUserProfile={setUserProfile} 
               />
