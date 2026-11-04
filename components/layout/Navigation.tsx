@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CalendarDays, Dumbbell, History, Plus, TrendingUp, X, Play, ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ViewState, WorkoutTemplate } from '../../types';
 import { theme } from '../../constants/theme';
 import { Button, PressableScale, useReducedMotion } from '../ui/Primitives';
@@ -15,6 +16,11 @@ interface NavigationProps {
   onQuickLog: () => void;
 }
 
+// The tab row has a fixed height; the device's home-indicator inset is added below it
+// so the row (and the centred quick-start button) never sits under the indicator.
+const TAB_ROW_HEIGHT = 64;
+const QUICK_SIZE = 60;
+
 const tabs: { view: ViewState; label: string; icon: typeof CalendarDays }[] = [
   { view: 'dashboard', label: 'Today', icon: CalendarDays },
   { view: 'templates', label: 'Workouts', icon: Dumbbell },
@@ -24,16 +30,18 @@ const tabs: { view: ViewState; label: string; icon: typeof CalendarDays }[] = [
 
 export const Navigation = ({ currentView, setView, templates, onStart, onCreate, onQuickLog }: NavigationProps) => {
   const [quickOpen, setQuickOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 8);
   const navigate = (view: ViewState) => { Haptics.selectionAsync(); setView(view); };
   const open = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setQuickOpen(true); };
   const start = (template: WorkoutTemplate) => { setQuickOpen(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onStart(template); };
 
   return <>
-    <View accessibilityRole="tablist" style={styles.container}>
+    <View accessibilityRole="tablist" style={[styles.container, { height: TAB_ROW_HEIGHT + bottomInset, paddingBottom: bottomInset }]}>
       {tabs.slice(0, 2).map(({ view, label, icon: Icon }) => <NavItem key={view} {...{ view, label, Icon, currentView, navigate }} />)}
       <View style={styles.quickSlot}>
         <PressableScale accessibilityRole="button" accessibilityLabel="Quick start" onPress={open} scaleTo={0.92} style={styles.quickButton}>
-          <Plus size={26} color={theme.colors.onPrimary} strokeWidth={2.75} />
+          <Plus size={30} color={theme.colors.onPrimary} strokeWidth={2.75} />
         </PressableScale>
       </View>
       {tabs.slice(2).map(({ view, label, icon: Icon }) => <NavItem key={view} {...{ view, label, Icon, currentView, navigate }} />)}
@@ -94,13 +102,13 @@ const NavItem = ({ view, label, Icon, currentView, navigate }: { view: ViewState
 };
 
 const styles = StyleSheet.create({
-  container: { position: 'absolute', left: 0, right: 0, bottom: 0, height: Platform.OS === 'ios' ? 88 : 72, paddingBottom: Platform.OS === 'ios' ? 20 : 4, flexDirection: 'row', alignItems: 'stretch', backgroundColor: theme.colors.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border, zIndex: 50 },
-  navItem: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  container: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'stretch', backgroundColor: theme.colors.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border, zIndex: 50 },
+  navItem: { flex: 1, height: TAB_ROW_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 4 },
   activeBar: { position: 'absolute', top: 0, width: 28, height: 3, borderBottomLeftRadius: 2, borderBottomRightRadius: 2 },
   activeBarOn: { backgroundColor: theme.colors.text },
   navLabel: { ...theme.type.caption, color: theme.colors.textSubtle }, navLabelActive: { color: theme.colors.text, fontFamily: theme.type.label.fontFamily },
-  quickSlot: { width: 76, alignItems: 'center', justifyContent: 'center' },
-  quickButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: theme.colors.surfaceElevated },
+  quickSlot: { width: 84, height: TAB_ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  quickButton: { width: QUICK_SIZE, height: QUICK_SIZE, borderRadius: QUICK_SIZE / 2, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' }, scrim: { flex: 1, backgroundColor: theme.colors.overlay },
   sheet: { maxHeight: '84%', backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.radius.xl, borderTopRightRadius: theme.radius.xl, paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 34 : 20, ...theme.shadow.sheet },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: theme.colors.surfacePressed, alignSelf: 'center', marginBottom: 14 },
