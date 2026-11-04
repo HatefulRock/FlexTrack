@@ -4,7 +4,7 @@ tags: [quick-log, edge, android-only]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Quick start"
-- tapOn: "Log a finished activity"
+- tapOn: "Log a past activity"
 # Cardio with no distance
 - scrollUntilVisible:
     element: "Save activity"

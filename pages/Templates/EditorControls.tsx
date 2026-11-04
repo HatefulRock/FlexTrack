@@ -40,7 +40,8 @@ export const exerciseSummary = (e: Exercise) => {
   const sets = e.targetSets ?? 1;
   const parts: string[] = [];
   if (e.type === 'timer') parts.push(`${sets} × ${formatClock(e.targetDurationSeconds)}`);
-  else if (e.type === 'distance') parts.push(`${sets > 1 ? `${sets} × ` : ''}${formatAmount(e.targetDistance)} ${e.targetDistanceUnit || 'km'}`);
+  // No target distance is an open run: "open distance", logged when it is done.
+  else if (e.type === 'distance') parts.push(`${sets > 1 ? `${sets} × ` : ''}${e.targetDistance ? `${formatAmount(e.targetDistance)} ${e.targetDistanceUnit || 'km'}` : 'open distance'}`);
   else {
     parts.push(`${sets} × ${e.targetReps ?? 0}`);
     const mode = e.loadMode || 'external', w = e.targetWeight || 0;

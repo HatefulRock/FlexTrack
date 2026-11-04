@@ -16,7 +16,7 @@ tags: [history]
       EXERCISES: "1"
 - tapOn: "Done"
 - tapOn: "Quick start"
-- tapOn: "Log a finished activity"
+- tapOn: "Log a past activity"
 - tapOn: "Distance in km"
 - inputText: "3"
 - runFlow: ../subflows/hide-keyboard.yaml

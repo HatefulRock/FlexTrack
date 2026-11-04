@@ -13,7 +13,7 @@ const MAX_ROUTINES = 30, MAX_ITEMS = 40;
 export const exerciseDetail = (e: Exercise) => {
   const sets = e.targetSets || 1;
   if (e.type === 'timer') return `${sets} × ${e.targetDurationSeconds || 0} s`;
-  if (e.type === 'distance') return `${formatDecimal(e.targetDistance || 0)} ${e.targetDistanceUnit === 'miles' ? 'mi' : e.targetDistanceUnit || 'km'}`;
+  if (e.type === 'distance') return e.targetDistance ? `${formatDecimal(e.targetDistance)} ${e.targetDistanceUnit === 'miles' ? 'mi' : e.targetDistanceUnit || 'km'}` : 'open distance';
   const reps = `${sets} × ${e.targetReps || 0}`;
   if (e.loadMode === 'bodyweight') return `${reps} · bodyweight`;
   if (!e.targetWeight) return reps;

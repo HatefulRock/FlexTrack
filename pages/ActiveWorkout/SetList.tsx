@@ -135,6 +135,7 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
         <Button variant="secondary" icon={running ? Pause : Play} label={running ? 'Pause' : elapsed > 0 ? 'Resume' : 'Start timer'} onPress={() => onToggleTimer(i)} style={styles.timerBtn} />
       </View>}
 
+      {exercise.type === 'distance' && !exercise.targetDistance && !set.distance && <Text style={styles.hint}>Go as far as you like. When you stop, enter the distance and tap Set done.</Text>}
       {exercise.type === 'distance' && <View style={styles.steppers}>
         <NumberStepper label="Distance" unit={exercise.targetDistanceUnit || 'km'} value={set.distance} step={distanceStep} onChange={v => onUpdateSet(i, 'distance', v)} />
         <View style={styles.timeField}>

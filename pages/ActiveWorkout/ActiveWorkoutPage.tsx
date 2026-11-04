@@ -18,6 +18,7 @@ import { Button, EmptyState, PressableScale, useReducedMotion } from '../../comp
 import { showAlert } from '../../components/ui/Dialog';
 import { theme } from '../../constants/theme';
 import { colorKeyOf, workoutColor } from '../../utils/workoutColor';
+import { withSessionDuration } from '../../utils/freeActivity';
 
 interface Props {
   template: WorkoutTemplate; resume?: ActiveSession | null; previousLogs: WorkoutLog[];
@@ -61,7 +62,7 @@ const buildLogs = (template: WorkoutTemplate, recent: WorkoutLog[], suggestions:
     exerciseId: e.id, exerciseName: e.name, exerciseType: e.type, loadMode: mode, distanceUnit: e.targetDistanceUnit, completed: false,
     sets: Array.from({ length: setCount }, (_, i) => ({
       setNumber: i + 1, completed: false, ...prefill(e, i, last, suggestions[j]),
-      distance: e.targetDistance, durationSeconds: e.targetDurationSeconds, notes: '',
+      distance: e.targetDistance || undefined, durationSeconds: e.targetDurationSeconds, notes: '',
     })),
   };
 });
@@ -152,13 +153,18 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
 
   const historySets = useMemo(() => (currentExercise ? lastSetsFor(currentExercise, recent) : undefined), [currentExercise, recent]);
 
+  const free = !!template.freeActivity;
+  // Only an open-ended session fills a missing time from the session clock; a routine keeps exactly what was entered.
+  const finishSet = (exercise: ExerciseLog, set: SetLog) => (free && set.completed ? withSessionDuration(exercise, set, startTime) : set);
   const finishWorkout = () => {
     cancelRest();
     onFinish({
-      id: generateId(), templateId: template.id, templateName: template.name, source: 'routine', color: colorKeyOf(template), startTime, endTime: Date.now(),
+      id: generateId(), startTime, endTime: Date.now(), templateName: template.name, source: 'routine',
+      // An open-ended session belongs to no saved workout: it is filed by what it was, like a quick log.
+      ...(free ? { activityCategory: template.freeActivity } : { templateId: template.id, color: colorKeyOf(template) }),
       exercises: logs.map((e, eIndex) => ({
         ...e,
-        sets: e.sets.map((set, setIndex) => withTimedDuration(e, set, timers[`${eIndex}-${setIndex}`])),
+        sets: e.sets.map((set, setIndex) => finishSet(e, withTimedDuration(e, set, timers[`${eIndex}-${setIndex}`]))),
         completed: e.sets.length > 0 && e.sets.every(s => s.completed),
       })),
     });
@@ -210,7 +216,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
     updateCurrentSets((sets, exercise) => sets.map((s, sIndex) => {
       if (sIndex !== i) return s;
       const toggled = { ...s, completed: completing };
-      return completing ? withTimedDuration(exercise, toggled, timers[key]) : toggled;
+      return completing ? finishSet(exercise, withTimedDuration(exercise, toggled, timers[key])) : toggled;
     }));
     stopTimer(key);
     if (!completing) { void Haptics.selectionAsync(); setFocusSet(i); return; }

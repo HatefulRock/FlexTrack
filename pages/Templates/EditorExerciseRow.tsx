@@ -97,6 +97,7 @@ export const EditorExerciseRow = ({ exercise: ex, index, count, expanded, error,
         </View>}
         <EditorStepper label="Rest (m:ss)" a11y={`Rest for ${label}`} value={ex.restSeconds} onChange={v => onChange({ restSeconds: v })} step={15} max={86_400} clock />
       </View>
+      {ex.type === 'distance' && <Text style={styles.hint}>{ex.targetDistance ? 'Not sure how far? Set the distance to 0 to leave it open.' : 'Open distance: you enter how far you went when you finish.'}</Text>}
 
       <View style={styles.footer}>
         <PressableScale accessibilityRole="button" accessibilityLabel={`Move ${label} up`} accessibilityState={{ disabled: index === 0 }} disabled={index === 0}
