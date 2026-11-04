@@ -26,7 +26,10 @@ export interface WorkoutTemplate {
   tags?: string[];
   scheduleDays?: number[]; // Array of 0-6 (Sun-Sat). Empty = no schedule.
   color?: string; // a WORKOUT_COLORS key the lifter picked; unset falls back to a stable default
+  freeActivity?: FreeActivityKind; // set only on the throwaway template behind an open-ended session; never saved as a workout
 }
+
+export type FreeActivityKind = 'run' | 'walk' | 'cycle' | 'other';
 
 export interface SetLog {
   setNumber: number;

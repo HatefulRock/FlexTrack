@@ -26,6 +26,7 @@ import { ActiveWorkoutPage } from './pages/ActiveWorkout/ActiveWorkoutPage';
 import { WorkoutSummaryPage } from './pages/ActiveWorkout/WorkoutSummaryPage';
 import { HistoryPage } from './pages/History/HistoryPage';
 import { QuickLogPage } from './pages/QuickLog/QuickLogPage';
+import { freeActivityTemplate } from './utils/freeActivity';
 
 const StatsPage = lazy(() => import('./pages/Stats/StatsPage').then(module => ({ default: module.StatsPage })));
 
@@ -130,6 +131,7 @@ const App = () => {
 
   const handleUpdateActiveTemplate = (t: WorkoutTemplate) => {
     setActiveTemplate(t);
+    if (t.freeActivity) return; // an open-ended session has no saved workout to update
     void saveTemplate(t).catch(() => showAlert('Save failed', 'The new default weight could not be written to local storage.'));
   };
 
@@ -237,7 +239,7 @@ const App = () => {
         </View>
 
         {view !== 'active-workout' && view !== 'workout-summary' && view !== 'template-editor' && view !== 'quick-log' && (
-          <Navigation currentView={view} setView={setView} templates={templates} onStart={handleStartWorkout} onCreate={() => { setEditingTemplate(null); setView('template-editor'); }} onQuickLog={() => setView('quick-log')} />
+          <Navigation currentView={view} setView={setView} templates={templates} onStart={handleStartWorkout} onCreate={() => { setEditingTemplate(null); setView('template-editor'); }} onQuickLog={() => setView('quick-log')} onStartFree={kind => handleStartWorkout(freeActivityTemplate(kind))} />
         )}
 
         <Onboarding visible={tourOpen} onClose={closeTour} />

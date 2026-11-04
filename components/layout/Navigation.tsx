@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CalendarDays, Dumbbell, History, Plus, TrendingUp, X, Play, ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { ViewState, WorkoutTemplate } from '../../types';
+import { FreeActivityKind, ViewState, WorkoutTemplate } from '../../types';
+import { FREE_ACTIVITIES } from '../../utils/freeActivity';
 import { theme } from '../../constants/theme';
 import { Button, PressableScale, useReducedMotion } from '../ui/Primitives';
 
@@ -13,6 +14,7 @@ interface NavigationProps {
   onStart: (template: WorkoutTemplate) => void;
   onCreate: () => void;
   onQuickLog: () => void;
+  onStartFree: (kind: FreeActivityKind) => void;
 }
 
 const tabs: { view: ViewState; label: string; icon: typeof CalendarDays }[] = [
@@ -22,11 +24,12 @@ const tabs: { view: ViewState; label: string; icon: typeof CalendarDays }[] = [
   { view: 'stats', label: 'Progress', icon: TrendingUp },
 ];
 
-export const Navigation = ({ currentView, setView, templates, onStart, onCreate, onQuickLog }: NavigationProps) => {
+export const Navigation = ({ currentView, setView, templates, onStart, onCreate, onQuickLog, onStartFree }: NavigationProps) => {
   const [quickOpen, setQuickOpen] = useState(false);
   const navigate = (view: ViewState) => { Haptics.selectionAsync(); setView(view); };
   const open = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setQuickOpen(true); };
   const start = (template: WorkoutTemplate) => { setQuickOpen(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onStart(template); };
+  const startFree = (kind: FreeActivityKind) => { setQuickOpen(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onStartFree(kind); };
 
   return <>
     <View accessibilityRole="tablist" style={styles.container}>
@@ -51,8 +54,19 @@ export const Navigation = ({ currentView, setView, templates, onStart, onCreate,
           <ChevronRight size={20} color={theme.colors.textSubtle} />
         </PressableScale>)}
       </ScrollView> : <Text style={styles.emptyText}>Create your first workout to make quick starts effortless.</Text>}
+      <View style={styles.free}>
+        <Text accessibilityRole="header" style={styles.freeTitle}>No plan? Just go</Text>
+        <Text style={styles.freeHint}>The clock starts now. Enter how far you went when you finish.</Text>
+        <View style={styles.freeRow}>
+          {FREE_ACTIVITIES.map(({ kind, label }) => <PressableScale key={kind} accessibilityRole="button" accessibilityLabel={`Start an open ${label.toLowerCase()}`}
+            onPress={() => startFree(kind)} scaleTo={0.95} style={styles.freeTile}>
+            <Play size={14} color={theme.colors.text} fill={theme.colors.text} />
+            <Text style={styles.freeLabel}>{label}</Text>
+          </PressableScale>)}
+        </View>
+      </View>
       <View style={styles.sheetActions}>
-        <Button label="Log a finished activity" variant="secondary" onPress={() => { setQuickOpen(false); onQuickLog(); }} />
+        <Button label="Log a past activity" variant="secondary" onPress={() => { setQuickOpen(false); onQuickLog(); }} />
         <Button label="New workout" icon={Plus} variant={templates.length ? 'ghost' : 'primary'} onPress={() => { setQuickOpen(false); onCreate(); }} />
       </View>
     </Sheet>
@@ -112,5 +126,11 @@ const styles = StyleSheet.create({
   playPlate: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
   routineText: { flex: 1 }, routineTitle: { ...theme.type.heading, color: theme.colors.text }, routineMeta: { ...theme.type.caption, color: theme.colors.textMuted, marginTop: 2 },
   emptyText: { ...theme.type.body, color: theme.colors.textMuted, marginVertical: 20 },
+  free: { marginBottom: 16, gap: 6 },
+  freeTitle: { ...theme.type.heading, color: theme.colors.text },
+  freeHint: { ...theme.type.caption, color: theme.colors.textMuted },
+  freeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  freeTile: { flex: 1, minHeight: 52, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceElevated, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
+  freeLabel: { ...theme.type.label, color: theme.colors.text },
   sheetActions: { gap: 8 },
 });

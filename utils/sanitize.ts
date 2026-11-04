@@ -46,6 +46,8 @@ export const sanitizeTemplate = (value: unknown): WorkoutTemplate | null => {
     tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 50).map(tag => tag.slice(0, 100)) : undefined,
     scheduleDays,
     color: isWorkoutColor(value.color) ? value.color : undefined,
+    freeActivity: value.freeActivity === 'run' || value.freeActivity === 'walk' || value.freeActivity === 'cycle' || value.freeActivity === 'other'
+      ? value.freeActivity : undefined,
   };
 };
 

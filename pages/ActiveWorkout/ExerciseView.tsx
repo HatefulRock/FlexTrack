@@ -7,11 +7,11 @@ import { formatDecimal } from '../../utils/training';
 
 const n = (v?: number) => formatDecimal(v ?? 0);
 
-// "4 × 6 at 80 kg", "3 × 8", "3 × 1:00", "5 km": the routine's target in the lifter's shorthand.
+// "4 × 6 at 80 kg", "3 × 8", "3 × 1:00", "5 km", "open distance": the routine's target in the lifter's shorthand.
 export const targetLabel = (exercise: Exercise) => {
   const sets = exercise.targetSets || 1;
-  if (exercise.type === 'distance') return `${sets > 1 ? `${sets} × ` : ''}${n(exercise.targetDistance)} ${exercise.targetDistanceUnit || 'km'}`;
-  if (exercise.type === 'timer') return `${sets} × ${formatTime(exercise.targetDurationSeconds || 0)}`;
+  if (exercise.type === 'distance') return `${sets > 1 ? `${sets} × ` : ''}${exercise.targetDistance ? `${n(exercise.targetDistance)} ${exercise.targetDistanceUnit || 'km'}` : 'open distance'}`;
+  if (exercise.type === 'timer') return `${sets} × ${exercise.targetDurationSeconds ? formatTime(exercise.targetDurationSeconds) : 'open time'}`;
   if (exercise.loadMode === 'bodyweight') return `${sets} × ${exercise.targetReps || 0}`;
   if (exercise.loadMode === 'assisted') return `${sets} × ${exercise.targetReps || 0} with ${n(exercise.targetWeight)} kg assist`;
   return `${sets} × ${exercise.targetReps || 0} at ${n(exercise.targetWeight)} kg`;

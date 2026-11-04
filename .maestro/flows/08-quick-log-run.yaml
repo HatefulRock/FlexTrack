@@ -4,7 +4,7 @@ tags: [smoke, quick-log]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Quick start"
-- tapOn: "Log a finished activity"
+- tapOn: "Log a past activity"
 - assertVisible: "Log activity"
 - tapOn: "Distance in km"
 - inputText: "5"
