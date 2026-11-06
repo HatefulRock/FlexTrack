@@ -74,7 +74,7 @@ const legacySessions = (value: unknown[], written: Set<string>): WorkoutLog[] =>
 // The old value is removed only once every session is written, so a crash part-way leaves it in place
 // and the next launch simply runs the move again.
 const migrateLegacyLogs = async (store: KeyValueStore, logs: WorkoutLog[]) => {
-  for (const batch of chunks(logs)) await store.multiSet(batch.map(log => [logKey(log.id), JSON.stringify(log)] as const));
+  await writeLogs(store, logs);
   await store.removeItem(KEYS.legacyLogs);
 };
 
@@ -119,4 +119,7 @@ export const loadAll = async (store: KeyValueStore): Promise<LoadedData> => {
 export const writeTemplates = (store: KeyValueStore, templates: WorkoutTemplate[]) => store.setItem(KEYS.templates, JSON.stringify(templates));
 export const writeProfile = (store: KeyValueStore, profile: UserProfile) => store.setItem(KEYS.profile, JSON.stringify(profile));
 export const writeLog = (store: KeyValueStore, log: WorkoutLog) => store.setItem(logKey(log.id), JSON.stringify(log));
-export const removeLogs = (store: KeyValueStore, ids: string[]) => (ids.length ? store.multiRemove(ids.map(logKey)) : Promise.resolve());
+export const writeLogs = async (store: KeyValueStore, logs: WorkoutLog[]) => {
+  for (const batch of chunks(logs)) await store.multiSet(batch.map(log => [logKey(log.id), JSON.stringify(log)] as const));
+};
+export const removeLogs =(store: KeyValueStore, ids: string[]) => (ids.length ? store.multiRemove(ids.map(logKey)) : Promise.resolve());

@@ -17,13 +17,13 @@ interface DashboardPageProps {
   templates: WorkoutTemplate[]; logs: WorkoutLog[];
   startWorkout: (t: WorkoutTemplate) => void; setView: (v: ViewState) => void;
   activeSession?: ActiveSession | null; onResume?: (s: ActiveSession) => void; onDiscardSession?: () => void;
-  onAddSample?: () => void; onCreate?: () => void; onHelp?: () => void;
+  onAddSample?: () => void; onRestore?: () => void; onCreate?: () => void; onHelp?: () => void;
 }
 
 const Score = ({ value, label }: { value: number; label: string }) =>
   <Text style={styles.scoreLabel}><Text style={styles.scoreValue}>{value}</Text>{label}</Text>;
 
-export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSession, onResume, onDiscardSession, onAddSample, onCreate, onHelp }: DashboardPageProps) => {
+export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSession, onResume, onDiscardSession, onAddSample, onRestore, onCreate, onHelp }: DashboardPageProps) => {
   const todayIndex = new Date().getDay();
   const todaysWorkouts = useMemo(() => templates.filter(t => t.scheduleDays?.includes(todayIndex)), [templates, todayIndex]);
   const week = useMemo(() => sessionsThisWeek(logs), [logs]);
@@ -36,7 +36,7 @@ export const DashboardPage = ({ templates, logs, startWorkout, setView, activeSe
     <View style={styles.content}>
       {activeSession && onResume && <ResumeCard session={activeSession} onResume={onResume} onDiscard={() => onDiscardSession?.()} />}
       <TodayFocusCard todaysWorkouts={todaysWorkouts} templates={templates} logs={logs} onStartWorkout={startWorkout}
-        onBrowse={() => setView('templates')} onCreate={onCreate ?? (() => setView('templates'))} onAddSample={onAddSample} secondaryStart={!!activeSession} />
+        onBrowse={() => setView('templates')} onCreate={onCreate ?? (() => setView('templates'))} onAddSample={onAddSample} onRestore={onRestore} secondaryStart={!!activeSession} />
 
       {(logs.length > 0 || templates.some(t => t.scheduleDays?.length)) && <View style={styles.week}>
         <WeeklySchedule templates={templates} logs={logs} onStartWorkout={startWorkout} />

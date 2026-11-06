@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, WorkoutLog, WorkoutTemplate } from '../types';
 import { MAX_LOGS, sanitizeLog, sanitizeProfile, sanitizeTemplate } from '../utils/sanitize';
-import { loadAll, removeLogs, Section, writeLog, writeProfile, writeTemplates } from '../utils/storage';
+import { loadAll, removeLogs, Section, writeLog, writeLogs, writeProfile, writeTemplates } from '../utils/storage';
+import { ImportedData, ImportPlan, planImport } from '../utils/importData';
 
 export const useWorkoutData = () => {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
@@ -12,6 +13,7 @@ export const useWorkoutData = () => {
   const [loading, setLoading] = useState(true);
   const templateRef = useRef<WorkoutTemplate[]>([]);
   const logRef = useRef<WorkoutLog[]>([]);
+  const profileRef = useRef<UserProfile>({ weightLogs: [], height: 0 });
   const writeQueue = useRef<Partial<Record<Section, Promise<void>>>>({});
   // A section whose stored value exists but could not be read is never written: that would replace the user's data with defaults.
   const blocked = useRef(new Set<Section>());
@@ -30,7 +32,7 @@ export const useWorkoutData = () => {
       .then(data => {
         if (!mounted) return;
         data.blocked.forEach(section => blocked.current.add(section));
-        templateRef.current = data.templates; logRef.current = data.logs;
+        templateRef.current = data.templates; logRef.current = data.logs; profileRef.current = data.profile;
         setTemplates(data.templates); setLogs(data.logs); setUserProfileState(data.profile); setUnreadable(data.unreadable);
       })
       .catch(() => {
@@ -72,9 +74,39 @@ export const useWorkoutData = () => {
   }, [persist]);
   const setUserProfile = useCallback((profile: UserProfile) => {
     const sanitized = sanitizeProfile(profile);
-    setUserProfileState(sanitized);
+    profileRef.current = sanitized; setUserProfileState(sanitized);
     return persist('profile', () => writeProfile(AsyncStorage, sanitized));
   }, [persist]);
 
-  return { templates, logs, userProfile, unreadable, loading, saveTemplate, deleteTemplate, addLog, setUserProfile };
+  // Adds a backup's workouts, sessions and weight entries to what is already here, planned against the current data at
+  // the moment it runs. Each section is written on its own; a section that fails (or is blocked) is reported and the
+  // rest still land, and importing the same file again adds only what is still missing.
+  const importData = useCallback(async (incoming: ImportedData): Promise<{ plan: ImportPlan; failed: Section[] }> => {
+    const plan = planImport({ templates: templateRef.current, logs: logRef.current, profile: profileRef.current }, incoming);
+    const writes: [Section, Promise<void>][] = [];
+    // A blocked section keeps showing what was read; persist rejects its write, which is reported as a failure.
+    const open = (section: Section) => !blocked.current.has(section);
+    if (plan.templates.length) {
+      const next = [...templateRef.current, ...plan.templates];
+      if (open('templates')) { templateRef.current = next; setTemplates(next); }
+      writes.push(['templates', persist('templates', () => writeTemplates(AsyncStorage, next))]);
+    }
+    if (plan.logs.length) {
+      const all = [...logRef.current, ...plan.logs].sort((a, b) => a.startTime - b.startTime);
+      const dropped = all.slice(0, Math.max(0, all.length - MAX_LOGS)).map(item => item.id);
+      const next = all.slice(-MAX_LOGS);
+      if (open('logs')) { logRef.current = next; setLogs(next); }
+      writes.push(['logs', persist('logs', async () => { await writeLogs(AsyncStorage, plan.logs); await removeLogs(AsyncStorage, dropped); })]);
+    }
+    if (plan.weightLogs.length || plan.height) {
+      const current = profileRef.current;
+      const next = sanitizeProfile({ height: plan.height ?? current.height, weightLogs: [...current.weightLogs, ...plan.weightLogs].sort((x, y) => x.date - y.date) });
+      if (open('profile')) { profileRef.current = next; setUserProfileState(next); }
+      writes.push(['profile', persist('profile', () => writeProfile(AsyncStorage, next))]);
+    }
+    const results = await Promise.allSettled(writes.map(([, write]) => write));
+    return { plan, failed: writes.filter((_, i) => results[i].status === 'rejected').map(([section]) => section) };
+  }, [persist]);
+
+  return { templates, logs, userProfile, unreadable, loading, saveTemplate, deleteTemplate, addLog, setUserProfile, importData };
 };

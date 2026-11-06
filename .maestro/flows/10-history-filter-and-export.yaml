@@ -1,4 +1,4 @@
-# History with mixed content: filter by type, clear the filter, and open the export.
+# History with mixed content: filter by type, clear the filter, and open the export from the Backup dialog.
 appId: com.HatefulRock.flextrack
 tags: [history]
 ---
@@ -33,4 +33,6 @@ tags: [history]
 - assertNotVisible: "Chest, .*"
 - tapOn: "Show all sessions"
 - assertVisible: "Chest, .*"
+- tapOn: "Back up or restore data"
+- assertVisible: "Restore from a backup"
 - tapOn: "Export all data"

@@ -11,6 +11,8 @@ import { useAppFonts } from './hooks/useAppFonts';
 import { DialogHost, showAlert } from './components/ui/Dialog';
 import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/activeSession';
 import { buildExport, shareExport } from './utils/exportData';
+import { describePlan, ImportedData, ImportError, importProblemMessage, isEmptyPlan, parseImport, planImport } from './utils/importData';
+import { pickBackupText } from './utils/pickBackup';
 import { clearSharedFiles } from './utils/sharedFiles';
 import { SAMPLE_ROUTINE } from './utils/storage';
 import { Onboarding, loadOnboardingSeen, markOnboardingSeen } from './components/Onboarding';
@@ -59,7 +61,8 @@ const App = () => {
     setUserProfile,
     saveTemplate,
     deleteTemplate,
-    addLog
+    addLog,
+    importData
   } = useWorkoutData();
   const health = useHealthSync();
   useWidgetSync(templates, logs, !loading);
@@ -155,6 +158,40 @@ const App = () => {
       .catch(() => showAlert('Export failed', 'Your data could not be exported. Try again.'));
   };
 
+  const handleImport = async () => {
+    let incoming: ImportedData;
+    try {
+      const text = await pickBackupText();
+      if (text === null) return;
+      incoming = parseImport(text);
+    } catch (error) {
+      showAlert('Can’t restore this file', error instanceof ImportError ? importProblemMessage(error.problem) : 'The file could not be read. Try again.');
+      return;
+    }
+    const preview = planImport({ templates, logs, profile: userProfile }, incoming);
+    if (isEmptyPlan(preview)) {
+      showAlert('Nothing new to restore', 'Everything in this backup is already on this device.');
+      return;
+    }
+    showAlert('Restore this backup?', `This adds ${describePlan(preview)}. Nothing already on this device is changed or removed.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Restore', onPress: () => {
+        void importData(incoming).then(({ plan, failed }) => failed.length
+          ? showAlert('Some data wasn’t restored', 'Part of the backup couldn’t be written to local storage. Restoring the same file again adds only what is still missing.')
+          : showAlert('Backup restored', `Added ${describePlan(plan)}.`));
+      } },
+    ]);
+  };
+
+  // iOS can't present the file picker or share sheet while the alert is still animating away. Web must stay
+  // synchronous: the browser only opens a file picker inside the tap that asked for it.
+  const afterAlert = (action: () => void) => () => { if (Platform.OS === 'ios') setTimeout(action, 350); else action(); };
+  const handleBackup = () => showAlert('Back up your data', 'Export saves every workout, session and weight entry to one file. Restore adds anything in a backup file that isn’t on this device yet.', [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Restore from a backup', onPress: afterAlert(() => { void handleImport(); }) },
+    { text: 'Export all data', onPress: afterAlert(handleExport) },
+  ]);
+
   const isFullScreen = view === 'active-workout' || view === 'workout-summary' || view === 'quick-log';
 
   return (
@@ -174,6 +211,7 @@ const App = () => {
                   onResume={handleResumeWorkout}
                   onDiscardSession={handleDiscardSession}
                   onAddSample={handleAddSample}
+                  onRestore={() => { void handleImport(); }}
                   onCreate={() => { setEditingTemplate(null); setView('template-editor'); }}
                   onHelp={() => setTourOpen(true)}
               />
@@ -221,7 +259,7 @@ const App = () => {
               <QuickLogPage onSave={(log) => { void addLog(log).then(() => health.onLogSaved(log), () => showAlert('Save failed', 'This activity could not be written to local storage.')); setView('history'); }} onCancel={() => setView('dashboard')} />
           )}
           {view === 'history' && (
-              <HistoryPage logs={logs} templates={templates} onExport={handleExport} health={health.available ? { name: health.platformName!, enabled: health.enabled, onPress: () => health.openSettings(logs) } : undefined} />
+              <HistoryPage logs={logs} templates={templates} onBackup={handleBackup} health={health.available ? { name: health.platformName!, enabled: health.enabled, onPress: () => health.openSettings(logs) } : undefined} />
           )}
 
           {view === 'stats' && (
