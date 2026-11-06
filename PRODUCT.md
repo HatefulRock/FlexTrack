@@ -22,17 +22,17 @@ Local-first and account-free: every routine, log and body metric lives on the de
 
 ## Operating Context
 
-- Routines with a weekly schedule; a Today view that surfaces the scheduled session.
+- Workouts (routines in the code), each with a colour and a weekly schedule; a Today view that surfaces the scheduled session. New installs start empty, with an opt-in sample workout and a first-run tour.
 - Guided workouts: per-set logging of reps, weight, duration or distance, previous-session values, plate calculator, adjustable rest timer, keep-awake.
 - Quick log for activities completed outside a routine (strength, run, walk, cycle, timed, other).
-- History (28-day grid, filters, session details) and Progress (records, consistency, training split, progression per exercise, bodyweight and BMI).
+- History (four-week calendar coloured by workout, filters, session details, backup export and restore) and Progress (records, 12-week heat strip per workout, progression per exercise, bodyweight and BMI).
+- Opt-in Apple Health / Health Connect workout writes, home-screen widgets, and Apple Watch and Wear OS companions.
 
 ## Capabilities and Constraints
 
-- React Native 0.81 + Expo 54, TypeScript, AsyncStorage persistence, manual view-state navigation in `App.tsx`.
+- React Native 0.88 + Expo 58, TypeScript, AsyncStorage persistence, manual view-state navigation in `App.tsx`.
 - Weight units: kilograms only.
 - Exercise types: reps (weighted, bodyweight, assisted), timer, distance (m, km, miles).
-- The AI Creator page exists in code but is not reachable from the app.
 
 ## Brand Commitments
 
