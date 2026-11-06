@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Exercise, ExerciseLog, SetLog, WorkoutLog, WorkoutTemplate } from '../../types';
 import { generateId } from '../../utils/helpers';
-import { BAR_KG } from '../../utils/training';
+import { barLoad } from '../../utils/units';
 import { ActiveSession, saveActiveSession } from '../../utils/activeSession';
 import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
 import { RestDock, RestNext, RestOverlay } from './RestControl';
@@ -196,7 +196,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   }));
   const stopTimer = (key: string) => { if (timerRunning[key]) toggleTimer(key); };
 
-  // The lock-screen notification names what comes after this rest, e.g. "Bench Press · 85 kg × 6".
+  // The lock-screen notification names what comes after this rest, e.g. "Bench Press · 85 kg × 6" (or lb).
   const nextSetLabel = (completedIndex: number): string | undefined => {
     const k = currentLog.sets.findIndex((s, j) => j !== completedIndex && !s.completed);
     if (k >= 0) return `${currentExercise.name} · ${describeSet(currentExercise, currentLog.sets[k])}`;
@@ -266,7 +266,7 @@ export const ActiveWorkoutPage = ({ template, resume, previousLogs, onUpdateTemp
   const restNext = useMemo<RestNext | null>(() => {
     const make = (ex: Exercise, set: SetLog, title: string): RestNext => ({
       title, load: describeSet(ex, set),
-      barWeight: ex.type === 'reps' && (ex.loadMode || 'external') === 'external' && (set.weight || 0) > BAR_KG ? set.weight : undefined,
+      barWeight: ex.type === 'reps' && (ex.loadMode || 'external') === 'external' && barLoad(set.weight) === 'loaded' ? set.weight : undefined,
     });
     if (!currentExercise || !currentLog) return null;
     if (currentIndex >= 0) return make(currentExercise, currentLog.sets[currentIndex], `Set ${currentIndex + 1} of ${currentLog.sets.length}`);

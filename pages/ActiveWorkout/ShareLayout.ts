@@ -1,7 +1,8 @@
 import { format } from 'date-fns';
 import { WorkoutLog } from '../../types';
 import { fonts, theme } from '../../constants/theme';
-import { RecordHit, formatDuration, formatNumber } from '../../utils/training';
+import { RecordHit, formatDuration } from '../../utils/training';
+import { getWeightUnit, unitWord, WeightUnit, weightTotal } from '../../utils/units';
 import { logColor } from '../../utils/workoutColor';
 import { bestSet, recordValue, recordWas, whiteLights } from './SummaryParts';
 
@@ -17,7 +18,7 @@ const P = 72, INNER = CARD_W - P * 2, R = 24;
 export interface ShareData {
   name: string; date: string; fileName: string;
   white: number; verdict: string; verdictDetail: string;
-  duration: string; sets: string; setsLabel: string; volume: string;
+  duration: string; sets: string; setsLabel: string; volume: string; unit: WeightUnit;
   records: { name: string; value: string; was: string }[];
   exercises: { name: string; color: string; best: string; skipped: boolean }[];
 }
@@ -37,7 +38,7 @@ export const buildShareData = (log: WorkoutLog, s: { doneSets: number; totalSets
     fileName: `flextrack-${slug}-${format(d, 'yyyy-MM-dd')}.png`,
     duration: formatDuration(s.duration),
     sets: String(s.doneSets), setsLabel: complete ? 'Sets' : `of ${s.totalSets} sets`,
-    volume: formatNumber(s.volume),
+    volume: weightTotal(s.volume), unit: getWeightUnit(),
     records: s.records.map(r => ({ name: r.exerciseName, value: recordValue(r), was: r.kind === 'oneRM' ? `est. 1RM ${recordWas(r)}` : recordWas(r) })),
     exercises: log.exercises.map(e => ({
       name: e.exerciseName, color: logColor(log),
@@ -49,7 +50,7 @@ export const buildShareData = (log: WorkoutLog, s: { doneSets: number; totalSets
 // What a screen reader hears for the card image.
 export const describeShare = (d: ShareData) => [
   `${d.name}, ${d.date}.`, `${d.verdict}: ${d.verdictDetail.toLowerCase()}.`,
-  `Duration ${d.duration}, ${d.sets} ${d.setsLabel === 'Sets' ? 'sets' : d.setsLabel}, volume ${d.volume} kilograms.`,
+  `Duration ${d.duration}, ${d.sets} ${d.setsLabel === 'Sets' ? 'sets' : d.setsLabel}, volume ${d.volume} ${unitWord(d.unit)}.`,
   d.records.length ? `${d.records.length === 1 ? 'New record' : `${d.records.length} records`}: ${d.records.map(r => `${r.name} ${r.value}`).join(', ')}.` : '',
   d.exercises.map(e => `${e.name}${e.best ? ` ${e.best.replace('×', 'by')}` : e.skipped ? ' skipped' : ''}`).join(', '),
 ].filter(Boolean).join(' ');
@@ -88,7 +89,7 @@ export const layoutCard = (d: ShareData): Op[] => {
   const scores: { runs: Run[]; label: string }[] = [
     { runs: [run(d.duration, d.duration.length > 6 ? 72 : 88, fonts.display, c.text)], label: 'Duration' },
     { runs: [run(d.sets, 88, fonts.display, c.text)], label: d.setsLabel },
-    { runs: [run(d.volume, d.volume.length > 6 ? 72 : 88, fonts.display, c.text), run(' kg', 44, fonts.display, c.textMuted)], label: 'Volume' },
+    { runs: [run(d.volume, d.volume.length > 6 ? 72 : 88, fonts.display, c.text), run(` ${d.unit}`, 44, fonts.display, c.textMuted)], label: 'Volume' },
   ];
   scores.forEach((s, i) => {
     const x = P + cell * i;

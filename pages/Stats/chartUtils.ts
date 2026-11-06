@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { theme } from '../../constants/theme';
+import { getWeightUnit } from '../../utils/units';
 import { formatTime } from '../../utils/time';
 
 export const DAY_MS = 86_400_000;
@@ -32,9 +33,10 @@ export const shortDate = (t: number, withYear = false) =>
 
 const clock = (minutes: number) => formatTime(Math.round(minutes * 60));
 
-// A metric value split into the display number and its unit, e.g. { value: '112.5', unit: 'kg' }.
+// A metric value split into the display number and its unit, e.g. { value: '112.5', unit: 'kg' }. Weights arrive already
+// in the lifter's unit (see metricValue).
 export const formatMetric = (key: string, v: number): { value: string; unit: string } => {
-  if (key === 'weight' || key === 'oneRM' || key === 'assistance') return { value: trimNumber(v, 1), unit: 'kg' };
+  if (key === 'weight' || key === 'oneRM' || key === 'assistance') return { value: trimNumber(v, 1), unit: getWeightUnit() };
   if (key === 'bestReps' || key === 'totalReps') return { value: String(Math.round(v)), unit: Math.round(v) === 1 ? 'rep' : 'reps' };
   if (key === 'distance') return { value: trimNumber(v, 2), unit: 'km' };
   if (key === 'pace') return { value: clock(v), unit: '/km' };

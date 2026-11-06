@@ -5,6 +5,7 @@ import { ExerciseLog } from '../../types';
 import { theme } from '../../constants/theme';
 import { CATEGORY_LABEL, RecordHit, exerciseCategory, formatDecimal as num } from '../../utils/training';
 import { formatTime } from '../../utils/time';
+import { getWeightUnit, toUnit, weightNumber } from '../../utils/units';
 
 const c = theme.colors;
 
@@ -30,8 +31,10 @@ export const JudgeLights = ({ scales, opacity, white }: { scales: Animated.Value
 );
 
 export const RECORD_KIND: Record<RecordHit['kind'], string> = { weight: 'Heaviest set', oneRM: 'Best estimated 1RM', reps: 'Most reps' };
-export const recordValue = (r: RecordHit) => r.kind === 'reps' ? `${r.value} reps` : `${num(r.value)} kg`;
-export const recordWas = (r: RecordHit) => r.kind === 'reps' ? `was ${r.previous}` : `was ${num(r.previous)} kg`;
+// Records read to a tenth in the lifter's unit: an estimated 1RM of 100.3 kg is 221.1 lb, not 221.12.
+const recordWeight = (kg: number) => `${num(Math.round(toUnit(kg) * 10) / 10)} ${getWeightUnit()}`;
+export const recordValue = (r: RecordHit) => r.kind === 'reps' ? `${r.value} reps` : recordWeight(r.value);
+export const recordWas = (r: RecordHit) => r.kind === 'reps' ? `was ${r.previous}` : `was ${recordWeight(r.previous)}`;
 
 // A record is a yellow plate: the whole band is the colour, the number is the scoreboard.
 export const RecordCard = ({ record }: { record: RecordHit }) => (
@@ -53,7 +56,7 @@ export const bestSet = (e: ExerciseLog): string => {
   const loaded = e.loadMode !== 'bodyweight' && e.loadMode !== 'assisted';
   if (!loaded) return `${Math.max(0, ...done.map(s => s.reps || 0))} reps`;
   const best = done.reduce((a, s) => ((s.weight || 0) > (a.weight || 0) || ((s.weight || 0) === (a.weight || 0) && (s.reps || 0) > (a.reps || 0)) ? s : a), done[0]);
-  return best.weight ? `${num(best.weight)} × ${best.reps || 0}` : `${best.reps || 0} reps`;
+  return best.weight ? `${weightNumber(best.weight)} × ${best.reps || 0}` : `${best.reps || 0} reps`;
 };
 
 export const ExerciseRow = ({ exercise, first, color }: { exercise: ExerciseLog; first: boolean; color: string }) => {

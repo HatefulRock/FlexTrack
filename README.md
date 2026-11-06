@@ -93,7 +93,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 - Compare a set with values from the previous matching session, and get a suggested weight increase when you hit your targets
 - Mark sets individually or complete all sets in an exercise
 - Update an exercise's default weight during a session
-- See the bar loaded plate by plate for the working weight, with ±2.5 kg steppers
+- See the bar loaded plate by plate for the working weight, with ±2.5 kg steppers (±5 lb, a 45 lb bar and pound plates when training in pounds)
 - Run per-set timers and an adjustable rest countdown with vibration feedback and a notification when rest ends
 - Keep the screen awake and guard against accidentally leaving a session
 - Review duration, sets, volume against last time, new records and per-exercise results after saving, and share the session as an image
@@ -120,6 +120,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 - Shows a 12-week heat strip of weekly sets per workout, in each workout's colour, with quick-logged cardio and other activity in their own rows
 - Charts progression for a selected exercise, with records marked
 - Chooses metrics for each modality, including weight, estimated 1RM, reps, assistance, duration, distance, and pace
+- Switch every weight in the app between kilograms and pounds from the **kg / lb** control in the Progress header. A new install in the US starts in pounds, and everything is stored in kilograms, so switching never changes your data
 - Logs height and body weight: the big **Latest weight** number is a readout, and tapping it jumps to the log field below
 - Explains BMI in words and charts weight over 30 days, 90 days or all time
 
@@ -182,6 +183,7 @@ FlexTrack/
 │   ├── storage.ts              # Storage layout, migration and the sample workout
 │   ├── sanitize.ts             # Validation and bounds for stored data
 │   ├── workoutColor.ts         # The workout colour palette and how logs pick a colour
+│   ├── units.ts                # kg / lb display, input, steps, bar and plates
 │   ├── training.ts             # Records, volume, streak and plate maths
 │   ├── progress.ts             # Modality-aware progress calculations
 │   ├── progression.ts          # Next-session weight suggestions
@@ -394,7 +396,7 @@ Flows match on accessibility labels, so renaming a label means updating the flow
 
 **State management** is intentionally simple: local React state in `App.tsx` drives the current screen and active session. There is no Redux, Zustand, or application context.
 
-**Persistence** is handled by `useWorkoutDataSafe` and `utils/storage.ts`, which validate and bound stored values and serialize writes. Workouts live in `workout-templates`, the profile in `user-profile`, and each session in its own `workout-log:<id>` key, so no single value outgrows Android's per-row read limit. Older installs that kept every session in `workout-logs` are migrated on launch. `onboarding-seen` records that the tour was shown. A stored value that can't be read is left untouched, never overwritten, and included in exports so it can be recovered. No sync layer or remote database is involved.
+**Persistence** is handled by `useWorkoutDataSafe` and `utils/storage.ts`, which validate and bound stored values and serialize writes. Workouts live in `workout-templates`, the profile in `user-profile`, and each session in its own `workout-log:<id>` key, so no single value outgrows Android's per-row read limit. Older installs that kept every session in `workout-logs` are migrated on launch. `onboarding-seen` records that the tour was shown, and `weight-unit` holds kg or lb (`utils/units.ts` converts at display and input; stored weights are always kilograms). A stored value that can't be read is left untouched, never overwritten, and included in exports so it can be recovered. No sync layer or remote database is involved.
 
 **Performance** — expensive derivations are memoized, and the chart-heavy Stats screen is loaded only when opened.
 

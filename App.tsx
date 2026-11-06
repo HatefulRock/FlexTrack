@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { View, StyleSheet, StatusBar, ActivityIndicator, BackHandler, Platform } from 'react-native';
 import { theme } from './constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -13,8 +13,10 @@ import { ActiveSession, clearActiveSession, loadActiveSession } from './utils/ac
 import { buildExport, shareExport } from './utils/exportData';
 import { describePlan, ImportedData, ImportError, importProblemMessage, isEmptyPlan, parseImport, planImport } from './utils/importData';
 import { pickBackupText } from './utils/pickBackup';
+import { getWeightUnit, setWeightUnit, subscribeWeightUnit, unitForLocale, WeightUnit } from './utils/units';
+import { deviceLocale, loadWeightUnit, saveWeightUnit } from './utils/unitSetting';
 import { clearSharedFiles } from './utils/sharedFiles';
-import { SAMPLE_ROUTINE } from './utils/storage';
+import { sampleRoutine } from './utils/storage';
 import { Onboarding, loadOnboardingSeen, markOnboardingSeen } from './components/Onboarding';
 
 // Layout
@@ -29,6 +31,7 @@ import { WorkoutSummaryPage } from './pages/ActiveWorkout/WorkoutSummaryPage';
 import { HistoryPage } from './pages/History/HistoryPage';
 import { QuickLogPage } from './pages/QuickLog/QuickLogPage';
 
+type StatsTab = 'training' | 'body';
 const StatsPage = lazy(() => import('./pages/Stats/StatsPage').then(module => ({ default: module.StatsPage })));
 
 const App = () => {
@@ -44,12 +47,17 @@ const App = () => {
   // null until read; the tour only opens for a brand-new install, never over an upgrade with data in it.
   const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+  const [statsTab, setStatsTab] = useState<StatsTab>('training');
+  // undefined until read, null when never chosen. Screens wait for it so weights never flash in the wrong unit.
+  const [storedUnit, setStoredUnit] = useState<WeightUnit | null | undefined>(undefined);
+  const unit = useSyncExternalStore(subscribeWeightUnit, getWeightUnit);
   const fontsReady = useAppFonts();
 
   useEffect(() => {
     clearSharedFiles();
     void loadActiveSession().then(session => { setSavedSession(session); setSessionChecked(true); });
     void loadOnboardingSeen().then(setOnboardingSeen);
+    void loadWeightUnit().then(stored => { if (stored) setWeightUnit(stored); setStoredUnit(stored); });
   }, []);
 
   const {
@@ -65,7 +73,18 @@ const App = () => {
     importData
   } = useWorkoutData();
   const health = useHealthSync();
-  useWidgetSync(templates, logs, !loading);
+  useWidgetSync(templates, logs, unit, !loading && storedUnit !== undefined);
+
+  // First launch with no unit saved: a new install starts in its region's unit (pounds in the US); an existing install,
+  // whose numbers were always kilograms, stays in kilograms. Either way it is saved, so it never changes by itself.
+  useEffect(() => {
+    if (loading || storedUnit !== null) return;
+    const hasData = templates.length > 0 || logs.length > 0 || userProfile.weightLogs.length > 0 || Object.keys(unreadable).length > 0;
+    const chosen = hasData ? 'kg' : unitForLocale(deviceLocale());
+    setWeightUnit(chosen); setStoredUnit(chosen); void saveWeightUnit(chosen);
+  }, [loading, storedUnit, templates.length, logs.length, userProfile.weightLogs.length, unreadable]);
+
+  const handleUnitChange = (next: WeightUnit) => { setWeightUnit(next); setStoredUnit(next); void saveWeightUnit(next); };
 
   // The editor and the activity form have an on-screen back button; the hardware key does the same
   // instead of closing the app. Active workout and the other tabs keep their own behaviour.
@@ -78,7 +97,7 @@ const App = () => {
     return () => handler.remove();
   }, [view]);
 
-  const ready = !loading && fontsReady && sessionChecked && onboardingSeen !== null;
+  const ready = !loading && fontsReady && sessionChecked && onboardingSeen !== null && !!storedUnit;
   const hasUnreadable = Object.keys(unreadable).length > 0;
   const firstRun = ready && !onboardingSeen && !hasUnreadable && templates.length === 0 && logs.length === 0;
   useEffect(() => { if (firstRun) setTourOpen(true); }, [firstRun]);
@@ -150,7 +169,7 @@ const App = () => {
   const closeTour = () => { setTourOpen(false); setOnboardingSeen(true); void markOnboardingSeen(); };
 
   const handleAddSample = () => {
-    void saveTemplate(SAMPLE_ROUTINE).catch(() => showAlert('Save failed', 'The sample workout could not be written to local storage.'));
+    void saveTemplate(sampleRoutine(unit)).catch(() => showAlert('Save failed', 'The sample workout could not be written to local storage.'));
   };
 
   const handleExport = () => {
@@ -199,7 +218,8 @@ const App = () => {
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" />
 
-        <View style={[styles.content, isFullScreen && styles.fullScreenContent]}>
+        {/* Keyed by the weight unit: screens read it while rendering, so a change remounts them in the new unit. */}
+        <View key={unit} style={[styles.content, isFullScreen && styles.fullScreenContent]}>
           
           {view === 'dashboard' && (
               <DashboardPage 
@@ -268,7 +288,11 @@ const App = () => {
                   logs={logs} 
                   templates={templates}
                   userProfile={userProfile} 
-                  setUserProfile={setUserProfile} 
+                  setUserProfile={setUserProfile}
+                  unit={unit}
+                  onUnitChange={handleUnitChange}
+                  tab={statsTab}
+                  onTabChange={setStatsTab}
               />
             </Suspense>
           )}

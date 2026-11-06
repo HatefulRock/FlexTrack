@@ -7,6 +7,7 @@ import { Button, Chip, PressableScale, SectionHeader } from '../../components/ui
 import { theme } from '../../constants/theme';
 import { DAY_MS, shortDate, trimNumber } from './chartUtils';
 import { LineChartSvg } from './LineChartSvg';
+import { fromUnit, getWeightUnit, toUnit, unitWord } from '../../utils/units';
 
 const RANGES = [{ key: '30', label: '30d', days: 30 }, { key: '90', label: '90d', days: 90 }, { key: 'all', label: 'All', days: 0 }] as const;
 type RangeKey = typeof RANGES[number]['key'];
@@ -47,20 +48,22 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
     const days = RANGES.find(r => r.key === range)!.days;
     const from = days ? Date.now() - days * DAY_MS : -Infinity;
     // Moving average over the whole history, so the first points of a short range still average 7 real entries.
-    const avg = validLogs.length >= AVG_N ? validLogs.map((l, i) => i < AVG_N - 1 ? null : { t: l.date, value: validLogs.slice(i - AVG_N + 1, i + 1).reduce((s, x) => s + x.weight, 0) / AVG_N }).filter((p): p is { t: number; value: number } => !!p && p.t >= from) : [];
-    const points = validLogs.filter(l => l.date >= from).map(l => ({ t: l.date, value: l.weight }));
+    const avg = validLogs.length >= AVG_N ? validLogs.map((l, i) => i < AVG_N - 1 ? null : { t: l.date, value: toUnit(validLogs.slice(i - AVG_N + 1, i + 1).reduce((s, x) => s + x.weight, 0) / AVG_N) }).filter((p): p is { t: number; value: number } => !!p && p.t >= from) : [];
+    // Charted in the lifter's unit; entries stay in kilograms.
+    const points = validLogs.filter(l => l.date >= from).map(l => ({ t: l.date, value: toUnit(l.weight) }));
     return { points, average: avg.length > 1 && points.length > 1 ? avg : undefined };
   }, [validLogs, range]);
 
   const saveWeight = async () => {
-    const value = parsePositive(weight, MAX_WEIGHT_KG);
-    if (value === null) { setMessage({ text: `Enter a weight in kg, above 0 and up to ${MAX_WEIGHT_KG}.`, error: true }); return; }
+    const unit = getWeightUnit(), max = Math.round(toUnit(MAX_WEIGHT_KG));
+    const value = parsePositive(weight, max);
+    if (value === null) { setMessage({ text: `Enter a weight in ${unit}, above 0 and up to ${max}.`, error: true }); return; }
     setSaving(true); setMessage(null);
-    const entry: BodyMetricLog = { date: Date.now(), weight: value };
+    const entry: BodyMetricLog = { date: Date.now(), weight: fromUnit(value) };
     try {
       await setUserProfile({ ...userProfile, weightLogs: [...validLogs, entry].sort((a, b) => a.date - b.date) });
       setWeight(''); Keyboard.dismiss(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setMessage({ text: `Saved ${trimNumber(value, 1)} kg`, error: false });
+      setMessage({ text: `Saved ${trimNumber(value, 1)} ${unit}`, error: false });
     } catch { setMessage({ text: 'Could not save your weight. Try again.', error: true }); }
     finally { setSaving(false); }
   };
@@ -77,17 +80,17 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
   const first = points[0], last = points[points.length - 1];
   const diff = points.length > 1 ? last.value - first.value : 0;
   const days = points.length > 1 ? Math.max(1, Math.round((last.t - first.t) / DAY_MS)) : 0;
-  const deltaText = points.length > 1 ? (Math.abs(diff) < 0.05 ? `No change in ${dayCount(days)}` : `${diff > 0 ? '+' : '−'}${trimNumber(Math.abs(diff), 1)} kg in ${dayCount(days)}`) : '';
-  const describe = points.length > 1 ? `Bodyweight, ${points.length} entries from ${trimNumber(first.value, 1)} kg on ${shortDate(first.t, true)} to ${trimNumber(last.value, 1)} kg on ${shortDate(last.t, true)}.` : '';
+  const deltaText = points.length > 1 ? (Math.abs(diff) < 0.05 ? `No change in ${dayCount(days)}` : `${diff > 0 ? '+' : '−'}${trimNumber(Math.abs(diff), 1)} ${getWeightUnit()} in ${dayCount(days)}`) : '';
+  const describe = points.length > 1 ? `Bodyweight, ${points.length} entries from ${trimNumber(first.value, 1)} ${unitWord()} on ${shortDate(first.t, true)} to ${trimNumber(last.value, 1)} ${unitWord()} on ${shortDate(last.t, true)}.` : '';
 
   return <View style={styles.container}>
     <View style={styles.card}>
       <View style={styles.scoreRow}>
         {/* Testers read the big number as the place to type: it is a readout, and tapping it jumps to the log field below. */}
-        <PressableScale scaleTo={0.98} accessibilityRole="button" accessibilityLabel={current ? `Latest weight ${trimNumber(current, 1)} kilograms. Log a new weight` : 'No weight logged. Log your weight'}
+        <PressableScale scaleTo={0.98} accessibilityRole="button" accessibilityLabel={current ? `Latest weight ${trimNumber(toUnit(current), 1)} ${unitWord()}. Log a new weight` : 'No weight logged. Log your weight'}
           onPress={() => weightInput.current?.focus()} style={styles.scoreCell}>
           <Text style={styles.caption}>Latest weight</Text>
-          <Text style={styles.score}>{current ? trimNumber(current, 1) : '–'}<Text style={styles.scoreUnit}> kg</Text></Text>
+          <Text style={styles.score}>{current ? trimNumber(toUnit(current), 1) : '–'}<Text style={styles.scoreUnit}> {getWeightUnit()}</Text></Text>
         </PressableScale>
         <Text style={styles.scoreSep}>·</Text>
         <View style={styles.scoreCell}>
@@ -112,8 +115,8 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
       <View style={styles.card}>
         <Text style={styles.logHint}>{latest ? 'Weigh in and enter it here. Each entry adds a point to your trend.' : 'Enter your bodyweight here to start tracking it. Each entry adds a point to your trend.'}</Text>
         <View style={styles.controls}>
-          <TextInput ref={weightInput} accessibilityLabel="Weight in kilograms" value={weight} onChangeText={setWeight} onSubmitEditing={saveWeight} keyboardType="decimal-pad" returnKeyType="done"
-            placeholder="e.g. 75.5 kg" placeholderTextColor={theme.colors.textSubtle} selectionColor={theme.colors.text} style={styles.weightInput} />
+          <TextInput ref={weightInput} accessibilityLabel={`Weight in ${unitWord()}`} value={weight} onChangeText={setWeight} onSubmitEditing={saveWeight} keyboardType="decimal-pad" returnKeyType="done"
+            placeholder={getWeightUnit() === 'lb' ? 'e.g. 165.5 lb' : 'e.g. 75.5 kg'} placeholderTextColor={theme.colors.textSubtle} selectionColor={theme.colors.text} style={styles.weightInput} />
           <Button label="Log weight" onPress={saveWeight} loading={saving} style={styles.logButton} />
         </View>
         {message && <Text accessibilityRole={message.error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[styles.message, message.error && styles.error]}>{message.text}</Text>}
@@ -126,7 +129,7 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
         {validLogs.length ? <>
           <View style={styles.ranges}>{RANGES.map(r => <View key={r.key} style={styles.rangeCell}><Chip label={r.label} active={range === r.key} accessibilityLabel={r.days ? `Last ${r.days} days` : 'All entries'} onPress={() => setRange(r.key)} /></View>)}</View>
           {points.length > 1 ? <>
-            <LineChartSvg points={points} average={average} unit="kg" describe={describe} height={210} />
+            <LineChartSvg points={points} average={average} unit={getWeightUnit()} describe={describe} height={210} />
             <View style={styles.footer}>
               <Text style={styles.delta}>{deltaText}</Text>
               {average && <View style={styles.legend}>
@@ -135,7 +138,7 @@ export const BodyTab = ({ userProfile, setUserProfile }: { userProfile: UserProf
               </View>}
             </View>
           </> : <View style={styles.empty}>
-            <Text style={styles.emptyText}>{points.length === 1 ? `One entry in this range (${trimNumber(points[0].value, 1)} kg). Log another to draw a line.` : 'No entries in this range.'}</Text>
+            <Text style={styles.emptyText}>{points.length === 1 ? `One entry in this range (${trimNumber(points[0].value, 1)} ${getWeightUnit()}). Log another to draw a line.` : 'No entries in this range.'}</Text>
           </View>}
         </> : <View style={styles.empty}>
           <Scale size={28} color={theme.colors.textMuted} strokeWidth={1.75} />

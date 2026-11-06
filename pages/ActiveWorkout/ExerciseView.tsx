@@ -4,6 +4,7 @@ import { Exercise } from '../../types';
 import { theme } from '../../constants/theme';
 import { formatTime } from '../../utils/time';
 import { formatDecimal } from '../../utils/training';
+import { formatWeight } from '../../utils/units';
 
 const n = (v?: number) => formatDecimal(v ?? 0);
 
@@ -13,8 +14,8 @@ export const targetLabel = (exercise: Exercise) => {
   if (exercise.type === 'distance') return `${sets > 1 ? `${sets} × ` : ''}${n(exercise.targetDistance)} ${exercise.targetDistanceUnit || 'km'}`;
   if (exercise.type === 'timer') return `${sets} × ${formatTime(exercise.targetDurationSeconds || 0)}`;
   if (exercise.loadMode === 'bodyweight') return `${sets} × ${exercise.targetReps || 0}`;
-  if (exercise.loadMode === 'assisted') return `${sets} × ${exercise.targetReps || 0} with ${n(exercise.targetWeight)} kg assist`;
-  return `${sets} × ${exercise.targetReps || 0} at ${n(exercise.targetWeight)} kg`;
+  if (exercise.loadMode === 'assisted') return `${sets} × ${exercise.targetReps || 0} with ${formatWeight(exercise.targetWeight ?? 0)} assist`;
+  return `${sets} × ${exercise.targetReps || 0} at ${formatWeight(exercise.targetWeight ?? 0)}`;
 };
 
 export const ExerciseView = ({ exercise, index, total, setNumber, setCount, color }: { exercise: Exercise; index: number; total: number; setNumber?: number; setCount?: number; color: string }) => {

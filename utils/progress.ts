@@ -1,4 +1,5 @@
 import { ExerciseLog, WorkoutLog } from '../types';
+import { getWeightUnit, toUnit } from './units';
 
 export type ProgressKind = 'external' | 'bodyweight' | 'assisted' | 'distance' | 'timer';
 export interface MetricOption { key: string; label: string; subtitle: string; unit: string; better: 'high' | 'low'; }
@@ -12,15 +13,15 @@ export const resolveKind = (exercise: ExerciseLog): ProgressKind => {
 
 export const metricOptions = (kind: ProgressKind): MetricOption[] => ({
   external: [
-    { key: 'weight', label: 'Weight', subtitle: 'Heaviest load', unit: 'kg', better: 'high' },
-    { key: 'oneRM', label: '1RM', subtitle: 'Estimated 1 rep max', unit: 'kg', better: 'high' },
+    { key: 'weight', label: 'Weight', subtitle: 'Heaviest load', unit: getWeightUnit(), better: 'high' },
+    { key: 'oneRM', label: '1RM', subtitle: 'Estimated 1 rep max', unit: getWeightUnit(), better: 'high' },
   ],
   bodyweight: [
     { key: 'bestReps', label: 'Best set', subtitle: 'Most reps in one set', unit: ' reps', better: 'high' },
     { key: 'totalReps', label: 'Total reps', subtitle: 'Completed reps per session', unit: ' reps', better: 'high' },
   ],
   assisted: [
-    { key: 'assistance', label: 'Assistance', subtitle: 'Lowest assistance used', unit: 'kg', better: 'low' },
+    { key: 'assistance', label: 'Assistance', subtitle: 'Lowest assistance used', unit: getWeightUnit(), better: 'low' },
     { key: 'bestReps', label: 'Best set', subtitle: 'Most reps in one set', unit: ' reps', better: 'high' },
   ],
   distance: [
@@ -34,16 +35,17 @@ export const metricOptions = (kind: ProgressKind): MetricOption[] => ({
 
 const distanceKm = (value: number, unit: ExerciseLog['distanceUnit']) => unit === 'm' ? value / 1000 : unit === 'miles' ? value * 1.609344 : value;
 
+// Weights (weight, 1RM, assistance) come back in the lifter's unit, ready to chart; distance in km, pace in min/km.
 export const metricValue = (exercise: ExerciseLog, key: string): number | null => {
   const sets = exercise.sets.filter(s => s.completed);
   if (!sets.length) return null;
-  if (key === 'weight') return Math.max(...sets.map(s => s.weight || 0)) || null;
-  if (key === 'oneRM') return Math.max(...sets.map(s => (s.weight || 0) * (1 + (s.reps || 0) / 30))) || null;
+  if (key === 'weight') return toUnit(Math.max(...sets.map(s => s.weight || 0))) || null;
+  if (key === 'oneRM') return toUnit(Math.max(...sets.map(s => (s.weight || 0) * (1 + (s.reps || 0) / 30)))) || null;
   if (key === 'bestReps') return Math.max(...sets.map(s => s.reps || 0)) || null;
   if (key === 'totalReps') return sets.reduce((n, s) => n + (s.reps || 0), 0) || null;
   if (key === 'assistance') {
     const values = sets.map(s => s.weight || 0).filter(Boolean);
-    return values.length ? Math.min(...values) : null;
+    return values.length ? toUnit(Math.min(...values)) : null;
   }
   if (key === 'distance') return Math.max(...sets.map(s => distanceKm(s.distance || 0, exercise.distanceUnit))) || null;
   if (key === 'pace') {

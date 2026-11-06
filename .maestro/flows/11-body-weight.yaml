@@ -1,10 +1,12 @@
-# Body tab: log weight, reject bad input, set height and see BMI.
+# Body tab: log weight, reject bad input, set height and see BMI, switch to pounds and back.
 appId: com.HatefulRock.flextrack
 tags: [body, edge]
 ---
 - runFlow: ../subflows/launch-clean.yaml
 - tapOn: "Progress"
 - tapOn: "Body"
+# A new install follows the device region (pounds in the US); this flow works in kilograms.
+- tapOn: "Show weights in kilograms"
 - tapOn: "Weight in kilograms"
 - inputText: "0"
 - runFlow: ../subflows/hide-keyboard.yaml
@@ -27,6 +29,11 @@ tags: [body, edge]
 - runFlow: ../subflows/hide-keyboard.yaml
 - pressKey: Enter
 - assertVisible: "Enter a weight in kg.*"
+# The same entry in pounds, staying on Body; stored kilograms are unchanged when switching back
+- tapOn: "Show weights in pounds"
+- assertVisible: "Latest weight 179.5 pounds.*"
+- tapOn: "Show weights in kilograms"
+- assertVisible: "Latest weight 81.4 kilograms.*"
 # Persists across a restart
 - stopApp
 - launchApp

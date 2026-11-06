@@ -31,7 +31,7 @@ Local-first and account-free: every routine, log and body metric lives on the de
 ## Capabilities and Constraints
 
 - React Native 0.88 + Expo 58, TypeScript, AsyncStorage persistence, manual view-state navigation in `App.tsx`.
-- Weight units: kilograms only.
+- Weight units: kilograms or pounds, chosen in the Progress header (a new US install starts in pounds). Everything is stored in kilograms; pounds bring a 45 lb bar, pound plates and 5 lb steps. Height stays in centimetres.
 - Exercise types: reps (weighted, bodyweight, assisted), timer, distance (m, km, miles).
 
 ## Brand Commitments

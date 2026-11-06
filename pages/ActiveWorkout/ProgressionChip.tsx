@@ -5,22 +5,23 @@ import { Exercise } from '../../types';
 import { theme } from '../../constants/theme';
 import { PressableScale } from '../../components/ui/Primitives';
 import { showAlert } from '../../components/ui/Dialog';
-import { PROGRESSION_STEP_KG, ProgressionSuggestion } from '../../utils/progression';
-import { formatDecimal as kg } from '../../utils/training';
+import { ProgressionSuggestion } from '../../utils/progression';
+import { formatDecimal } from '../../utils/training';
+import { formatWeight, getWeightUnit, unitWord, weightStep } from '../../utils/units';
 
 // The step this suggestion takes, as printed, spoken and offered in the dialog.
 const stepCopy = (exercise: Exercise) => {
-  const mode = exercise.loadMode || 'external', step = kg(PROGRESSION_STEP_KG);
+  const mode = exercise.loadMode || 'external', step = formatDecimal(weightStep()), unit = getWeightUnit();
   if (mode === 'bodyweight') return { mark: '+1 rep', spoken: 'add 1 rep', keep: 'Keep +1 rep', revert: 'Use last reps' };
-  if (mode === 'assisted') return { mark: `−${step} kg`, spoken: `reduce assistance by ${step} kilograms`, keep: `Keep −${step} kg assist`, revert: 'Use last assistance' };
-  return { mark: `+${step} kg`, spoken: `add ${step} kilograms`, keep: `Keep +${step} kg`, revert: 'Use last weight' };
+  if (mode === 'assisted') return { mark: `−${step} ${unit}`, spoken: `reduce assistance by ${step} ${unitWord()}`, keep: `Keep −${step} ${unit} assist`, revert: 'Use last assistance' };
+  return { mark: `+${step} ${unit}`, spoken: `add ${step} ${unitWord()}`, keep: `Keep +${step} ${unit}`, revert: 'Use last weight' };
 };
 
 const todayCopy = (exercise: Exercise, s: ProgressionSuggestion) => {
   const mode = exercise.loadMode || 'external';
   if (mode === 'bodyweight') return `Today: ${s.reps} reps a set.`;
-  if (mode === 'assisted') return `Today: ${s.reps} reps with ${kg(s.weight ?? 0)} kg assist.`;
-  return `Today: ${kg(s.weight ?? 0)} kg × ${s.reps}.`;
+  if (mode === 'assisted') return `Today: ${s.reps} reps with ${formatWeight(s.weight ?? 0)} assist.`;
+  return `Today: ${formatWeight(s.weight ?? 0)} × ${s.reps}.`;
 };
 
 // Chalk-outlined, never yellow: yellow is a record actually set, this is only an offer.

@@ -4,19 +4,20 @@ import { Exercise, ExerciseLog, SetLog, WorkoutLog } from '../../types';
 import { theme } from '../../constants/theme';
 import { formatTime } from '../../utils/time';
 import { differenceInCalendarDays, format } from 'date-fns';
-import { formatDecimal as num, formatNumber } from '../../utils/training';
+import { formatDecimal as num } from '../../utils/training';
+import { formatWeight, getWeightUnit, toUnit, unitWord, weightNumber, weightTotal } from '../../utils/units';
 
 type SetValues = Pick<SetLog, 'reps' | 'weight' | 'distance' | 'durationSeconds'>;
 const MINUS = '−';
 const mode = (e: Exercise) => e.loadMode || 'external';
 
-// Last time's set in shorthand: "85 × 6", "8 reps", "8 reps · 20 kg assist", "1:00", "5 km".
+// Last time's set in shorthand: "85 × 6", "8 reps", "8 reps · 20 kg assist", "1:00", "5 km". Weights in the lifter's unit.
 export const paceLabel = (exercise: Exercise, set: SetValues) => {
   if (exercise.type === 'timer') return formatTime(set.durationSeconds || 0);
   if (exercise.type === 'distance') return `${num(set.distance || 0)} ${exercise.targetDistanceUnit || 'km'}`;
   if (mode(exercise) === 'bodyweight') return `${set.reps || 0} reps`;
-  if (mode(exercise) === 'assisted') return `${set.reps || 0} reps · ${num(set.weight || 0)} kg assist`;
-  return `${num(set.weight || 0)} × ${set.reps || 0}`;
+  if (mode(exercise) === 'assisted') return `${set.reps || 0} reps · ${formatWeight(set.weight || 0)} assist`;
+  return `${weightNumber(set.weight || 0)} × ${set.reps || 0}`;
 };
 
 export interface PacePart { text: string; spoken: string; better: boolean; }
@@ -38,8 +39,9 @@ export const paceDelta = (exercise: Exercise, current: SetValues, last?: SetValu
     return parts;
   }
   if (mode(exercise) !== 'bodyweight') {
-    const d = diff(current.weight, last.weight), assisted = mode(exercise) === 'assisted';
-    if (d) parts.push({ text: `${sign(d)}${num(Math.abs(d))} kg${assisted ? ' assist' : ''}`, spoken: `${d > 0 ? 'up' : 'down'} ${num(Math.abs(d))} kilograms${assisted ? ' of assistance' : ''}`, better: assisted ? d < 0 : d > 0 });
+    // Compared in the lifter's unit, so a 5 lb jump reads +5 lb.
+    const d = diff(toUnit(current.weight || 0), toUnit(last.weight || 0)), assisted = mode(exercise) === 'assisted';
+    if (d) parts.push({ text: `${sign(d)}${num(Math.abs(d))} ${getWeightUnit()}${assisted ? ' assist' : ''}`, spoken: `${d > 0 ? 'up' : 'down'} ${num(Math.abs(d))} ${unitWord()}${assisted ? ' of assistance' : ''}`, better: assisted ? d < 0 : d > 0 });
   }
   const r = diff(current.reps, last.reps);
   if (r) parts.push({ text: `${sign(r)}${Math.abs(r)} ${Math.abs(r) === 1 ? 'rep' : 'reps'}`, spoken: `${r > 0 ? 'up' : 'down'} ${Math.abs(r)} ${Math.abs(r) === 1 ? 'rep' : 'reps'}`, better: r > 0 });
@@ -57,7 +59,7 @@ export const PaceMark = ({ parts, style }: { parts: PacePart[]; style?: TextStyl
 const findExercise = (log: WorkoutLog, e: ExerciseLog) => log.exercises.find(x => x.exerciseId === e.exerciseId) || log.exercises.find(x => x.exerciseName.toLowerCase() === e.exerciseName.toLowerCase());
 const isExternal = (e: ExerciseLog) => (e.exerciseType ?? 'reps') === 'reps' && (e.loadMode || 'external') === 'external';
 
-// Running kg difference against the last session of this routine: completed sets only, set for set, same exercises only.
+// Running volume difference (kilograms) against the last session of this routine: completed sets only, set for set, same exercises only.
 export const routinePace = (logs: ExerciseLog[], previous: WorkoutLog) => {
   let delta = 0, compared = 0;
   logs.forEach(e => {
@@ -83,14 +85,14 @@ export const sessionDayLabel = (at: number, now = Date.now()) => {
   return format(at, 'd MMM');
 };
 
-// Quiet header line: "+240 kg vs last Tuesday", "Even with last Tuesday". Silent until a set can be compared.
+// Quiet header line: "+240 kg vs last Tuesday" (or lb), "Even with last Tuesday". Silent until a set can be compared.
 export const RoutinePace = ({ logs, previous, style }: { logs: ExerciseLog[]; previous: WorkoutLog; style?: TextStyle }) => {
   const { delta, compared } = routinePace(logs, previous);
   if (!compared) return null;
   const when = sessionDayLabel(previous.endTime || previous.startTime);
-  const abs = Math.abs(delta), amount = abs >= 1000 ? formatNumber(abs) : num(abs);
-  const text = delta === 0 ? `Even with ${when}` : `${delta > 0 ? '+' : MINUS}${amount} kg vs ${when}`;
-  const spoken = delta === 0 ? `Even with ${when}` : `${amount} kilograms ${delta > 0 ? 'ahead of' : 'behind'} ${when}`;
+  const abs = Math.abs(delta), amount = toUnit(abs) >= 1000 ? weightTotal(abs) : num(Math.round(toUnit(abs) * 10) / 10);
+  const text = delta === 0 ? `Even with ${when}` : `${delta > 0 ? '+' : MINUS}${amount} ${getWeightUnit()} vs ${when}`;
+  const spoken = delta === 0 ? `Even with ${when}` : `${amount} ${unitWord()} ${delta > 0 ? 'ahead of' : 'behind'} ${when}`;
   return <Text numberOfLines={1} accessibilityLabel={spoken} style={[styles.routine, style, delta > 0 ? styles.better : styles.worse]}>{text}</Text>;
 };
 

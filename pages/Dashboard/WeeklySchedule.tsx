@@ -4,7 +4,8 @@ import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
 import { WorkoutLog, WorkoutTemplate } from '../../types';
 import { theme } from '../../constants/theme';
 import { SectionHeader } from '../../components/ui/Primitives';
-import { formatNumber, logVolume } from '../../utils/training';
+import { logVolume } from '../../utils/training';
+import { getWeightUnit, toUnit, unitWord, weightTotal } from '../../utils/units';
 import { sessionCategories } from '../History/historyModel';
 
 const BAR_MAX = 64, BAR_MIN = 6, STUB = 14;
@@ -18,7 +19,11 @@ type Day = {
 const isCardio = (l: WorkoutLog) => sessionCategories(l).every(s => s.category === 'cardio');
 const minutesOf = (l: WorkoutLog) => (l.endTime ? Math.max(0, l.endTime - l.startTime) / 60000 : 0);
 const barHeight = (value: number, max: number) => Math.max(BAR_MIN, Math.round(BAR_MAX * Math.min(1, value / max)));
-const tonnes = (kg: number) => (kg < 50 ? '<0.1t' : `${(kg / 1000).toFixed(1)}t`);
+// Compact bar labels: "1.2t" in kilograms, "2.6k" in pounds.
+const compactVolume = (kg: number) => {
+  const v = toUnit(kg), mark = getWeightUnit() === 'lb' ? 'k' : 't';
+  return v < 50 ? `<0.1${mark}` : `${(v / 1000).toFixed(1)}${mark}`;
+};
 
 const buildWeek = (templates: WorkoutTemplate[], logs: WorkoutLog[], now = new Date()): Day[] => {
   const from = startOfWeek(now);
@@ -40,7 +45,7 @@ const dayLabel = (d: Day, pending: boolean) => {
   const head = `${format(d.date, 'EEEE d')}${d.isToday ? ', today' : ''}`;
   if (d.lifted || d.cardioSessions) {
     const parts = [
-      d.lifted ? (d.volume ? `${formatNumber(d.volume)} kg lifted` : 'lifted') : '',
+      d.lifted ? (d.volume ? `${weightTotal(d.volume)} ${unitWord()} lifted` : 'lifted') : '',
       d.cardioSessions ? (d.cardioMinutes > 0 ? `${Math.round(d.cardioMinutes)} minutes cardio` : 'cardio') : '',
     ].filter(Boolean);
     return `${head}: trained, ${parts.join(', ')}`;
@@ -51,7 +56,7 @@ const dayLabel = (d: Day, pending: boolean) => {
 const DayBars = ({ day: d, pending, maxVolume, maxMinutes }: { day: Day; pending: boolean; maxVolume: number; maxMinutes: number }) => {
   const cardioOnly = !d.lifted && d.cardioSessions > 0;
   const cardioH = d.cardioSessions ? barHeight(d.cardioMinutes, maxMinutes) : 0;
-  const value = d.volume ? tonnes(d.volume) : cardioOnly && d.cardioMinutes > 0 ? `${Math.round(d.cardioMinutes)}m` : '';
+  const value = d.volume ? compactVolume(d.volume) : cardioOnly && d.cardioMinutes > 0 ? `${Math.round(d.cardioMinutes)}m` : '';
   return <View style={styles.barArea}>
     {!!value && <Text style={styles.value} numberOfLines={1}>{value}</Text>}
     {cardioOnly ? <View style={[styles.bar, styles.cardioBar, { height: cardioH }]} />
