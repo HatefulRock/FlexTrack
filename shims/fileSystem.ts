@@ -1,4 +1,4 @@
-// Web build: exports download a Blob instead of writing a file, so these are never called.
+// Web build: exports download a Blob and restores use a file input instead, so these are never called.
 export const Paths = { cache: '' };
 export class Directory {
   exists = false;
