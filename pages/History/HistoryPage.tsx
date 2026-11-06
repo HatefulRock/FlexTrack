@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
-import { CalendarDays, Download, HeartPulse, History as HistoryIcon } from 'lucide-react-native';
+import { CalendarDays, DatabaseBackup, HeartPulse, History as HistoryIcon } from 'lucide-react-native';
 import { format, isSameDay } from 'date-fns';
 import { Header } from '../../components/layout/Header';
 import { Chip, EmptyState, PressableScale, SectionHeader } from '../../components/ui/Primitives';
@@ -13,7 +13,7 @@ import { sessionMs } from './historyModel';
 
 export interface HealthSyncAction { name: string; enabled: boolean; onPress: () => void }
 
-export const HistoryPage = ({ logs, templates, onExport, health }: { logs: WorkoutLog[]; templates?: WorkoutTemplate[]; onExport: () => void; health?: HealthSyncAction }) => {
+export const HistoryPage = ({ logs, templates, onBackup, health }: { logs: WorkoutLog[]; templates?: WorkoutTemplate[]; onBackup: () => void; health?: HealthSyncAction }) => {
   const [filter, setFilter] = useState('All'), [selected, setSelected] = useState<Date | null>(null);
   const options = useMemo(() => ['All', ...Array.from(new Set(logs.map(l => l.templateName)))], [logs]);
   // Sessions logged without a duration don't pull the average towards zero.
@@ -38,9 +38,9 @@ export const HistoryPage = ({ logs, templates, onExport, health }: { logs: Worko
       {health && <PressableScale accessibilityRole="button" accessibilityLabel={`${health.name} sync, ${health.enabled ? 'on' : 'off'}`} onPress={health.onPress} scaleTo={0.92} style={[styles.health, health.enabled && styles.healthOn]}>
         <HeartPulse size={20} color={health.enabled ? theme.colors.onPrimary : theme.colors.text} />
       </PressableScale>}
-      <PressableScale accessibilityRole="button" accessibilityLabel="Export all data" onPress={onExport} scaleTo={0.92} style={styles.export}>
-        <Download size={20} color={theme.colors.text} />
-        <Text style={styles.exportText}>Export</Text>
+      <PressableScale accessibilityRole="button" accessibilityLabel="Back up or restore data" onPress={onBackup} scaleTo={0.92} style={styles.export}>
+        <DatabaseBackup size={20} color={theme.colors.text} />
+        <Text style={styles.exportText}>Backup</Text>
       </PressableScale>
     </>} />
     <View style={[styles.content, styles.top]}>

@@ -20,10 +20,10 @@ const nextScheduled = (templates: WorkoutTemplate[], now: Date) => {
 
 interface Props {
   todaysWorkouts: WorkoutTemplate[]; templates?: WorkoutTemplate[]; logs?: WorkoutLog[];
-  onStartWorkout: (t: WorkoutTemplate) => void; onBrowse: () => void; onCreate?: () => void; onAddSample?: () => void; secondaryStart?: boolean;
+  onStartWorkout: (t: WorkoutTemplate) => void; onBrowse: () => void; onCreate?: () => void; onAddSample?: () => void; onRestore?: () => void; secondaryStart?: boolean;
 }
 
-export const TodayFocusCard = ({ todaysWorkouts, templates = todaysWorkouts, logs = [], onStartWorkout, onBrowse, onCreate, onAddSample, secondaryStart }: Props) => {
+export const TodayFocusCard = ({ todaysWorkouts, templates = todaysWorkouts, logs = [], onStartWorkout, onBrowse, onCreate, onAddSample, onRestore, secondaryStart }: Props) => {
   const now = new Date();
   const isNew = logs.length === 0;
   const workout = todaysWorkouts[0] ?? (isNew ? templates[0] : undefined);
@@ -49,6 +49,7 @@ export const TodayFocusCard = ({ todaysWorkouts, templates = todaysWorkouts, log
     <Text style={styles.body}>Pick the exercises once. Schedule the days and today&apos;s session shows up here, ready to start.</Text>
     <Button label="New workout" onPress={onCreate ?? onBrowse} style={styles.start} />
     {onAddSample && <Button label="Try a sample workout" variant="ghost" accessibilityLabel="Add a sample workout" onPress={onAddSample} style={styles.sample} />}
+    {onRestore && <Button label="Restore from a backup" variant="ghost" accessibilityLabel="Restore from a backup" onPress={onRestore} style={styles.restore} />}
   </View>;
 
   const next = nextScheduled(templates, now);
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
   start: { marginTop: 18, minHeight: 56 },
   restButton: { marginTop: 18, minHeight: 48 },
   sample: { marginTop: 4, minHeight: 48 },
+  restore: { minHeight: 48 },
   also: { minHeight: 44, marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.border },
   alsoText: { ...theme.type.body, color: theme.colors.textMuted, flex: 1 },
   alsoName: { fontFamily: theme.type.label.fontFamily, color: theme.colors.text },

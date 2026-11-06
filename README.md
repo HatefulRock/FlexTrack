@@ -69,7 +69,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 ### First run
 
 - A new install starts empty: no workouts or history you didn't create
-- The empty Today card offers to create a workout or add a sample one ("Full Body A") to try a session first
+- The empty Today card offers to create a workout, add a sample one ("Full Body A") to try a session first, or restore a backup from another phone
 - A four-step tour explains building a workout, starting it from Today, logging a set and where results go; it opens on first launch and again from the **?** button on Today
 
 ### Today and scheduling
@@ -111,7 +111,7 @@ The screenshots use a 430 × 932 mobile viewport and are stored at 3× resolutio
 - See total sessions, average duration, and current streak
 - Filter by workout or a selected day
 - Review sessions grouped by month with duration, volume, and exercise details
-- Export every workout, session and body-weight entry as one JSON file from the History header
+- Back up every workout, session and body-weight entry as one JSON file from the History header's **Backup** button, and restore that file on any device. Restoring only adds: anything already on the device is never replaced or removed, so restoring the same file twice adds nothing
 - Turn on Apple Health or Health Connect sync from the heart button (see [Health sync](#health-sync))
 
 ### Progress
@@ -189,6 +189,8 @@ FlexTrack/
 │   ├── widgetData.ts           # Widget snapshot (bridges per platform alongside)
 │   ├── watchData.ts            # Watch snapshot with formatted exercises
 │   ├── exportData.ts           # JSON export through the share sheet
+│   ├── importData.ts           # Reads a backup and plans what it adds
+│   ├── pickBackup.ts           # System file picker (or a file input on web)
 │   └── time.ts, formatters.ts, helpers.ts
 ├── components/
 │   ├── Onboarding.tsx          # Four-step first-run tour
@@ -398,7 +400,7 @@ Flows match on accessibility labels, so renaming a label means updating the flow
 
 ### Current boundaries
 
-- Data is local to the current browser or device; there is no account, cloud sync, or remote database. Export is the only way to copy it off the device, and there is no import yet.
+- Data is local to the current browser or device; there is no account, cloud sync, or remote database. A backup file is the only way to move it between devices.
 - Exercise categories (push, pull, legs) shown in the editor's exercise picker are inferred from exercise names.
 
 ---
