@@ -1,5 +1,6 @@
 import { UserProfile, WorkoutLog, WorkoutTemplate } from '../types';
 import { isRecord, MAX_LOGS, MAX_TEMPLATES, sanitizeLog, sanitizeProfile, sanitizeTemplate } from './sanitize';
+import { fromUnit, WeightUnit } from './units';
 
 // The subset of AsyncStorage used here, so tests can pass an in-memory store.
 export interface KeyValueStore {
@@ -30,6 +31,13 @@ export const SAMPLE_ROUTINE: WorkoutTemplate = {
     { id: 'starter-row', name: 'Barbell Row', type: 'reps', loadMode: 'external', targetSets: 3, targetReps: 8, targetWeight: 30, restSeconds: 90 },
     { id: 'starter-plank', name: 'Plank', type: 'timer', targetSets: 2, targetDurationSeconds: 45, restSeconds: 60 },
   ],
+};
+
+// In pounds the sample loads round numbers a US gym racks (95, 65, 65 lb), not 88.18 lb converted from 40 kg.
+const SAMPLE_LB: Record<string, number> = { 'starter-squat': 95, 'starter-bench': 65, 'starter-row': 65 };
+export const sampleRoutine = (unit: WeightUnit): WorkoutTemplate => unit === 'kg' ? SAMPLE_ROUTINE : {
+  ...SAMPLE_ROUTINE,
+  exercises: SAMPLE_ROUTINE.exercises.map(e => (e.id in SAMPLE_LB ? { ...e, targetWeight: fromUnit(SAMPLE_LB[e.id], 'lb') } : e)),
 };
 
 export type Section = 'templates' | 'logs' | 'profile';

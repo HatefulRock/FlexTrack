@@ -18,16 +18,6 @@ export const exerciseCategory = (name: string, type?: ExerciseType): Category =>
   return 'other';
 };
 
-// Calibrated plates per side, heaviest first, for a standard 20 kg bar.
-export const BAR_KG = 20;
-export const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25] as const;
-export const platesPerSide = (total: number, bar = BAR_KG): { plates: number[]; remainder: number } => {
-  let left = Math.max(0, (total - bar) / 2);
-  const plates: number[] = [];
-  PLATE_SIZES.forEach(p => { while (left + 1e-9 >= p) { plates.push(p); left -= p; } });
-  return { plates, remainder: Math.round(left * 100) / 100 };
-};
-
 export const estimate1RM = (weight = 0, reps = 0) => (weight > 0 && reps > 0 ? weight * (1 + reps / 30) : 0);
 
 export const formatDuration = (ms: number) => {
@@ -39,7 +29,6 @@ export const formatDuration = (ms: number) => {
 
 // Up to two decimals so plate maths stays loadable: 33.75 kg a side, never a rounded 33.8.
 export const formatDecimal = (n: number) => String(Number(n.toFixed(2)));
-export const formatKg = (kg: number) => `${formatDecimal(kg)} kg`;
 export const formatNumber = (n: number) => Math.round(n).toLocaleString('en-US');
 
 // Lifted volume only: on assisted sets the weight is help from the machine, so it never counts.

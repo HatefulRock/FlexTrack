@@ -10,7 +10,8 @@ import { Barbell } from './Barbell';
 import { PaceMark, paceDelta, paceLabel } from './PaceParts';
 import { ProgressionChip } from './ProgressionChip';
 import { ProgressionSuggestion } from '../../utils/progression';
-import { BAR_KG, formatDecimal as fmtNum } from '../../utils/training';
+import { formatDecimal as fmtNum } from '../../utils/training';
+import { barLoad, formatWeight, fromUnit, getWeightUnit, shownWeight, unitWord, weightNumber, weightStep } from '../../utils/units';
 
 interface Props {
   exercise: Exercise; sets: SetLog[]; historySets?: SetLog[]; exerciseIndex: number;
@@ -22,16 +23,15 @@ interface Props {
 }
 
 const loadMode = (e: Exercise) => e.loadMode || 'external';
-const WEIGHT_STEP_KG = 2.5;
 
-// "85 kg × 6", "8 reps", "0:45", "5 km · 24:10": the set as the lifter says it.
+// "85 kg × 6", "8 reps", "0:45", "5 km · 24:10": the set as the lifter says it, in their weight unit.
 export const describeSet = (exercise: Exercise, set: Pick<SetLog, 'reps' | 'weight' | 'distance' | 'durationSeconds'>, elapsed = 0) => {
   if (exercise.type === 'timer') return formatTime(elapsed || set.durationSeconds || 0);
   if (exercise.type === 'distance') return `${fmtNum(set.distance || 0)} ${exercise.targetDistanceUnit || 'km'}${set.durationSeconds ? ` · ${formatTime(set.durationSeconds)}` : ''}`;
   const reps = set.reps || 0;
   if (loadMode(exercise) === 'bodyweight') return `${reps} reps`;
-  if (loadMode(exercise) === 'assisted') return `${reps} reps · ${fmtNum(set.weight || 0)} kg assist`;
-  return `${fmtNum(set.weight || 0)} kg × ${reps}`;
+  if (loadMode(exercise) === 'assisted') return `${reps} reps · ${formatWeight(set.weight || 0)} assist`;
+  return `${formatWeight(set.weight || 0)} × ${reps}`;
 };
 
 // Three white judges' lights: a good lift. They play on the set just completed, never on the set still to lift.
@@ -98,8 +98,9 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
 
   // A loaded bar is drawn plate by plate; exactly the bar is named; a lighter external load (a dumbbell, a cable) has no bar to show.
   const renderBar = (weight = 0) => {
-    if (weight > BAR_KG) return <Barbell weight={weight} />;
-    if (weight === BAR_KG) return <View style={styles.emptyBar}><Text style={styles.emptyBarText}>Empty bar</Text></View>;
+    const load = barLoad(weight);
+    if (load === 'loaded') return <Barbell weight={weight} />;
+    if (load === 'bar') return <View style={styles.emptyBar}><Text style={styles.emptyBarText}>Empty bar</Text></View>;
     return null;
   };
 
@@ -123,8 +124,8 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
           {mode === 'bodyweight' ? 'Enter the reps you did below, then tap Set done.' : `Enter the ${mode === 'assisted' ? 'assistance' : 'weight'} and reps you actually did below, then tap Set done.`}
         </Text>}
         <View style={styles.steppers}>
-          {mode !== 'bodyweight' && <NumberStepper label={mode === 'assisted' ? 'Assistance' : 'Weight'} unit={mode === 'assisted' ? 'kg assist' : 'kg'}
-            value={set.weight} step={WEIGHT_STEP_KG} onEdit={weightEdit} onChange={v => onUpdateSet(i, 'weight', v)} />}
+          {mode !== 'bodyweight' && <NumberStepper label={mode === 'assisted' ? 'Assistance' : 'Weight'} unit={mode === 'assisted' ? `${getWeightUnit()} assist` : getWeightUnit()}
+            value={set.weight === undefined ? undefined : shownWeight(set.weight)} step={weightStep()} onEdit={weightEdit} onChange={v => onUpdateSet(i, 'weight', fromUnit(v))} />}
           <NumberStepper label="Reps" unit="reps" value={set.reps} step={1} onChange={v => onUpdateSet(i, 'reps', Math.round(v))} />
         </View>
       </>}
@@ -149,9 +150,9 @@ export const SetList = ({ exercise, sets, historySets, exerciseIndex, timers, ti
           {set.notes ? <MessageSquare size={16} color={theme.colors.textSecondary} /> : <MessageSquarePlus size={16} color={theme.colors.textMuted} />}
           <Text style={styles.auxText}>{set.notes ? 'Note' : 'Add note'}</Text>
         </PressableScale>
-        {changedWeight && <PressableScale scaleTo={0.97} accessibilityRole="button" accessibilityLabel={`Use ${set.weight} kilograms as the default for ${exercise.name}`}
+        {changedWeight && <PressableScale scaleTo={0.97} accessibilityRole="button" accessibilityLabel={`Use ${weightNumber(set.weight as number)} ${unitWord()} as the default for ${exercise.name}`}
           onPress={() => { setDefaultCandidate(null); onSetDefaultWeight(set.weight as number); }} style={styles.auxBtn}>
-          <Text style={styles.defaultText}>Use {fmtNum(set.weight as number)} kg as default</Text>
+          <Text style={styles.defaultText}>Use {formatWeight(set.weight as number)} as default</Text>
         </PressableScale>}
       </View>
       {notes[key] && <TextInput autoFocus accessibilityLabel={`Note for set ${set.setNumber}`} placeholder="Note for this set" placeholderTextColor={theme.colors.textMuted}

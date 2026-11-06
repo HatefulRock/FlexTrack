@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentStreak, detectRecords, formatDuration, logVolume, platesPerSide } from '../utils/training';
+import { currentStreak, detectRecords, formatDuration, logVolume } from '../utils/training';
 import { WorkoutLog } from '../types';
 
 const log = (id: string, day: Date, weight: number, reps: number, over: Partial<WorkoutLog['exercises'][number]> = {}): WorkoutLog => ({
@@ -7,16 +7,6 @@ const log = (id: string, day: Date, weight: number, reps: number, over: Partial<
   exercises: [{ exerciseId: 'bench', exerciseName: 'Bench Press', completed: true, sets: [{ setNumber: 1, weight, reps, completed: true }], ...over }],
 });
 const daysAgo = (n: number, now = new Date(2026, 9, 28, 12)) => { const d = new Date(now); d.setDate(d.getDate() - n); return d; };
-
-describe('platesPerSide', () => {
-  it('loads heaviest plates first', () => {
-    expect(platesPerSide(87.5)).toEqual({ plates: [25, 5, 2.5, 1.25], remainder: 0 });
-  });
-  it('reports weight that cannot be loaded', () => {
-    expect(platesPerSide(21)).toEqual({ plates: [], remainder: 0.5 });
-    expect(platesPerSide(10)).toEqual({ plates: [], remainder: 0 });
-  });
-});
 
 describe('formatDuration', () => {
   it('formats seconds, minutes and hours', () => {

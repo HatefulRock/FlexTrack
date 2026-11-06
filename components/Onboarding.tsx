@@ -4,6 +4,7 @@ import { CalendarDays, Check, Dumbbell, LucideIcon, TrendingUp } from 'lucide-re
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../constants/theme';
 import { Button, PressableScale } from './ui/Primitives';
+import { getWeightUnit } from '../utils/units';
 import { WORKOUT_COLORS } from '../utils/workoutColor';
 
 export const ONBOARDING_KEY = 'onboarding-seen';
@@ -22,7 +23,7 @@ const STEPS: Step[] = [
 
 // The bit of the set card a new lifter misses: the labelled boxes they type into.
 const SetPreview = () => <View style={styles.preview} accessible={false} importantForAccessibility="no-hide-descendants">
-  {[['Weight', '60', 'kg'], ['Reps', '8', 'reps']].map(([label, value, unit]) => <View key={label}>
+  {[['Weight', ...(getWeightUnit() === 'lb' ? ['135', 'lb'] : ['60', 'kg'])], ['Reps', '8', 'reps']].map(([label, value, unit]) => <View key={label}>
     <Text style={styles.previewLabel}>{label}</Text>
     <View style={styles.previewBox}><Text style={styles.previewValue}>{value}</Text><Text style={styles.previewUnit}>{unit}</Text></View>
   </View>)}

@@ -1,14 +1,13 @@
 import { Exercise, ExerciseLog } from '../types';
-import { formatKg } from './training';
+import { addInUnit, formatWeight, weightStep } from './units';
 
 export interface ProgressionSuggestion { weight?: number; reps: number; reason: string; }
 
-export const PROGRESSION_STEP_KG = 2.5;
-
 // Double progression. Every working set last session done at the routine's target reps (or more) earns the next step:
-// +2.5 kg on external load, one more rep than last time's weakest set on bodyweight, 2.5 kg less than the least
-// assistance used. A missed set holds: null, and the lifter repeats last time's values. Timer and distance work never
-// get a suggestion.
+// one step on external load (+2.5 kg, or +5 lb for a lifter in pounds), one more rep than last time's weakest set on
+// bodyweight, one step less than the least assistance used. Weights stay in kilograms; the step is taken in the
+// lifter's unit so the suggestion is a load they can put on the bar. A missed set holds: null, and the lifter repeats
+// last time's values. Timer and distance work never get a suggestion.
 export const suggestProgression = (exercise: Exercise, last?: ExerciseLog | null): ProgressionSuggestion | null => {
   if (exercise.type !== 'reps' || !last?.sets.length) return null;
   const target = Math.floor(exercise.targetReps ?? 0);
@@ -27,9 +26,9 @@ export const suggestProgression = (exercise: Exercise, last?: ExerciseLog | null
   if (mode === 'assisted') {
     const least = Math.min(...weights);
     if (least <= 0) return null;
-    return { weight: Math.max(0, Math.round((least - PROGRESSION_STEP_KG) * 100) / 100), reps: target, reason: `You hit ${sets} × ${target} with ${formatKg(least)} assist last time` };
+    return { weight: addInUnit(least, -weightStep()), reps: target, reason: `You hit ${sets} × ${target} with ${formatWeight(least)} assist last time` };
   }
   const top = Math.max(...weights);
   if (top <= 0) return null;
-  return { weight: Math.round((top + PROGRESSION_STEP_KG) * 100) / 100, reps: target, reason: `You hit ${sets} × ${target} at ${formatKg(top)} last time` };
+  return { weight: addInUnit(top, weightStep()), reps: target, reason: `You hit ${sets} × ${target} at ${formatWeight(top)} last time` };
 };

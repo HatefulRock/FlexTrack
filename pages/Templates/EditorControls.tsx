@@ -7,6 +7,7 @@ import { PressableScale } from '../../components/ui/Primitives';
 import { Exercise } from '../../types';
 import { formatDecimal } from '../../utils/training';
 import { formatTime } from '../../utils/time';
+import { formatWeight } from '../../utils/units';
 
 const { colors, type, radius } = theme;
 
@@ -45,8 +46,8 @@ export const exerciseSummary = (e: Exercise) => {
     parts.push(`${sets} × ${e.targetReps ?? 0}`);
     const mode = e.loadMode || 'external', w = e.targetWeight || 0;
     if (mode === 'bodyweight') parts.push('bodyweight');
-    else if (mode === 'assisted') parts.push(`${formatAmount(w)} kg assist`);
-    else if (w > 0) parts.push(`${formatAmount(w)} kg`);
+    else if (mode === 'assisted') parts.push(`${formatWeight(w)} assist`);
+    else if (w > 0) parts.push(formatWeight(w));
   }
   const rest = e.restSeconds || 0;
   parts.push(rest > 0 ? `rest ${formatClock(rest)}` : 'no rest');

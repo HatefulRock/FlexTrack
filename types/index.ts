@@ -10,7 +10,7 @@ export interface Exercise {
   loadMode?: LoadMode;
   targetSets?: number;
   targetReps?: number;
-  targetWeight?: number; // in kg or lbs
+  targetWeight?: number; // kg, whatever unit the lifter sees (utils/units.ts)
   targetDurationSeconds?: number;
   targetDistance?: number;
   targetDistanceUnit?: 'm' | 'km' | 'miles';

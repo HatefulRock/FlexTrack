@@ -8,8 +8,9 @@ import { formatTime } from '../../utils/time';
 import { theme } from '../../constants/theme';
 import { PressableScale, useReducedMotion } from '../../components/ui/Primitives';
 import { logColor } from '../../utils/workoutColor';
-import { CATEGORY_LABEL, estimate1RM, formatDecimal, formatDuration, formatNumber, logVolume } from '../../utils/training';
+import { CATEGORY_LABEL, estimate1RM, formatDecimal, formatDuration, logVolume } from '../../utils/training';
 import { ACTIVITY_LABEL, sessionCategories, sessionMs } from './historyModel';
+import { formatWeight, getWeightUnit, weightNumber, weightTotal } from '../../utils/units';
 
 const num = (n = 0) => formatDecimal(n);
 
@@ -25,8 +26,8 @@ const setEntries = (e: ExerciseLog): { text: string; score: number }[] => e.sets
   if (e.exerciseType === 'distance') return { text: `${num(s.distance)} ${e.distanceUnit || 'km'}${s.durationSeconds ? ` in ${formatTime(s.durationSeconds)}` : ''}`, score: s.distance || 0 };
   if (e.exerciseType === 'timer') { const d = s.durationSeconds || e.durationSeconds || 0; return { text: formatTime(d), score: d }; }
   if (e.loadMode === 'bodyweight' || !s.weight) return { text: `${s.reps || 0}`, score: s.reps || 0 };
-  if (e.loadMode === 'assisted') return { text: `${s.reps || 0} at −${num(s.weight)} kg`, score: (s.reps || 0) * 1000 - (s.weight || 0) };
-  return { text: `${num(s.weight)} × ${s.reps || 0}`, score: estimate1RM(s.weight, s.reps) || s.weight || 0 };
+  if (e.loadMode === 'assisted') return { text: `${s.reps || 0} at −${formatWeight(s.weight || 0)}`, score: (s.reps || 0) * 1000 - (s.weight || 0) };
+  return { text: `${weightNumber(s.weight || 0)} × ${s.reps || 0}`, score: estimate1RM(s.weight, s.reps) || s.weight || 0 };
 });
 
 const SetLine = ({ e }: { e: ExerciseLog }) => {
@@ -34,7 +35,7 @@ const SetLine = ({ e }: { e: ExerciseLog }) => {
   if (!entries.length) return <Text style={styles.setsMuted}>Not completed</Text>;
   const best = entries.length > 1 ? entries.reduce((b, x, i) => (x.score > entries[b].score ? i : b), 0) : -1;
   const timed = e.exerciseType === 'distance' || e.exerciseType === 'timer';
-  const unit = timed || e.loadMode === 'assisted' ? '' : entries.some(x => x.text.includes('×')) ? ' kg' : ' reps';
+  const unit = timed || e.loadMode === 'assisted' ? '' : entries.some(x => x.text.includes('×')) ? ` ${getWeightUnit()}` : ' reps';
   return <Text style={styles.sets}>{entries.map((x, i) => <Text key={i}>
     <Text style={i === best ? styles.setBest : undefined}>{x.text}</Text>{i < entries.length - 1 ? ', ' : ''}
   </Text>)}{unit && <Text style={styles.setsMuted}>{unit}</Text>}</Text>;
@@ -53,7 +54,7 @@ export const LogItem = ({ log, first = false, templates }: { log: WorkoutLog; fi
     quick ? ACTIVITY_LABEL[log.activityCategory || 'other'] : '',
     ms > 0 ? formatDuration(ms) : '',
     !quick || log.exercises.length ? `${log.exercises.filter(e => e.completed).length}/${log.exercises.length} exercises` : '',
-    volume > 0 ? `${formatNumber(volume)} kg` : '',
+    volume > 0 ? `${weightTotal(volume)} ${getWeightUnit()}` : '',
     distance,
   ].filter(Boolean);
 

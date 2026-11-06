@@ -2,20 +2,25 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { G, Rect, Text as SvgText } from 'react-native-svg';
 import { fonts, plates as PLATE_COLORS, theme } from '../../constants/theme';
-import { BAR_KG, formatKg, platesPerSide } from '../../utils/training';
+import { formatDecimal } from '../../utils/training';
+import { getWeightUnit, platesPerSide } from '../../utils/units';
 
 // True relative diameters of calibrated plates: 25 and 20 kg share the 450 mm face.
 const DIAMETER: Record<number, number> = { 25: 1, 20: 1, 15: 0.86, 10: 0.72, 5: 0.5, 2.5: 0.4, 1.25: 0.32 };
 const DARK_LABEL = new Set([15, 5, 1.25]);
+// Pound plates take the colour and size of their kilogram neighbour, as coloured pound bumpers do: 45 blue, 35 yellow, 25 green.
+const LOOK_LB: Record<number, number> = { 45: 20, 35: 15, 25: 10, 10: 5, 5: 2.5, 2.5: 1.25 };
 const CHROME = '#B9BDC1';
 const SHAFT = '#8A8E92';
 
-// Side view of a loaded bar: plates heaviest-in on both sleeves, each printed with its kg.
+// Side view of a loaded bar: plates heaviest-in on both sleeves, each printed with its weight in the lifter's unit.
 export const Barbell = ({ weight, height = 92 }: { weight: number; height?: number }) => {
   const [width, setWidth] = useState(0);
-  const { plates, remainder } = platesPerSide(weight);
-  const perSide = Math.max(0, (weight - BAR_KG) / 2);
-  const summary = plates.length ? `${formatKg(BAR_KG)} bar, ${plates.map(p => formatKg(p)).join(' + ')} a side` : `${formatKg(BAR_KG)} bar`;
+  const unit = getWeightUnit();
+  const { bar, perSide, plates, remainder } = platesPerSide(weight, unit);
+  const fmt = (n: number) => `${formatDecimal(n)} ${unit}`;
+  const look = (p: number) => (unit === 'lb' ? LOOK_LB[p] : p);
+  const summary = plates.length ? `${fmt(bar)} bar, ${plates.map(fmt).join(' + ')} a side` : `${fmt(bar)} bar`;
 
   const cy = height / 2;
   const plateMax = height - 4;
@@ -33,13 +38,13 @@ export const Barbell = ({ weight, height = 92 }: { weight: number; height?: numb
     items.push(<Rect key="collar" x={x(0, innerCollarW)} y={cy - height * 0.17} width={innerCollarW} height={height * 0.34} rx={1.5} fill={CHROME} />);
     let offset = innerCollarW + 1;
     plates.forEach((p, i) => {
-      const h = DIAMETER[p] * plateMax;
+      const h = DIAMETER[look(p)] * plateMax;
       const w = Math.max(0, pw - 1.5);
       const px = x(offset, w);
       items.push(<G key={`p${i}`}>
-        <Rect x={px} y={cy - h / 2} width={w} height={h} rx={2.5} fill={PLATE_COLORS[p as keyof typeof PLATE_COLORS]} />
+        <Rect x={px} y={cy - h / 2} width={w} height={h} rx={2.5} fill={PLATE_COLORS[look(p) as keyof typeof PLATE_COLORS]} />
         <SvgText x={px + w / 2} y={cy + 4.5} fontSize={12} fontFamily={fonts.displayBlack} textAnchor="middle"
-          fill={DARK_LABEL.has(p) ? theme.colors.onPrimary : theme.colors.text}>{String(p)}</SvgText>
+          fill={DARK_LABEL.has(look(p)) ? theme.colors.onPrimary : theme.colors.text}>{String(p)}</SvgText>
       </G>);
       offset += pw;
     });
@@ -56,7 +61,7 @@ export const Barbell = ({ weight, height = 92 }: { weight: number; height?: numb
       </Svg>}
     </View>
     <Text style={styles.caption}>
-      {formatKg(BAR_KG)} bar + {formatKg(perSide - remainder)} a side{remainder > 0 ? ` (${formatKg(remainder)} a side won't load)` : ''}
+      {fmt(bar)} bar + {fmt(perSide - remainder)} a side{remainder > 0 ? ` (${fmt(remainder)} a side won't load)` : ''}
     </Text>
   </View>;
 };

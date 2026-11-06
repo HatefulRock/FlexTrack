@@ -7,6 +7,7 @@ import { PressableScale } from '../../components/ui/Primitives';
 import { Exercise, ExerciseType, LoadMode } from '../../types';
 import { CATEGORY_LABEL, categoryColor, exerciseCategory } from '../../utils/training';
 import { EditorSegmented, EditorStepper, exerciseSummary } from './EditorControls';
+import { fromUnit, getWeightUnit, shownWeight, unitWord, weightStep } from '../../utils/units';
 
 const { colors, type, radius } = theme;
 
@@ -86,8 +87,9 @@ export const EditorExerciseRow = ({ exercise: ex, index, count, expanded, error,
       <View style={styles.grid}>
         <EditorStepper label="Sets" a11y={`Sets for ${label}`} value={ex.targetSets} onChange={v => onChange({ targetSets: v })} step={1} min={1} max={100} integer />
         {ex.type === 'reps' && <EditorStepper label="Reps" a11y={`Reps for ${label}`} value={ex.targetReps} onChange={v => onChange({ targetReps: v })} step={1} max={100_000} integer />}
-        {ex.type === 'reps' && mode !== 'bodyweight' && <EditorStepper label={mode === 'assisted' ? 'Assistance kg' : 'kg'} a11y={`${mode === 'assisted' ? 'Assistance kilograms' : 'Kilograms'} for ${label}`}
-          value={ex.targetWeight} onChange={v => onChange({ targetWeight: v })} step={2.5} max={100_000} />}
+        {ex.type === 'reps' && mode !== 'bodyweight' && <EditorStepper label={mode === 'assisted' ? `Assistance ${getWeightUnit()}` : getWeightUnit()}
+          a11y={`${mode === 'assisted' ? `Assistance ${unitWord()}` : unitWord().replace(/^./, c => c.toUpperCase())} for ${label}`}
+          value={shownWeight(ex.targetWeight ?? 0)} onChange={v => onChange({ targetWeight: fromUnit(v) })} step={weightStep()} max={100_000} />}
         {ex.type === 'timer' && <EditorStepper label="Time (m:ss)" a11y={`Time per set for ${label}`} value={ex.targetDurationSeconds} onChange={v => onChange({ targetDurationSeconds: v })} step={15} max={604_800} clock />}
         {ex.type === 'distance' && <EditorStepper label={`Distance (${unit})`} a11y={`Distance for ${label}`} value={ex.targetDistance} onChange={v => onChange({ targetDistance: v })}
           step={unit === 'm' ? 100 : 0.5} max={1_000_000} />}

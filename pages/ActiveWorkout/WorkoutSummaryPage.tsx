@@ -6,7 +6,8 @@ import { WorkoutLog } from '../../types';
 import { theme } from '../../constants/theme';
 import { Share2 } from 'lucide-react-native';
 import { Button, SectionHeader, useReducedMotion } from '../../components/ui/Primitives';
-import { detectRecords, formatDuration, formatNumber, logVolume } from '../../utils/training';
+import { detectRecords, formatDuration, logVolume } from '../../utils/training';
+import { getWeightUnit, unitWord, weightTotal } from '../../utils/units';
 import { ExerciseRow, JudgeLights, RecordCard, lightsVerdict, whiteLights } from './SummaryParts';
 import { buildShareData } from './ShareLayout';
 import { ShareSheet } from './ShareSheet';
@@ -96,12 +97,12 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
   // Only a complete session is a fair comparison with the last one.
   const fairDelta = delta === null || !complete ? null : delta;
   const deltaText = fairDelta === null ? null
-    : fairDelta > 0 ? `+${formatNumber(fairDelta)} kg vs last`
-    : fairDelta < 0 ? `−${formatNumber(-fairDelta)} kg vs last`
+    : fairDelta > 0 ? `+${weightTotal(fairDelta)} ${getWeightUnit()} vs last`
+    : fairDelta < 0 ? `−${weightTotal(-fairDelta)} ${getWeightUnit()} vs last`
     : 'Same as last';
   const deltaSpoken = fairDelta === null ? ''
     : fairDelta === 0 ? ', same as last session'
-    : `, ${formatNumber(Math.abs(fairDelta))} kilograms ${fairDelta > 0 ? 'more' : 'less'} than last session`;
+    : `, ${weightTotal(Math.abs(fairDelta))} ${unitWord()} ${fairDelta > 0 ? 'more' : 'less'} than last session`;
 
   return <View style={styles.container}>
     <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -123,8 +124,8 @@ export const WorkoutSummaryPage = ({ log, previousLogs = [], onDone, onViewHisto
           <View style={styles.divider} />
           <Score value={String(doneSets)} label={complete ? 'Sets' : `of ${totalSets} sets`} />
           <View style={styles.divider} />
-          <View style={styles.score} accessible accessibilityLabel={`Volume ${formatNumber(volume)} kilograms${deltaSpoken}`}>
-            <Text style={styles.scoreValue} numberOfLines={1}>{formatNumber(shownVolume)}<Text style={styles.scoreUnit}> kg</Text></Text>
+          <View style={styles.score} accessible accessibilityLabel={`Volume ${weightTotal(volume)} ${unitWord()}${deltaSpoken}`}>
+            <Text style={styles.scoreValue} numberOfLines={1}>{weightTotal(shownVolume)}<Text style={styles.scoreUnit}> {getWeightUnit()}</Text></Text>
             <Text style={styles.scoreLabel}>Volume</Text>
             {fairDelta !== null && deltaText && <Text style={[styles.delta, fairDelta > 0 ? styles.deltaUp : styles.deltaFlat]}>{deltaText}</Text>}
           </View>
